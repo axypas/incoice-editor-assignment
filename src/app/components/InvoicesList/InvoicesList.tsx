@@ -11,13 +11,7 @@
 
 import { Invoice, InvoiceFilter } from 'types/invoice.types'
 import { Customer, Product } from 'types'
-import React, {
-  useState,
-  useMemo,
-  FormEvent,
-  useCallback,
-  useEffect,
-} from 'react'
+import React, { useState, useMemo, FormEvent, useCallback } from 'react'
 import {
   useTable,
   useSortBy,
@@ -96,17 +90,13 @@ const InvoicesList = (): React.ReactElement => {
   const perPage = 10
 
   // Fetch invoices with active filters and pagination
+  // The hook auto-fetches when filters, page, or perPage change
   const { invoices, pagination, isLoading, isError, error, refetch } =
     useInvoices({
       filters: activeFilters,
       page: currentPage,
       perPage,
     })
-
-  // Refetch when page changes
-  useEffect(() => {
-    refetch(currentPage, perPage)
-  }, [currentPage, perPage, refetch])
 
   // Format date to YYYY-MM-DD for API
   const formatDateForAPI = (date: Date): string => {
