@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App'
 import { ApiProvider } from '../api'
 
+import './index.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
 
 const apiBase = process.env.REACT_APP_API_BASE ?? ''

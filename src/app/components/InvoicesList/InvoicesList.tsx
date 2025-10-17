@@ -33,8 +33,8 @@ import {
   Form,
   Row as BsRow,
   Col,
-  ButtonGroup,
   Card,
+  ButtonGroup,
 } from 'react-bootstrap'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -391,9 +391,17 @@ const InvoicesList = (): React.ReactElement => {
       {
         Header: 'ID',
         accessor: 'id',
-        Cell: ({ value }: CellProps<Invoice, string | undefined>) => (
-          <span className="font-monospace">{value || '—'}</span>
-        ),
+        Cell: ({ row }: CellProps<Invoice, string | undefined>) => {
+          const invoice = row.original
+          return (
+            <div>
+              <div className="fw-semibold text-dark">#{invoice.id || '—'}</div>
+              <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                {invoice.invoice_lines.length} line(s)
+              </div>
+            </div>
+          )
+        },
       },
       {
         Header: 'Customer',
@@ -403,14 +411,33 @@ const InvoicesList = (): React.ReactElement => {
                 row.customer.last_name || ''
               }`.trim()
             : '',
-        Cell: ({ value }: CellProps<Invoice, string>) => <>{value || '—'}</>,
+        Cell: ({ row }: CellProps<Invoice, string>) => {
+          const customer = row.original.customer
+          if (!customer) {
+            return <span className="text-muted">—</span>
+          }
+          return (
+            <div>
+              <div className="fw-semibold text-dark">
+                {customer.first_name} {customer.last_name}
+              </div>
+              {customer.address && (
+                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                  {customer.address}
+                </div>
+              )}
+            </div>
+          )
+        },
         id: 'customer',
       },
       {
         Header: 'Date',
         accessor: 'date',
         Cell: ({ value }: CellProps<Invoice, string>) => (
-          <>{value ? formatDate(value) : '—'}</>
+          <span className="text-secondary">
+            {value ? formatDate(value) : '—'}
+          </span>
         ),
       },
       {
@@ -421,7 +448,9 @@ const InvoicesList = (): React.ReactElement => {
             !row.original.paid && value && new Date(value) < new Date()
 
           return (
-            <span className={isOverdue ? 'text-danger fw-bold' : ''}>
+            <span
+              className={isOverdue ? 'text-danger fw-bold' : 'text-secondary'}
+            >
               {value ? formatDate(value) : '—'}
               {isOverdue && ' ⚠️'}
             </span>
@@ -436,7 +465,7 @@ const InvoicesList = (): React.ReactElement => {
           const isPaid = row.original.paid
 
           return (
-            <span className="text-start font-monospace d-block">
+            <span className="fw-semibold text-dark">
               {isPaid ? formatCurrency(total) : '—'}
             </span>
           )
@@ -472,27 +501,44 @@ const InvoicesList = (): React.ReactElement => {
         id: 'status',
       },
       {
-        Header: 'Actions',
+        Header: () => <div className="text-end">Actions</div>,
         accessor: (row) => row,
         Cell: ({ value: invoice }: CellProps<Invoice, Invoice>) => (
-          <div className="btn-group btn-group-sm" role="group">
+          <div className="d-flex justify-content-end gap-2">
             {!invoice.finalized && (
-              <Button variant="outline-primary" size="sm">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+              >
                 Edit
               </Button>
             )}
             {invoice.finalized && (
-              <Button variant="outline-secondary" size="sm">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+              >
                 View
               </Button>
             )}
             {!invoice.finalized && (
-              <Button variant="outline-success" size="sm">
+              <Button
+                variant="primary"
+                size="sm"
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+              >
                 Finalize
               </Button>
             )}
             {!invoice.finalized && (
-              <Button variant="outline-danger" size="sm">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                className="text-danger"
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+              >
                 Delete
               </Button>
             )}
@@ -656,14 +702,18 @@ const InvoicesList = (): React.ReactElement => {
 
   // Table view with filters and data
   return (
-    <div>
+    <div className="pb-4">
       {/* Filter controls */}
       <Form onSubmit={handleFilterSubmit} className="mt-4">
-        <Card className="p-3">
+        <Card className="p-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
+          {/* Line 1: Status and Payment */}
           <BsRow className="g-3">
-            <Col md={6} lg={3}>
+            <Col md={6}>
               <Form.Group controlId="status">
-                <Form.Label className="text-uppercase small fw-semibold text-muted">
+                <Form.Label
+                  className="text-uppercase small fw-semibold text-muted"
+                  style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
+                >
                   Status
                 </Form.Label>
                 <ButtonGroup size="sm" className="d-flex">
@@ -684,9 +734,12 @@ const InvoicesList = (): React.ReactElement => {
                 </ButtonGroup>
               </Form.Group>
             </Col>
-            <Col md={6} lg={3}>
+            <Col md={6}>
               <Form.Group controlId="payment">
-                <Form.Label className="text-uppercase small fw-semibold text-muted">
+                <Form.Label
+                  className="text-uppercase small fw-semibold text-muted"
+                  style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
+                >
                   Payment
                 </Form.Label>
                 <ButtonGroup size="sm" className="d-flex">
@@ -707,9 +760,16 @@ const InvoicesList = (): React.ReactElement => {
                 </ButtonGroup>
               </Form.Group>
             </Col>
-            <Col md={6} lg={3}>
+          </BsRow>
+
+          {/* Line 2: Customer and Product */}
+          <BsRow className="g-3 mt-2">
+            <Col md={6}>
               <Form.Group controlId="customer">
-                <Form.Label className="text-uppercase small fw-semibold text-muted">
+                <Form.Label
+                  className="text-uppercase small fw-semibold text-muted"
+                  style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
+                >
                   Customer
                 </Form.Label>
                 <CustomerAutocomplete
@@ -718,9 +778,12 @@ const InvoicesList = (): React.ReactElement => {
                 />
               </Form.Group>
             </Col>
-            <Col md={6} lg={3}>
+            <Col md={6}>
               <Form.Group controlId="product">
-                <Form.Label className="text-uppercase small fw-semibold text-muted">
+                <Form.Label
+                  className="text-uppercase small fw-semibold text-muted"
+                  style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
+                >
                   Product
                 </Form.Label>
                 <ProductAutocomplete
@@ -731,10 +794,14 @@ const InvoicesList = (): React.ReactElement => {
             </Col>
           </BsRow>
 
+          {/* Line 3: Date Range and Due Date Range */}
           <BsRow className="g-3 mt-2">
-            <Col md={4} lg={4}>
-              <Form.Group controlId="dateRange">
-                <Form.Label className="text-uppercase small fw-semibold text-muted">
+            <Col md={6}>
+              <Form.Group controlId="dateRange" className="flex flex-col">
+                <Form.Label
+                  className="text-uppercase small fw-semibold text-muted"
+                  style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
+                >
                   Date Range
                 </Form.Label>
                 <DatePicker
@@ -755,9 +822,12 @@ const InvoicesList = (): React.ReactElement => {
                 </Form.Text>
               </Form.Group>
             </Col>
-            <Col md={4} lg={4}>
-              <Form.Group controlId="dueDateRange">
-                <Form.Label className="text-uppercase small fw-semibold text-muted">
+            <Col md={6}>
+              <Form.Group controlId="dueDateRange" className="flex flex-col">
+                <Form.Label
+                  className="text-uppercase small fw-semibold text-muted"
+                  style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
+                >
                   Due Date Range
                 </Form.Label>
                 <DatePicker
@@ -778,7 +848,11 @@ const InvoicesList = (): React.ReactElement => {
                 </Form.Text>
               </Form.Group>
             </Col>
-            <Col md={4} lg={4} className="d-flex align-items-end gap-2">
+          </BsRow>
+
+          {/* Line 4: Buttons */}
+          <BsRow className="g-3 mt-3">
+            <Col className="d-flex gap-2">
               <Button
                 type="submit"
                 variant="primary"
@@ -836,88 +910,130 @@ const InvoicesList = (): React.ReactElement => {
             </div>
           </div>
         )}
-        <Table {...getTableProps()} hover responsive>
-          <thead className="table-light">
-            {headerGroups.map((headerGroup) => (
-              <tr {...headerGroup.getHeaderGroupProps()}>
-                {headerGroup.headers.map((column) => {
-                  const sortColumn = column as ColumnWithSort<Invoice>
+        <Card
+          className="overflow-hidden shadow-sm"
+          style={{ borderRadius: '0.75rem' }}
+        >
+          <div className="table-responsive">
+            <Table
+              {...getTableProps()}
+              className="mb-0"
+              style={{ fontSize: '0.875rem' }}
+            >
+              <thead style={{ backgroundColor: '#f8fafc' }}>
+                {headerGroups.map((headerGroup) => (
+                  <tr {...headerGroup.getHeaderGroupProps()}>
+                    {headerGroup.headers.map((column) => {
+                      const sortColumn = column as ColumnWithSort<Invoice>
+                      return (
+                        <th
+                          {...column.getHeaderProps(
+                            sortColumn.getSortByToggleProps()
+                          )}
+                          style={{
+                            cursor: sortColumn.canSort ? 'pointer' : 'default',
+                            padding: '0.75rem 1.25rem',
+                            fontWeight: 500,
+                            color: '#64748b',
+                            borderBottom: '1px solid #e2e8f0',
+                          }}
+                          role={sortColumn.canSort ? 'button' : undefined}
+                          tabIndex={sortColumn.canSort ? 0 : undefined}
+                        >
+                          {column.render('Header')}
+                          {sortColumn.isSorted
+                            ? sortColumn.isSortedDesc
+                              ? ' ▼'
+                              : ' ▲'
+                            : ''}
+                        </th>
+                      )
+                    })}
+                  </tr>
+                ))}
+              </thead>
+              <tbody {...getTableBodyProps()}>
+                {rows.map((row) => {
+                  prepareRow(row)
+                  const expandedRow = row as Row<Invoice> &
+                    UseExpandedRowProps<Invoice>
                   return (
-                    <th
-                      {...column.getHeaderProps(
-                        sortColumn.getSortByToggleProps()
+                    <React.Fragment key={row.id}>
+                      <tr
+                        {...row.getRowProps()}
+                        style={{
+                          borderBottom: '1px solid #f1f5f9',
+                        }}
+                        className="align-middle"
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = '#f8fafc'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'transparent'
+                        }}
+                      >
+                        {row.cells.map((cell) => (
+                          <td
+                            {...cell.getCellProps()}
+                            style={{ padding: '1rem 1.25rem' }}
+                          >
+                            {cell.render('Cell')}
+                          </td>
+                        ))}
+                      </tr>
+                      {expandedRow.isExpanded && (
+                        <tr>
+                          <td
+                            colSpan={visibleColumns.length}
+                            style={{ padding: 0 }}
+                          >
+                            {renderRowSubComponent({ row: expandedRow })}
+                          </td>
+                        </tr>
                       )}
-                      style={{
-                        cursor: sortColumn.canSort ? 'pointer' : 'default',
-                      }}
-                      role={sortColumn.canSort ? 'button' : undefined}
-                      tabIndex={sortColumn.canSort ? 0 : undefined}
-                    >
-                      {column.render('Header')}
-                      {sortColumn.isSorted
-                        ? sortColumn.isSortedDesc
-                          ? ' ▼'
-                          : ' ▲'
-                        : ''}
-                    </th>
+                    </React.Fragment>
                   )
                 })}
-              </tr>
-            ))}
-          </thead>
-          <tbody {...getTableBodyProps()}>
-            {rows.map((row) => {
-              prepareRow(row)
-              const expandedRow = row as Row<Invoice> &
-                UseExpandedRowProps<Invoice>
-              return (
-                <React.Fragment key={row.id}>
-                  <tr {...row.getRowProps()}>
-                    {row.cells.map((cell) => (
-                      <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-                    ))}
-                  </tr>
-                  {expandedRow.isExpanded && (
-                    <tr>
-                      <td colSpan={visibleColumns.length}>
-                        {renderRowSubComponent({ row: expandedRow })}
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              )
-            })}
-          </tbody>
-        </Table>
+              </tbody>
+            </Table>
+          </div>
+        </Card>
       </div>
 
       {/* Pagination Footer */}
       {pagination && (
-        <div className="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
-          <div className="text-muted small">
-            Page {currentPage} of {pagination.total_pages} ·{' '}
-            {pagination.total_entries} invoice
-            {pagination.total_entries !== 1 ? 's' : ''}
+        <Card className="mt-3 shadow-sm" style={{ borderRadius: '0.75rem' }}>
+          <div
+            className="d-flex justify-content-between align-items-center p-3"
+            style={{ backgroundColor: '#f8fafc' }}
+          >
+            <span className="text-secondary" style={{ fontSize: '0.875rem' }}>
+              Page {currentPage} of {pagination.total_pages} ·{' '}
+              {pagination.total_entries} invoice
+              {pagination.total_entries !== 1 ? 's' : ''}
+            </span>
+            <div className="d-flex gap-2">
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={currentPage === 1 || isLoading}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline-secondary"
+                size="sm"
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage === pagination.total_pages || isLoading}
+                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+              >
+                Next
+              </Button>
+            </div>
           </div>
-          <div className="d-flex gap-2">
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1 || isLoading}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline-secondary"
-              size="sm"
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === pagination.total_pages || isLoading}
-            >
-              Next
-            </Button>
-          </div>
-        </div>
+        </Card>
       )}
     </div>
   )

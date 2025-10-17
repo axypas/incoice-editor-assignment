@@ -228,7 +228,7 @@ describe('InvoicesList - US1', () => {
       renderInvoicesList()
 
       await waitFor(() => {
-        expect(screen.getByText('1')).toBeInTheDocument()
+        expect(screen.getByText('#1')).toBeInTheDocument()
       })
     })
 
@@ -424,7 +424,7 @@ describe('InvoicesList - US1', () => {
 
       // Wait for table and data to load
       await waitFor(() => {
-        expect(screen.getByText('1')).toBeInTheDocument()
+        expect(screen.getByText('#1')).toBeInTheDocument()
       })
       expect(screen.getByRole('table')).toBeInTheDocument()
 
@@ -434,13 +434,13 @@ describe('InvoicesList - US1', () => {
       expect(rows.length).toBe(4) // 1 header + 3 data rows
 
       // Check dates appear in descending order (newest to oldest)
-      expect(rows[1]).toHaveTextContent('3')
+      expect(rows[1]).toHaveTextContent('#3')
       expect(rows[1]).toHaveTextContent('Jan 20, 2024')
 
-      expect(rows[2]).toHaveTextContent('1')
+      expect(rows[2]).toHaveTextContent('#1')
       expect(rows[2]).toHaveTextContent('Jan 15, 2024')
 
-      expect(rows[3]).toHaveTextContent('2')
+      expect(rows[3]).toHaveTextContent('#2')
       expect(rows[3]).toHaveTextContent('Jan 10, 2024')
     })
 
@@ -483,15 +483,15 @@ describe('InvoicesList - US1', () => {
 
       // Wait for table and data to load
       await waitFor(() => {
-        expect(screen.getByText('1')).toBeInTheDocument()
+        expect(screen.getByText('#1')).toBeInTheDocument()
       })
       expect(screen.getByRole('table')).toBeInTheDocument()
 
       // Initially sorted by date desc: ID 1 (Jan 20) should come before ID 2 (Jan 15)
       let rows = screen.getAllByRole('row')
-      expect(rows[1]).toHaveTextContent('1')
+      expect(rows[1]).toHaveTextContent('#1')
       expect(rows[1]).toHaveTextContent('Jan 20, 2024')
-      expect(rows[2]).toHaveTextContent('2')
+      expect(rows[2]).toHaveTextContent('#2')
       expect(rows[2]).toHaveTextContent('Jan 15, 2024')
 
       // Find and click on Amount column header to sort by amount ascending
@@ -503,14 +503,14 @@ describe('InvoicesList - US1', () => {
       await waitFor(() => {
         rows = screen.getAllByRole('row')
         // After sort by amount, ID 2 (500) comes first
-        expect(rows[1]).toHaveTextContent('2')
+        expect(rows[1]).toHaveTextContent('#2')
       })
 
       // Verify full sort order
       rows = screen.getAllByRole('row')
-      expect(rows[1]).toHaveTextContent('2')
+      expect(rows[1]).toHaveTextContent('#2')
       expect(rows[1]).toHaveTextContent('500')
-      expect(rows[2]).toHaveTextContent('1')
+      expect(rows[2]).toHaveTextContent('#1')
       expect(rows[2]).toHaveTextContent('1 000')
     })
   })
@@ -919,9 +919,9 @@ describe('InvoicesList - US1', () => {
 
       // Initially should show 2 invoices
       await waitFor(() => {
-        expect(screen.getByText('1')).toBeInTheDocument()
+        expect(screen.getByText('#1')).toBeInTheDocument()
       })
-      expect(screen.getByText('2')).toBeInTheDocument()
+      expect(screen.getByText('#2')).toBeInTheDocument()
 
       // Apply a filter
       const dateInput = screen.getByPlaceholderText(
@@ -953,9 +953,9 @@ describe('InvoicesList - US1', () => {
 
       // Verify all invoices are shown again
       await waitFor(() => {
-        expect(screen.getByText('1')).toBeInTheDocument()
+        expect(screen.getByText('#1')).toBeInTheDocument()
       })
-      expect(screen.getByText('2')).toBeInTheDocument()
+      expect(screen.getByText('#2')).toBeInTheDocument()
     })
   })
 })
