@@ -38,6 +38,7 @@ import {
 } from 'react-bootstrap'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import { useNavigate } from 'react-router-dom'
 import { useInvoices } from 'hooks/useInvoices'
 import {
   formatCurrency,
@@ -75,6 +76,8 @@ const paymentOptions: Array<{ value: PaymentFilter; label: string }> = [
 ]
 
 const InvoicesList = (): React.ReactElement => {
+  const navigate = useNavigate()
+
   // Filter state
   const [filterForm, setFilterForm] = useState<FilterFormData>({
     dateRange: [null, null],
@@ -714,7 +717,11 @@ const InvoicesList = (): React.ReactElement => {
       <div className="text-center mt-5 py-5">
         <h4 className="text-muted">No invoices yet</h4>
         <p className="text-muted">Create your first invoice to get started</p>
-        <Button variant="primary" className="mt-3">
+        <Button
+          variant="primary"
+          className="mt-3"
+          onClick={() => navigate('/invoices/new')}
+        >
           Create Invoice
         </Button>
       </div>
@@ -724,8 +731,23 @@ const InvoicesList = (): React.ReactElement => {
   // Table view with filters and data
   return (
     <div className="pb-4">
+      {/* Header */}
+      <div className="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <div>
+          <h2 className="mb-1">Invoices</h2>
+          <p className="text-muted mb-0">Manage and track all your invoices</p>
+        </div>
+        <Button
+          variant="primary"
+          onClick={() => navigate('/invoices/new')}
+          style={{ minWidth: '150px' }}
+        >
+          + Create Invoice
+        </Button>
+      </div>
+
       {/* Filter controls */}
-      <Form onSubmit={handleFilterSubmit} className="mt-4">
+      <Form onSubmit={handleFilterSubmit}>
         <Card className="p-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
           {/* Line 1: Status and Payment */}
           <BsRow className="g-3">

@@ -6,6 +6,7 @@
 
 import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { rest } from 'msw'
 import { server } from 'test/server'
 import { API_BASE } from 'test/constants'
@@ -54,12 +55,14 @@ jest.mock('react-datepicker', () => {
   }
 })
 
-// Helper to render InvoicesList with ApiProvider
+// Helper to render InvoicesList with ApiProvider and Router
 const renderInvoicesList = () => {
   return render(
-    <ApiProvider url={API_BASE} token="test-token">
-      <InvoicesList />
-    </ApiProvider>
+    <MemoryRouter>
+      <ApiProvider url={API_BASE} token="test-token">
+        <InvoicesList />
+      </ApiProvider>
+    </MemoryRouter>
   )
 }
 
