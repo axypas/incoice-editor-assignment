@@ -17,6 +17,7 @@ import {
   HeaderGroup,
   TableState,
 } from 'react-table'
+import { Spinner, Alert, Button, Badge, Table } from 'react-bootstrap'
 import { logger } from 'utils/logger'
 import {
   formatCurrency,
@@ -153,16 +154,18 @@ const InvoicesList = (): React.ReactElement => {
 
           return (
             <>
-              <span className={`badge bg-${value ? 'success' : 'secondary'}`}>
+              <Badge bg={value ? 'success' : 'secondary'}>
                 {value ? 'Finalized' : 'Draft'}
-              </span>
+              </Badge>
               {row.original.paid && (
-                <span className="badge bg-success ms-1">Paid</span>
+                <Badge bg="success" className="ms-1">
+                  Paid
+                </Badge>
               )}
               {!row.original.paid && value && (
-                <span className={`badge bg-${paymentStatus.color} ms-1`}>
+                <Badge bg={paymentStatus.color} className="ms-1">
                   {paymentStatus.label}
-                </span>
+                </Badge>
               )}
             </>
           )
@@ -180,24 +183,24 @@ const InvoicesList = (): React.ReactElement => {
         Cell: ({ value: invoice }: CellProps<Invoice, Invoice>) => (
           <div className="btn-group btn-group-sm" role="group">
             {!invoice.finalized && (
-              <button className="btn btn-outline-primary" type="button">
+              <Button variant="outline-primary" size="sm">
                 Edit
-              </button>
+              </Button>
             )}
             {invoice.finalized && (
-              <button className="btn btn-outline-secondary" type="button">
+              <Button variant="outline-secondary" size="sm">
                 View
-              </button>
+              </Button>
             )}
             {!invoice.finalized && (
-              <button className="btn btn-outline-success" type="button">
+              <Button variant="outline-success" size="sm">
                 Finalize
-              </button>
+              </Button>
             )}
             {!invoice.finalized && (
-              <button className="btn btn-outline-danger" type="button">
+              <Button variant="outline-danger" size="sm">
                 Delete
-              </button>
+              </Button>
             )}
           </div>
         ),
@@ -228,11 +231,9 @@ const InvoicesList = (): React.ReactElement => {
     return (
       <div className="mt-4">
         <div className="d-flex align-items-center">
-          <div
-            className="spinner-border spinner-border-sm me-2"
-            role="status"
-            aria-hidden="true"
-          ></div>
+          <Spinner animation="border" size="sm" role="status" className="me-2">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
           <span>Loading invoices...</span>
         </div>
       </div>
@@ -242,16 +243,13 @@ const InvoicesList = (): React.ReactElement => {
   // Error state
   if (state.error) {
     return (
-      <div className="alert alert-danger mt-4" role="alert">
-        <h5 className="alert-heading">Error</h5>
+      <Alert variant="danger" className="mt-4">
+        <Alert.Heading>Error</Alert.Heading>
         <p>{state.error}</p>
-        <button
-          className="btn btn-outline-danger btn-sm"
-          onClick={fetchInvoices}
-        >
+        <Button variant="outline-danger" size="sm" onClick={fetchInvoices}>
           Retry
-        </button>
-      </div>
+        </Button>
+      </Alert>
     )
   }
 
@@ -261,15 +259,17 @@ const InvoicesList = (): React.ReactElement => {
       <div className="text-center mt-5 py-5">
         <h4 className="text-muted">No invoices yet</h4>
         <p className="text-muted">Create your first invoice to get started</p>
-        <button className="btn btn-primary mt-3">Create Invoice</button>
+        <Button variant="primary" className="mt-3">
+          Create Invoice
+        </Button>
       </div>
     )
   }
 
   // Table view with react-table
   return (
-    <div className="table-responsive mt-4">
-      <table {...getTableProps()} className="table table-hover">
+    <div className="mt-4">
+      <Table {...getTableProps()} hover responsive>
         <thead className="table-light">
           {headerGroups.map((headerGroup) => (
             <tr {...headerGroup.getHeaderGroupProps()}>
@@ -310,7 +310,7 @@ const InvoicesList = (): React.ReactElement => {
             )
           })}
         </tbody>
-      </table>
+      </Table>
     </div>
   )
 }
