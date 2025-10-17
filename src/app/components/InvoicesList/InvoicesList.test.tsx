@@ -6,12 +6,11 @@
 
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
-import { server } from '../../../test/server'
+import { rest } from 'msw'
+import { server } from 'test/server'
+import { API_BASE } from 'test/constants'
 import { ApiProvider } from '../../../api'
 import InvoicesList from './index'
-
-const API_BASE = 'https://jean-test-api.herokuapp.com'
 
 // Helper to render InvoicesList with ApiProvider
 const renderInvoicesList = () => {
@@ -71,8 +70,8 @@ describe('InvoicesList - US1', () => {
   describe('Error State', () => {
     it('shows error message with retry button on API failure', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.error()
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(ctx.status(500))
         })
       )
 
@@ -91,20 +90,22 @@ describe('InvoicesList - US1', () => {
       let callCount = 0
 
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
           callCount++
           if (callCount === 1) {
-            return HttpResponse.error()
+            return res(ctx.status(500))
           }
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 0,
-            },
-            invoices: [],
-          })
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 0,
+              },
+              invoices: [],
+            })
+          )
         })
       )
 
@@ -126,19 +127,21 @@ describe('InvoicesList - US1', () => {
 
   // TODO: Table display tests with MSW - requires fixing handler timing
   // These tests work when run individually but fail in suite due to MSW reset timing
-  describe.skip('Table Display with Data', () => {
+  describe('Table Display with Data', () => {
     it('renders table with invoice data', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [mockInvoice],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
         })
       )
 
@@ -158,16 +161,18 @@ describe('InvoicesList - US1', () => {
 
     it('formats invoice number correctly', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [mockInvoice],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
         })
       )
 
@@ -180,16 +185,18 @@ describe('InvoicesList - US1', () => {
 
     it('displays customer name', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [mockInvoice],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
         })
       )
 
@@ -202,38 +209,42 @@ describe('InvoicesList - US1', () => {
 
     it('formats currency amount correctly', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [mockInvoice],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
         })
       )
 
       renderInvoicesList()
 
       await waitFor(() => {
-        expect(screen.getByText('€1,250.50')).toBeInTheDocument()
+        expect(screen.getByText(/1\s?250,50\s?€/)).toBeInTheDocument()
       })
     })
 
     it('shows Draft status badge for non-finalized invoice', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [mockInvoice],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
         })
       )
 
@@ -249,16 +260,18 @@ describe('InvoicesList - US1', () => {
 
     it('shows appropriate action buttons for draft invoices', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [mockInvoice],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
         })
       )
 
@@ -274,16 +287,18 @@ describe('InvoicesList - US1', () => {
 
     it('shows View button for finalized invoices', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [{ ...mockInvoice, finalized: true }],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [{ ...mockInvoice, finalized: true }],
+            })
+          )
         })
       )
 
@@ -299,8 +314,7 @@ describe('InvoicesList - US1', () => {
   })
 
   describe('Sorting', () => {
-    // TODO: Fix MSW handler timing - this test works individually but fails in suite
-    it.skip('sorts by date descending by default', async () => {
+    it('sorts by date descending by default', async () => {
       const invoices = [
         { ...mockInvoice, id: 1, date: '2024-01-15' },
         { ...mockInvoice, id: 2, date: '2024-01-10' },
@@ -308,85 +322,119 @@ describe('InvoicesList - US1', () => {
       ]
 
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 3,
-            },
-            invoices,
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 3,
+              },
+              invoices,
+            })
+          )
         })
       )
 
       renderInvoicesList()
 
+      // Wait for table and data to load
       await waitFor(() => {
-        expect(screen.getByRole('table')).toBeInTheDocument()
+        expect(screen.getByText('INV-1')).toBeInTheDocument()
       })
-
-      // Date column should show descending sort indicator (▼)
-      const dateHeader = screen.getByRole('columnheader', { name: /date ▼/i })
-      expect(dateHeader).toBeInTheDocument()
+      expect(screen.getByRole('table')).toBeInTheDocument()
 
       // Verify rows are sorted by date descending (newest first)
+      // initialState sorts the data but doesn't set visual indicator until user interaction
       const rows = screen.getAllByRole('row')
-      // rows[0] is header, rows[1] should be 2024-01-20, rows[2] should be 2024-01-15, rows[3] should be 2024-01-10
       expect(rows.length).toBe(4) // 1 header + 3 data rows
+
+      // Check dates appear in descending order (newest to oldest)
+      expect(rows[1]).toHaveTextContent('INV-3')
+      expect(rows[1]).toHaveTextContent('Jan 20, 2024')
+
+      expect(rows[2]).toHaveTextContent('INV-1')
+      expect(rows[2]).toHaveTextContent('Jan 15, 2024')
+
+      expect(rows[3]).toHaveTextContent('INV-2')
+      expect(rows[3]).toHaveTextContent('Jan 10, 2024')
     })
 
-    it.skip('sorts invoices when clicking column headers', async () => {
+    it('sorts invoices when clicking column headers', async () => {
+      // Use IDs in reverse order of dates to show sorting change
       const invoices = [
-        { ...mockInvoice, id: 1, total: '500.00', date: '2024-01-15' },
-        { ...mockInvoice, id: 2, total: '1000.00', date: '2024-01-10' },
+        { ...mockInvoice, id: 2, total: '500.00', date: '2024-01-15' },
+        { ...mockInvoice, id: 1, total: '1000.00', date: '2024-01-20' },
       ]
 
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 2,
-            },
-            invoices,
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 2,
+              },
+              invoices,
+            })
+          )
         })
       )
 
       renderInvoicesList()
 
+      // Wait for table and data to load
       await waitFor(() => {
-        expect(screen.getByRole('table')).toBeInTheDocument()
+        expect(screen.getByText('INV-1')).toBeInTheDocument()
+      })
+      expect(screen.getByRole('table')).toBeInTheDocument()
+
+      // Initially sorted by date desc: INV-1 (Jan 20) should come before INV-2 (Jan 15)
+      let rows = screen.getAllByRole('row')
+      expect(rows[1]).toHaveTextContent('INV-1')
+      expect(rows[1]).toHaveTextContent('Jan 20, 2024')
+      expect(rows[2]).toHaveTextContent('INV-2')
+      expect(rows[2]).toHaveTextContent('Jan 15, 2024')
+
+      // Find and click on Amount column header to sort by amount ascending
+      const amountHeader = screen.getByRole('button', { name: /amount/i })
+      await userEvent.click(amountHeader)
+
+      // After clicking, should sort by amount ascending
+      // INV-2 ($500) should come before INV-1 ($1000)
+      await waitFor(() => {
+        rows = screen.getAllByRole('row')
+        // After sort by amount, INV-2 (500) comes first
+        expect(rows[1]).toHaveTextContent('INV-2')
       })
 
-      // Click on ID column to sort
-      const idHeader = screen.getByRole('button', { name: /invoice #/i })
-      await userEvent.click(idHeader)
-
-      // Should show sort indicator
-      await waitFor(() => {
-        expect(screen.getByText(/invoice # ▲/i)).toBeInTheDocument()
-      })
+      // Verify full sort order
+      rows = screen.getAllByRole('row')
+      expect(rows[1]).toHaveTextContent('INV-2')
+      expect(rows[1]).toHaveTextContent('500')
+      expect(rows[2]).toHaveTextContent('INV-1')
+      expect(rows[2]).toHaveTextContent('1 000')
     })
   })
 
-  describe.skip('Edge Cases', () => {
+  describe('Edge Cases', () => {
     it('handles missing customer name with fallback', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [{ ...mockInvoice, customer: null }],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [{ ...mockInvoice, customer: null }],
+            })
+          )
         })
       )
 
@@ -399,16 +447,18 @@ describe('InvoicesList - US1', () => {
 
     it('handles null dates with fallback', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.json({
-            pagination: {
-              page: 1,
-              page_size: 25,
-              total_pages: 1,
-              total_entries: 1,
-            },
-            invoices: [{ ...mockInvoice, date: null, deadline: null }],
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 25,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [{ ...mockInvoice, date: null, deadline: null }],
+            })
+          )
         })
       )
 

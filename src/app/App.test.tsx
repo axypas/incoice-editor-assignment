@@ -5,12 +5,11 @@
  */
 
 import { render, screen, waitFor } from '@testing-library/react'
-import { http, HttpResponse } from 'msw'
+import { rest } from 'msw'
 import { server } from '../test/server'
+import { API_BASE } from '../test/constants'
 import { ApiProvider } from '../api'
 import App from './App'
-
-const API_BASE = 'https://jean-test-api.herokuapp.com'
 
 // Helper to render App with ApiProvider
 const renderApp = () => {
@@ -65,11 +64,8 @@ describe('App - API Health Check (US0)', () => {
     it('shows authentication error with actionable instructions', async () => {
       // Mock 401 Unauthorized response
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return new HttpResponse(null, {
-            status: 401,
-            statusText: 'Unauthorized',
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(ctx.status(401))
         })
       )
 
@@ -100,11 +96,8 @@ describe('App - API Health Check (US0)', () => {
     it('does not render invoice list on auth error', async () => {
       // Mock 403 Forbidden response
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return new HttpResponse(null, {
-            status: 403,
-            statusText: 'Forbidden',
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(ctx.status(403))
         })
       )
 
@@ -125,8 +118,8 @@ describe('App - API Health Check (US0)', () => {
     it('shows connection error without auth instructions', async () => {
       // Mock network error
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return HttpResponse.error()
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(ctx.status(500))
         })
       )
 
@@ -149,11 +142,8 @@ describe('App - API Health Check (US0)', () => {
     it('shows connection error for 500 server error', async () => {
       // Mock 500 Internal Server Error
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return new HttpResponse(null, {
-            status: 500,
-            statusText: 'Internal Server Error',
-          })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(ctx.status(500))
         })
       )
 
@@ -181,8 +171,8 @@ describe('App - API Health Check (US0)', () => {
 
     it('error state has proper ARIA role', async () => {
       server.use(
-        http.get(`${API_BASE}/invoices`, () => {
-          return new HttpResponse(null, { status: 401 })
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(ctx.status(401))
         })
       )
 

@@ -50,7 +50,7 @@
   },
   "jest": {
     "transformIgnorePatterns": [
-      "node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|until-async|@inquirer|statuses|yoctocolors-cjs)/)"
+      "node_modules/(?!(msw)/)"
     ]
   },
   "resolutions": {
@@ -83,8 +83,9 @@
     "@types/react-router-dom": "5.3.3",
     "@types/react-table": "7.7.14",
     "husky": "^9.1.7",
+    "jest-fixed-jsdom": "^0.0.10",
     "lint-staged": "^16.2.4",
-    "msw": "^2.11.5",
+    "msw": "^1.3.2",
     "openapi-client-axios-typegen": "7.3.1",
     "prettier": "3.0.0",
     "react-scripts": "5.0.1",
