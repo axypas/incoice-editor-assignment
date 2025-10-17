@@ -100,9 +100,11 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
 
 ## Pull Requests & CI
 - **PR template**: problem, solution, screenshots (states), tests added, trade‑offs.
-  - Add a short “Principles Applied” note (which principles, how) and “User Impact” summary (who benefits, stress reduced).
+  - Add a short "Principles Applied" note (which principles, how) and "User Impact" summary (who benefits, stress reduced).
 - **Checks**: typecheck, lint, tests. One `yarn ci` script should run all.
-- **Committing**: always ask before creating any commit.
+- **Committing**:
+  - Always ask before creating any commit
+  - Do NOT include "Generated with Claude Code" or "Co-Authored-By: Claude" footers in commit messages
 
 ## Performance & UX
 - Optimistic updates only where safe (finalize/delete can be optimistic with rollback).
