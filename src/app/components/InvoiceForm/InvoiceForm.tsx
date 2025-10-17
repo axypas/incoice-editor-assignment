@@ -467,6 +467,7 @@ const InvoiceForm: React.FC = () => {
                         setDeadline(newDeadline)
                       }
                     }}
+                    maxDate={new Date()}
                     dateFormat="yyyy-MM-dd"
                     className="form-control"
                     onBlur={() => handleFieldBlur('date', date)}
@@ -474,6 +475,9 @@ const InvoiceForm: React.FC = () => {
                   {touched.date && errors.date && (
                     <Form.Text className="text-danger">{errors.date}</Form.Text>
                   )}
+                  <Form.Text className="text-muted">
+                    Cannot be in the future
+                  </Form.Text>
                 </Form.Group>
               </Col>
               <Col md={6}>
