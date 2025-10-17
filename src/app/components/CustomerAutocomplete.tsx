@@ -51,6 +51,11 @@ const CustomerAutocomplete = ({ value, onChange }: Props) => {
       value={value}
       onChange={onChange}
       loadOptions={loadOptions}
+      loadingMessage={() => 'Loading customers...'}
+      noOptionsMessage={({ inputValue }) =>
+        inputValue ? 'No customers found' : 'Start typing to search'
+      }
+      isClearable
     />
   )
 }

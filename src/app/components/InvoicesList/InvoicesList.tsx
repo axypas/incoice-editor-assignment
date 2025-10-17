@@ -2,20 +2,33 @@
  * Enhanced InvoicesList component (US1, US2)
  * Displays invoices in a well-formatted table with sorting, filtering, and actions
  * Uses react-table for table functionality
- * Supports filtering by date range and invoice number
+ * Supports filtering by date range, due date range, status, payment, customer, and product
+ *
+ * NOTE: Invoice number/ID filtering was removed because the backend API does not support
+ * the 'start_with' operator on the 'id' field. The API only supports exact match ('eq')
+ * for ID filtering, which is not useful for user search scenarios.
  */
 
 import { Invoice, InvoiceFilter } from 'types/invoice.types'
 import { Customer, Product } from 'types'
-import { useState, useMemo, FormEvent, useCallback, useEffect } from 'react'
+import React, {
+  useState,
+  useMemo,
+  FormEvent,
+  useCallback,
+  useEffect,
+} from 'react'
 import {
   useTable,
   useSortBy,
+  useExpanded,
   Column,
   CellProps,
   UseSortByColumnProps,
+  UseExpandedRowProps,
   HeaderGroup,
   TableState,
+  Row,
 } from 'react-table'
 import {
   Spinner,
@@ -35,7 +48,6 @@ import { useInvoices } from 'hooks/useInvoices'
 import {
   formatCurrency,
   formatDate,
-  formatInvoiceNumber,
   getPaymentStatusLabel,
 } from 'utils/currency'
 import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
@@ -48,7 +60,7 @@ type PaymentFilter = 'all' | 'paid' | 'unpaid'
 
 interface FilterFormData {
   dateRange: [Date | null, Date | null]
-  invoiceNumber: string
+  dueDateRange: [Date | null, Date | null]
   status: StatusFilter
   payment: PaymentFilter
   customer: Customer | null
@@ -71,7 +83,7 @@ const InvoicesList = (): React.ReactElement => {
   // Filter state
   const [filterForm, setFilterForm] = useState<FilterFormData>({
     dateRange: [null, null],
-    invoiceNumber: '',
+    dueDateRange: [null, null],
     status: 'all',
     payment: 'all',
     customer: null,
@@ -110,6 +122,7 @@ const InvoicesList = (): React.ReactElement => {
       const filters: InvoiceFilter[] = []
 
       const [startDate, endDate] = formData.dateRange
+      const [dueDateStart, dueDateEnd] = formData.dueDateRange
 
       if (startDate) {
         filters.push({
@@ -127,11 +140,19 @@ const InvoicesList = (): React.ReactElement => {
         })
       }
 
-      if (formData.invoiceNumber.trim()) {
+      if (dueDateStart) {
         filters.push({
-          field: 'invoice_number',
-          operator: 'start_with',
-          value: formData.invoiceNumber.trim(),
+          field: 'deadline',
+          operator: 'gteq',
+          value: formatDateForAPI(dueDateStart),
+        })
+      }
+
+      if (dueDateEnd) {
+        filters.push({
+          field: 'deadline',
+          operator: 'lteq',
+          value: formatDateForAPI(dueDateEnd),
         })
       }
 
@@ -215,7 +236,7 @@ const InvoicesList = (): React.ReactElement => {
   const handleClearFilters = useCallback(() => {
     const resetForm: FilterFormData = {
       dateRange: [null, null],
-      invoiceNumber: '',
+      dueDateRange: [null, null],
       status: 'all',
       payment: 'all',
       customer: null,
@@ -228,6 +249,40 @@ const InvoicesList = (): React.ReactElement => {
 
   // Check if any filters are active
   const hasActiveFilters = activeFilters.length > 0
+
+  // Compare two filter arrays for equality
+  const areFiltersEqual = useCallback(
+    (filters1: InvoiceFilter[], filters2: InvoiceFilter[]): boolean => {
+      if (filters1.length !== filters2.length) return false
+
+      // Sort both arrays by field, operator, and value for consistent comparison
+      const sort = (f: InvoiceFilter[]) =>
+        [...f].sort((a, b) => {
+          const fieldCompare = a.field.localeCompare(b.field)
+          if (fieldCompare !== 0) return fieldCompare
+          const opCompare = a.operator.localeCompare(b.operator)
+          if (opCompare !== 0) return opCompare
+          return String(a.value).localeCompare(String(b.value))
+        })
+
+      const sorted1 = sort(filters1)
+      const sorted2 = sort(filters2)
+
+      return sorted1.every(
+        (f1, idx) =>
+          f1.field === sorted2[idx].field &&
+          f1.operator === sorted2[idx].operator &&
+          f1.value === sorted2[idx].value
+      )
+    },
+    []
+  )
+
+  // Check if filter form values differ from currently active filters
+  const hasChangedFilters = useMemo(() => {
+    const formFilters = buildFilters(filterForm)
+    return !areFiltersEqual(formFilters, activeFilters)
+  }, [filterForm, activeFilters, buildFilters, areFiltersEqual])
 
   // Format active filter summary
   const getFilterSummary = () => {
@@ -257,24 +312,96 @@ const InvoicesList = (): React.ReactElement => {
           parts.push(`Date to ${f.value}`)
         }
       }
-      if (f.field === 'invoice_number') {
-        parts.push(`Invoice # starts with "${f.value}"`)
+      if (f.field === 'deadline') {
+        if (f.operator === 'gteq') {
+          parts.push(`Due date from ${f.value}`)
+        }
+        if (f.operator === 'lteq') {
+          parts.push(`Due date to ${f.value}`)
+        }
       }
     })
 
     return parts.join(', ')
   }
 
+  // Render expandable row content
+  const renderRowSubComponent = useCallback(
+    ({ row }: { row: Row<Invoice> & UseExpandedRowProps<Invoice> }) => {
+      const invoice = row.original
+      if (!invoice.invoice_lines || invoice.invoice_lines.length === 0) {
+        return (
+          <div className="p-3 text-muted">
+            <em>No invoice lines</em>
+          </div>
+        )
+      }
+
+      return (
+        <div className="p-3 bg-light">
+          <h6 className="mb-3">Invoice Lines</h6>
+          <Table size="sm" bordered>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th className="text-end">Quantity</th>
+                <th>Unit</th>
+                <th className="text-end">Unit Price</th>
+                <th className="text-end">VAT Rate</th>
+                <th className="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoice.invoice_lines.map((line, idx) => {
+                const lineTotal = line.quantity * line.unit_price
+                return (
+                  <tr key={line.id || idx}>
+                    <td>{line.label}</td>
+                    <td className="text-end">{line.quantity}</td>
+                    <td>{line.unit}</td>
+                    <td className="text-end">
+                      {formatCurrency(line.unit_price)}
+                    </td>
+                    <td className="text-end">{line.vat_rate}%</td>
+                    <td className="text-end font-monospace">
+                      {formatCurrency(lineTotal)}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </Table>
+        </div>
+      )
+    },
+    []
+  )
+
   // Define table columns
   const columns: Column<Invoice>[] = useMemo(
     () => [
       {
-        Header: 'Invoice #',
+        // Expander column
+        id: 'expander',
+        Header: () => null,
+        Cell: ({ row }: CellProps<Invoice>) => {
+          const expandRow = row as Row<Invoice> & UseExpandedRowProps<Invoice>
+          return (
+            <span
+              {...expandRow.getToggleRowExpandedProps()}
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+            >
+              {expandRow.isExpanded ? '▼' : '▶'}
+            </span>
+          )
+        },
+        disableSortBy: true,
+      },
+      {
+        Header: 'ID',
         accessor: 'id',
         Cell: ({ value }: CellProps<Invoice, string | undefined>) => (
-          <span className="font-monospace">
-            {formatInvoiceNumber(value || '')}
-          </span>
+          <span className="font-monospace">{value || '—'}</span>
         ),
       },
       {
@@ -313,11 +440,13 @@ const InvoicesList = (): React.ReactElement => {
       {
         Header: 'Amount',
         accessor: 'total',
-        Cell: ({ value }: CellProps<Invoice, number | undefined>) => {
+        Cell: ({ value, row }: CellProps<Invoice, number | undefined>) => {
           const total = value || 0
+          const isPaid = row.original.paid
+
           return (
-            <span className="text-end font-monospace d-block">
-              {formatCurrency(total)}
+            <span className="text-start font-monospace d-block">
+              {isPaid ? formatCurrency(total) : '—'}
             </span>
           )
         },
@@ -394,25 +523,18 @@ const InvoicesList = (): React.ReactElement => {
         sortBy: [{ id: 'date', desc: true }],
       } as unknown as Partial<TableState<Invoice>>,
     },
-    useSortBy
+    useSortBy,
+    useExpanded
   )
 
-  const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } =
-    tableInstance
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="mt-4">
-        <div className="d-flex align-items-center">
-          <Spinner animation="border" size="sm" role="status" className="me-2">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-          <span>Loading invoices...</span>
-        </div>
-      </div>
-    )
-  }
+  const {
+    getTableProps,
+    getTableBodyProps,
+    headerGroups,
+    rows,
+    prepareRow,
+    visibleColumns,
+  } = tableInstance
 
   // Error state
   if (isError) {
@@ -436,7 +558,7 @@ const InvoicesList = (): React.ReactElement => {
           {/* Filter controls */}
           <Form onSubmit={handleFilterSubmit} className="mt-4">
             <BsRow className="g-3 align-items-end">
-              <Col md={5}>
+              <Col md={4}>
                 <Form.Group controlId="dateRange">
                   <Form.Label>Date Range</Form.Label>
                   <DatePicker
@@ -454,45 +576,46 @@ const InvoicesList = (): React.ReactElement => {
                     aria-describedby="dateRangeHelp"
                   />
                   <Form.Text id="dateRangeHelp" muted>
-                    Filter invoices by date range
+                    Filter by invoice date
                   </Form.Text>
                 </Form.Group>
               </Col>
               <Col md={4}>
-                <Form.Group controlId="invoiceNumber">
-                  <Form.Label>Invoice Number</Form.Label>
-                  <Form.Control
-                    type="text"
-                    placeholder="Search by number"
-                    value={filterForm.invoiceNumber}
-                    onChange={(e) =>
-                      setFilterForm({
-                        ...filterForm,
-                        invoiceNumber: e.target.value,
-                      })
-                    }
-                    aria-describedby="invoiceNumberHelp"
+                <Form.Group controlId="dueDateRange">
+                  <Form.Label>Due Date Range</Form.Label>
+                  <DatePicker
+                    selectsRange
+                    startDate={filterForm.dueDateRange[0]}
+                    endDate={filterForm.dueDateRange[1]}
+                    onChange={(update: [Date | null, Date | null]) => {
+                      setFilterForm({ ...filterForm, dueDateRange: update })
+                    }}
+                    placeholderText="Select due date range"
+                    dateFormat="yyyy-MM-dd"
+                    className="form-control"
+                    isClearable
+                    aria-describedby="dueDateRangeHelp"
                   />
-                  <Form.Text id="invoiceNumberHelp" muted>
-                    Search for invoices starting with this text
+                  <Form.Text id="dueDateRangeHelp" muted>
+                    Filter by payment deadline
                   </Form.Text>
                 </Form.Group>
               </Col>
-              <Col md={3}>
-                <div className="d-flex gap-2">
-                  <Button type="submit" variant="primary">
-                    Apply Filters
-                  </Button>
-                  {hasActiveFilters && (
-                    <Button
-                      type="button"
-                      variant="outline-secondary"
-                      onClick={handleClearFilters}
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
+              <Col md={4} className="d-flex align-items-end gap-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  disabled={!hasChangedFilters}
+                >
+                  Apply Filters
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline-secondary"
+                  onClick={handleClearFilters}
+                >
+                  Clear Filters
+                </Button>
               </Col>
             </BsRow>
             {hasActiveFilters && (
@@ -607,9 +730,11 @@ const InvoicesList = (): React.ReactElement => {
           </BsRow>
 
           <BsRow className="g-3 mt-2">
-            <Col md={5}>
+            <Col md={4} lg={4}>
               <Form.Group controlId="dateRange">
-                <Form.Label>Date Range</Form.Label>
+                <Form.Label className="text-uppercase small fw-semibold text-muted">
+                  Date Range
+                </Form.Label>
                 <DatePicker
                   selectsRange
                   startDate={filterForm.dateRange[0]}
@@ -624,43 +749,48 @@ const InvoicesList = (): React.ReactElement => {
                   aria-describedby="dateRangeHelp"
                 />
                 <Form.Text id="dateRangeHelp" muted>
-                  Filter invoices by date range
+                  Filter by invoice date
                 </Form.Text>
               </Form.Group>
             </Col>
-            <Col md={4}>
-              <Form.Group controlId="invoiceNumber">
-                <Form.Label>Invoice Number</Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Search by number"
-                  value={filterForm.invoiceNumber}
-                  onChange={(e) =>
-                    setFilterForm({
-                      ...filterForm,
-                      invoiceNumber: e.target.value,
-                    })
-                  }
-                  aria-describedby="invoiceNumberHelp"
+            <Col md={4} lg={4}>
+              <Form.Group controlId="dueDateRange">
+                <Form.Label className="text-uppercase small fw-semibold text-muted">
+                  Due Date Range
+                </Form.Label>
+                <DatePicker
+                  selectsRange
+                  startDate={filterForm.dueDateRange[0]}
+                  endDate={filterForm.dueDateRange[1]}
+                  onChange={(update: [Date | null, Date | null]) => {
+                    setFilterForm({ ...filterForm, dueDateRange: update })
+                  }}
+                  placeholderText="Select due date range"
+                  dateFormat="yyyy-MM-dd"
+                  className="form-control"
+                  isClearable
+                  aria-describedby="dueDateRangeHelp"
                 />
-                <Form.Text id="invoiceNumberHelp" muted>
-                  Search for invoices starting with this text
+                <Form.Text id="dueDateRangeHelp" muted>
+                  Filter by payment deadline
                 </Form.Text>
               </Form.Group>
             </Col>
-            <Col md={3} className="d-flex align-items-end gap-2">
-              <Button type="submit" variant="primary">
+            <Col md={4} lg={4} className="d-flex align-items-end gap-2">
+              <Button
+                type="submit"
+                variant="primary"
+                disabled={!hasChangedFilters}
+              >
                 Apply Filters
               </Button>
-              {hasActiveFilters && (
-                <Button
-                  type="button"
-                  variant="outline-secondary"
-                  onClick={handleClearFilters}
-                >
-                  Reset
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="outline-secondary"
+                onClick={handleClearFilters}
+              >
+                Clear Filters
+              </Button>
             </Col>
           </BsRow>
 
@@ -675,7 +805,35 @@ const InvoicesList = (): React.ReactElement => {
       </Form>
 
       {/* Table */}
-      <div className="mt-4">
+      <div className="mt-4" style={{ position: 'relative' }}>
+        {isLoading && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 10,
+            }}
+          >
+            <div className="d-flex align-items-center">
+              <Spinner
+                animation="border"
+                size="sm"
+                role="status"
+                className="me-2"
+              >
+                <span className="visually-hidden">Loading...</span>
+              </Spinner>
+              <span>Loading invoices...</span>
+            </div>
+          </div>
+        )}
         <Table {...getTableProps()} hover responsive>
           <thead className="table-light">
             {headerGroups.map((headerGroup) => (
@@ -708,12 +866,23 @@ const InvoicesList = (): React.ReactElement => {
           <tbody {...getTableBodyProps()}>
             {rows.map((row) => {
               prepareRow(row)
+              const expandedRow = row as Row<Invoice> &
+                UseExpandedRowProps<Invoice>
               return (
-                <tr {...row.getRowProps()}>
-                  {row.cells.map((cell) => (
-                    <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-                  ))}
-                </tr>
+                <React.Fragment key={row.id}>
+                  <tr {...row.getRowProps()}>
+                    {row.cells.map((cell) => (
+                      <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+                    ))}
+                  </tr>
+                  {expandedRow.isExpanded && (
+                    <tr>
+                      <td colSpan={visibleColumns.length}>
+                        {renderRowSubComponent({ row: expandedRow })}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               )
             })}
           </tbody>
@@ -733,7 +902,7 @@ const InvoicesList = (): React.ReactElement => {
               variant="outline-secondary"
               size="sm"
               onClick={() => setCurrentPage(currentPage - 1)}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || isLoading}
             >
               Previous
             </Button>
@@ -741,7 +910,7 @@ const InvoicesList = (): React.ReactElement => {
               variant="outline-secondary"
               size="sm"
               onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage === pagination.total_pages}
+              disabled={currentPage === pagination.total_pages || isLoading}
             >
               Next
             </Button>

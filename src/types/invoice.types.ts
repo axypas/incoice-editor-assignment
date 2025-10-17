@@ -95,7 +95,8 @@ export interface InvoiceCalculation {
 export interface InvoiceFilter {
   field:
     | 'date'
-    | 'invoice_number'
+    | 'deadline'
+    | 'id'
     | 'customer_id'
     | 'finalized'
     | 'paid'

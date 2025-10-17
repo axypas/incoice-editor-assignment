@@ -46,6 +46,11 @@ const ProductAutocomplete = ({ value, onChange }: Props) => {
       value={value}
       onChange={onChange}
       loadOptions={loadOptions}
+      loadingMessage={() => 'Loading products...'}
+      noOptionsMessage={({ inputValue }) =>
+        inputValue ? 'No products found' : 'Start typing to search'
+      }
+      isClearable
     />
   )
 }
