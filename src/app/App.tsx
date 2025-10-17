@@ -8,6 +8,7 @@ import { useApiHealth } from '../hooks/useApiHealth'
 
 import InvoicesList from './components/InvoicesList'
 import InvoiceShow from './components/InvoiceShow'
+import InvoiceForm from './components/InvoiceForm'
 
 function App() {
   const { isChecking, isHealthy, isAuthError, error } = useApiHealth()
@@ -65,6 +66,7 @@ function App() {
           {isHealthy && (
             <Router>
               <Routes>
+                <Route path="/invoices/new" Component={InvoiceForm} />
                 <Route path="/invoice/:id" Component={InvoiceShow} />
                 <Route path="/" Component={InvoicesList} />
               </Routes>
