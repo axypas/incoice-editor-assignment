@@ -44,6 +44,7 @@ import {
   formatDate,
   getPaymentStatusLabel,
 } from 'utils/currency'
+import { calculateLineItem } from 'utils/calculations'
 import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
 import ProductAutocomplete from 'app/components/ProductAutocomplete'
 
@@ -343,7 +344,7 @@ const InvoicesList = (): React.ReactElement => {
             </thead>
             <tbody>
               {invoice.invoice_lines.map((line, idx) => {
-                const lineTotal = line.quantity * line.unit_price
+                const lineCalculation = calculateLineItem(line)
                 return (
                   <tr key={line.id || idx}>
                     <td>{line.label}</td>
@@ -354,7 +355,7 @@ const InvoicesList = (): React.ReactElement => {
                     </td>
                     <td className="text-end">{line.vat_rate}%</td>
                     <td className="text-end font-monospace">
-                      {formatCurrency(lineTotal)}
+                      {formatCurrency(lineCalculation.subtotal)}
                     </td>
                   </tr>
                 )
