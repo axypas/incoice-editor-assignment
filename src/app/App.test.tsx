@@ -27,19 +27,21 @@ describe('App - API Health Check (US0)', () => {
       // Default MSW handler returns 200 with empty invoices
       renderApp()
 
-      // Initially shows loading state
-      expect(screen.getByText('Loading your invoices...')).toBeInTheDocument()
-
       // Wait for API call to complete and app to render
       await waitFor(() => {
         expect(
           screen.getByText(/This is the initial application/i)
         ).toBeInTheDocument()
       })
-      expect(screen.getByRole('table')).toBeInTheDocument()
+
+      // With empty invoices, should show empty state (not a table)
+      await waitFor(() => {
+        expect(screen.getByText('No invoices yet')).toBeInTheDocument()
+      })
+      expect(screen.queryByRole('table')).not.toBeInTheDocument()
     })
 
-    it('does not show loading or error states when healthy', async () => {
+    it('does not show error states when healthy', async () => {
       renderApp()
 
       // Wait for API call to complete
@@ -49,9 +51,11 @@ describe('App - API Health Check (US0)', () => {
         ).toBeInTheDocument()
       })
 
-      expect(
-        screen.queryByText('Loading your invoices...')
-      ).not.toBeInTheDocument()
+      // Wait for InvoicesList to finish loading
+      await waitFor(() => {
+        expect(screen.getByText('No invoices yet')).toBeInTheDocument()
+      })
+
       expect(screen.queryByText('Authentication Error')).not.toBeInTheDocument()
       expect(screen.queryByText('Connection Error')).not.toBeInTheDocument()
     })

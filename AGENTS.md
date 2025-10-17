@@ -33,8 +33,13 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
 - **TypeScript** strict; avoid `any`. Narrow types at the edge (API).
 - **Naming**: domain-first (Invoice, InvoiceLine, FinalizeInvoiceDialog).
 - **Components**: small, focused, accessible by default (labels, roles).
+- **File structure**:
+  - Single-file components: `src/app/components/ComponentName.tsx` (no folder)
+  - Multi-file components: `src/app/components/ComponentName/ComponentName.tsx` with `index.tsx` for barrel export only
+  - Use `index.tsx` only for exports, never for component implementation
 - **Side effects**: isolate in hooks (`useInvoices`, `useFinalizeInvoice`), return `{ run, status, error }`.
 - **Error handling**: user-facing messages + logs in dev console; never swallow errors.
+- **Use existing libraries**: Leverage already-installed dependencies (React-Bootstrap, react-table, etc.) before writing custom implementations or adding new packages.
 - **No needless deps**: use the skeleton's deps; any new dep must be justified in README.
 
 ## Financial Accuracy & Validation
@@ -103,7 +108,7 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
   - Add a short "Principles Applied" note (which principles, how) and "User Impact" summary (who benefits, stress reduced).
 - **Checks**: typecheck, lint, tests. One `yarn ci` script should run all.
 - **Committing**:
-  - Always ask before creating any commit
+  - **CRITICAL: NEVER create commits without explicit user permission. Always ask first and wait for approval.**
   - Do NOT include "Generated with Claude Code" or "Co-Authored-By: Claude" footers in commit messages
 
 ## Performance & UX
