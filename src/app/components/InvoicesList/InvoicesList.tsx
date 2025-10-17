@@ -539,6 +539,18 @@ const InvoicesList = (): React.ReactElement => {
     )
   }
 
+  // Loading state on initial load - prevent flash of empty state
+  if (isLoading && invoices.length === 0) {
+    return (
+      <div className="d-flex justify-content-center align-items-center mt-5 py-5">
+        <Spinner animation="border" role="status" className="me-2">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
+        <span>Loading invoices...</span>
+      </div>
+    )
+  }
+
   // Empty state - distinguish between no invoices and no filtered results
   if (invoices.length === 0) {
     if (hasActiveFilters) {
