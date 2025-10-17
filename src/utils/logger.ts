@@ -2,6 +2,7 @@
  * Logger utility
  * - Suppresses ALL logs in test and production environments
  * - Only logs in development for debugging
+ * - TODO Production deployments should forward events to LogRocket instead of console logging
  */
 
 const isDev = process.env.NODE_ENV === 'development'
