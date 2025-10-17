@@ -421,9 +421,30 @@ const InvoicesList = (): React.ReactElement => {
               <div className="fw-semibold text-dark">
                 {customer.first_name} {customer.last_name}
               </div>
+              {customer.email && (
+                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                  {customer.email}
+                </div>
+              )}
               {customer.address && (
                 <div className="text-muted" style={{ fontSize: '0.75rem' }}>
                   {customer.address}
+                </div>
+              )}
+              {(customer.city || customer.zip_code || customer.country) && (
+                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                  {customer.city && <span>{customer.city}</span>}
+                  {customer.country_code && (
+                    <span>
+                      {customer.city && ', '}
+                      {customer.country_code}
+                    </span>
+                  )}
+                </div>
+              )}
+              {customer.vat_number && (
+                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                  VAT: {customer.vat_number}
                 </div>
               )}
             </div>

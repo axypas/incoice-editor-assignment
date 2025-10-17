@@ -10,6 +10,10 @@ export interface Customer {
   last_name: string
   email?: string
   address?: string
+  zip_code?: string
+  city?: string
+  country?: string
+  country_code?: string
   country_alpha2?: string
   vat_number?: string
 }
