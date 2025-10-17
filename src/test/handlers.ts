@@ -13,7 +13,7 @@ export const handlers = [
       ctx.json({
         pagination: {
           page: 1,
-          page_size: 25,
+          page_size: 10,
           total_pages: 1,
           total_entries: 0,
         },

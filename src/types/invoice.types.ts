@@ -93,7 +93,14 @@ export interface InvoiceCalculation {
 
 // Filter types for list view
 export interface InvoiceFilter {
-  field: 'date' | 'invoice_number' | 'customer_id' | 'finalized'
+  field:
+    | 'date'
+    | 'invoice_number'
+    | 'customer_id'
+    | 'finalized'
+    | 'paid'
+    | 'product_id'
+    | 'invoice_lines.product_id'
   operator: 'eq' | 'gteq' | 'lteq' | 'start_with' | 'in'
   value: string | boolean | string[]
 }

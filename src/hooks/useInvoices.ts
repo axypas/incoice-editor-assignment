@@ -13,11 +13,19 @@ import {
   ApiError,
 } from '../types/invoice.types'
 
+interface Pagination {
+  page: number
+  page_size: number
+  total_pages: number
+  total_entries: number
+}
+
 interface UseInvoicesResult {
   invoices: Invoice[]
+  pagination: Pagination | null
   status: AsyncStatus
   error: ApiError | null
-  refetch: () => Promise<void>
+  refetch: (page?: number, perPage?: number) => Promise<void>
   isLoading: boolean
   isError: boolean
   isSuccess: boolean
@@ -26,6 +34,8 @@ interface UseInvoicesResult {
 interface UseInvoicesOptions {
   filters?: InvoiceFilter[]
   autoFetch?: boolean
+  page?: number
+  perPage?: number
 }
 
 /**
@@ -36,61 +46,70 @@ interface UseInvoicesOptions {
 export const useInvoices = (
   options: UseInvoicesOptions = {}
 ): UseInvoicesResult => {
-  const { filters = [], autoFetch = true } = options
+  const { filters = [], autoFetch = true, page = 1, perPage = 10 } = options
   const api = useApi()
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
+  const [pagination, setPagination] = useState<Pagination | null>(null)
   const [status, setStatus] = useState<AsyncStatus>('idle')
   const [error, setError] = useState<ApiError | null>(null)
 
-  const fetchInvoices = useCallback(async () => {
-    try {
-      setStatus('loading')
-      setError(null)
+  const fetchInvoices = useCallback(
+    async (currentPage?: number, currentPerPage?: number) => {
+      try {
+        setStatus('loading')
+        setError(null)
 
-      // Build filter query param if filters provided
-      const params: any = {}
-      if (filters.length > 0) {
-        params.filter = JSON.stringify(filters)
+        // Build filter query param if filters provided
+        const params: any = {
+          page: currentPage ?? page,
+          per_page: currentPerPage ?? perPage,
+        }
+        if (filters.length > 0) {
+          params.filter = JSON.stringify(filters)
+        }
+
+        // Call API with filters and pagination
+        const response = await api.getInvoices(params)
+
+        // Extract invoices array and pagination from response
+        const data = response.data?.invoices || []
+        const paginationData = response.data?.pagination || null
+
+        // Map API types to domain types
+        const mappedInvoices = data.map((inv: any) => ({
+          ...inv,
+          id: inv.id?.toString(),
+          customer_id: inv.customer_id?.toString(),
+          invoice_number: inv.id?.toString(), // API doesn't provide invoice_number, use id as fallback
+          total: parseFloat(inv.total || '0'),
+          tax: parseFloat(inv.tax || '0'),
+          invoice_lines: (inv.invoice_lines || []).map((line: any) => ({
+            ...line,
+            id: line.id?.toString(),
+            unit_price: parseFloat(line.price || '0'),
+            vat_rate: parseFloat(line.vat_rate || '0'),
+          })),
+        }))
+
+        setInvoices(mappedInvoices as Invoice[])
+        setPagination(paginationData)
+        setStatus('success')
+      } catch (err: any) {
+        console.error('Failed to fetch invoices:', err)
+
+        const apiError: ApiError = {
+          error: err.name || 'FetchError',
+          message: 'Unable to load invoices. Please try again.',
+          statusCode: err.response?.status || 500,
+        }
+
+        setError(apiError)
+        setStatus('error')
       }
-
-      // Call API with filters
-      const response = await api.getInvoices(null, params)
-
-      // Extract invoices array from response (API returns { pagination, invoices })
-      const data = response.data?.invoices || []
-
-      // Map API types to domain types
-      const mappedInvoices = data.map((inv: any) => ({
-        ...inv,
-        id: inv.id?.toString(),
-        customer_id: inv.customer_id?.toString(),
-        invoice_number: inv.id?.toString(), // API doesn't provide invoice_number, use id as fallback
-        total: parseFloat(inv.total || '0'),
-        tax: parseFloat(inv.tax || '0'),
-        invoice_lines: (inv.invoice_lines || []).map((line: any) => ({
-          ...line,
-          id: line.id?.toString(),
-          unit_price: parseFloat(line.price || '0'),
-          vat_rate: parseFloat(line.vat_rate || '0'),
-        })),
-      }))
-
-      setInvoices(mappedInvoices as Invoice[])
-      setStatus('success')
-    } catch (err: any) {
-      console.error('Failed to fetch invoices:', err)
-
-      const apiError: ApiError = {
-        error: err.name || 'FetchError',
-        message: err.message || 'Failed to load invoices. Please try again.',
-        statusCode: err.response?.status || 500,
-      }
-
-      setError(apiError)
-      setStatus('error')
-    }
-  }, [api, filters])
+    },
+    [api, filters, page, perPage]
+  )
 
   // Auto-fetch on mount and when filters change
   useEffect(() => {
@@ -101,6 +120,7 @@ export const useInvoices = (
 
   return {
     invoices,
+    pagination,
     status,
     error,
     refetch: fetchInvoices,

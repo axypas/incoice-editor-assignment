@@ -4,13 +4,55 @@
  * Uses MSW to mock API responses
  */
 
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { rest } from 'msw'
 import { server } from 'test/server'
 import { API_BASE } from 'test/constants'
 import { ApiProvider } from '../../../api'
 import InvoicesList from './index'
+
+// Mock react-datepicker to make it testable
+jest.mock('react-datepicker', () => {
+  const React = require('react')
+  return function MockDatePicker({
+    onChange,
+    placeholderText,
+    startDate,
+    endDate,
+    ...props
+  }: any) {
+    const [inputValue, setInputValue] = React.useState('')
+
+    return (
+      <input
+        data-testid="mock-datepicker"
+        placeholder={placeholderText}
+        value={inputValue}
+        onChange={(e) => {
+          const value = e.target.value
+          setInputValue(value)
+          if (value) {
+            // Parse date as local time to avoid timezone issues
+            const parts = value.split('-')
+            if (parts.length === 3) {
+              const date = new Date(
+                parseInt(parts[0]),
+                parseInt(parts[1]) - 1,
+                parseInt(parts[2])
+              )
+              // For range picker, pass [startDate, null] when a single date is entered
+              onChange([date, null])
+            }
+          } else {
+            onChange([null, null])
+          }
+        }}
+        {...props}
+      />
+    )
+  }
+})
 
 // Helper to render InvoicesList with ApiProvider
 const renderInvoicesList = () => {
@@ -99,7 +141,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 0,
               },
@@ -135,7 +177,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -151,11 +193,11 @@ describe('InvoicesList - US1', () => {
         expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      // Check table structure
+      // Check table structure - use getAllByText for headers that might appear in filters too
       expect(screen.getByText(/invoice #/i)).toBeInTheDocument()
-      expect(screen.getByText(/customer/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/customer/i).length).toBeGreaterThan(0)
       expect(screen.getByText(/amount/i)).toBeInTheDocument()
-      expect(screen.getByText(/status/i)).toBeInTheDocument()
+      expect(screen.getAllByText(/status/i).length).toBeGreaterThan(0)
       expect(screen.getByText(/actions/i)).toBeInTheDocument()
     })
 
@@ -166,7 +208,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -190,7 +232,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -214,7 +256,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -238,7 +280,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -251,10 +293,13 @@ describe('InvoicesList - US1', () => {
       renderInvoicesList()
 
       await waitFor(() => {
-        expect(screen.getByText('Draft')).toBeInTheDocument()
+        expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      const badge = screen.getByText('Draft')
+      // Find the Draft badge specifically (not the filter button)
+      const badges = screen.getAllByText('Draft')
+      const badge = badges.find((el) => el.classList.contains('badge'))
+      expect(badge).toBeInTheDocument()
       expect(badge).toHaveClass('badge', 'bg-secondary')
     })
 
@@ -265,7 +310,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -278,11 +323,15 @@ describe('InvoicesList - US1', () => {
       renderInvoicesList()
 
       await waitFor(() => {
-        expect(screen.getByText('Edit')).toBeInTheDocument()
+        expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      expect(screen.getByText('Finalize')).toBeInTheDocument()
-      expect(screen.getByText('Delete')).toBeInTheDocument()
+      // Check action buttons in the table
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Finalize' })
+      ).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
     })
 
     it('shows View button for finalized invoices', async () => {
@@ -292,7 +341,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -327,7 +376,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 3,
               },
@@ -374,7 +423,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 2,
               },
@@ -428,7 +477,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -452,7 +501,7 @@ describe('InvoicesList - US1', () => {
             ctx.json({
               pagination: {
                 page: 1,
-                page_size: 25,
+                page_size: 10,
                 total_pages: 1,
                 total_entries: 1,
               },
@@ -467,6 +516,388 @@ describe('InvoicesList - US1', () => {
       await waitFor(() => {
         expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(2)
       })
+    })
+  })
+
+  describe('Filtering - US2', () => {
+    it('shows filter controls above the table', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Check filter controls are present
+      expect(
+        screen.getByPlaceholderText(/select date range/i)
+      ).toBeInTheDocument()
+      expect(screen.getByLabelText(/invoice number/i)).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /apply filters/i })
+      ).toBeInTheDocument()
+    })
+
+    it('applies date filter and calls API with correct filter param', async () => {
+      let capturedParams: any = null
+      let requestCount = 0
+
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          requestCount++
+          if (requestCount > 1) {
+            // Capture params from second request (after filter applied)
+            capturedParams = {
+              filter: req.url.searchParams.get('filter'),
+            }
+          }
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Fill in date filter using date range picker (mocked)
+      const dateInput = screen.getByPlaceholderText(
+        /select date range/i
+      ) as HTMLInputElement
+      fireEvent.change(dateInput, { target: { value: '2024-01-01' } })
+
+      // Submit filter
+      await userEvent.click(
+        screen.getByRole('button', { name: /apply filters/i })
+      )
+
+      // Wait for active filters to appear (indicates filter was applied)
+      await waitFor(() => {
+        expect(screen.getByText(/active filters/i)).toBeInTheDocument()
+      })
+
+      // Verify API was called with filter param
+      await waitFor(
+        () => {
+          expect(capturedParams).toBeTruthy()
+        },
+        { timeout: 5000 }
+      )
+
+      expect(capturedParams.filter).toBeTruthy()
+      const parsedFilter = JSON.parse(capturedParams.filter)
+      expect(parsedFilter).toEqual([
+        {
+          field: 'date',
+          operator: 'gteq',
+          value: '2024-01-01',
+        },
+      ])
+
+      // Verify active filters summary is shown
+      expect(screen.getByText(/date from 2024-01-01/i)).toBeInTheDocument()
+    })
+
+    it('applies invoice number filter and calls API with correct filter param', async () => {
+      let capturedParams: any = null
+      let requestCount = 0
+
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          requestCount++
+          if (requestCount > 1) {
+            // Capture params from second request (after filter applied)
+            capturedParams = {
+              filter: req.url.searchParams.get('filter'),
+            }
+          }
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Fill in invoice number filter
+      const invoiceNumberInput = screen.getByLabelText(/invoice number/i)
+      await userEvent.clear(invoiceNumberInput)
+      await userEvent.type(invoiceNumberInput, 'INV-1')
+
+      // Submit filter
+      await userEvent.click(
+        screen.getByRole('button', { name: /apply filters/i })
+      )
+
+      // Verify API was called with filter param
+      await waitFor(() => {
+        expect(capturedParams).toBeTruthy()
+      })
+
+      expect(capturedParams.filter).toBeTruthy()
+      const parsedFilter = JSON.parse(capturedParams.filter)
+      expect(parsedFilter).toEqual([
+        {
+          field: 'invoice_number',
+          operator: 'start_with',
+          value: 'INV-1',
+        },
+      ])
+
+      // Verify active filters summary is shown
+      await waitFor(() => {
+        expect(
+          screen.getByText(/invoice # starts with "inv-1"/i)
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('applies both filters together', async () => {
+      let capturedParams: any = null
+      let requestCount = 0
+
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          requestCount++
+          if (requestCount > 1) {
+            // Capture params from second request (after filter applied)
+            capturedParams = {
+              filter: req.url.searchParams.get('filter'),
+            }
+          }
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Fill in both filters
+      const dateInput = screen.getByPlaceholderText(
+        /select date range/i
+      ) as HTMLInputElement
+      fireEvent.change(dateInput, { target: { value: '2024-01-01' } })
+
+      const invoiceNumberInput = screen.getByLabelText(/invoice number/i)
+      await userEvent.clear(invoiceNumberInput)
+      await userEvent.type(invoiceNumberInput, 'INV-1')
+
+      // Submit filter
+      await userEvent.click(
+        screen.getByRole('button', { name: /apply filters/i })
+      )
+
+      // Verify API was called with both filters
+      await waitFor(() => {
+        expect(capturedParams).toBeTruthy()
+      })
+
+      expect(capturedParams.filter).toBeTruthy()
+      const parsedFilter2 = JSON.parse(capturedParams.filter)
+      expect(parsedFilter2).toHaveLength(2)
+      expect(parsedFilter2).toEqual(
+        expect.arrayContaining([
+          { field: 'date', operator: 'gteq', value: '2024-01-01' },
+          { field: 'invoice_number', operator: 'start_with', value: 'INV-1' },
+        ])
+      )
+    })
+
+    it('shows filtered empty state when no results match filters', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          const filterParam = req.url.searchParams.get('filter')
+          // Return empty results if filter is present
+          if (filterParam) {
+            return res(
+              ctx.json({
+                pagination: {
+                  page: 1,
+                  page_size: 10,
+                  total_pages: 1,
+                  total_entries: 0,
+                },
+                invoices: [],
+              })
+            )
+          }
+          // Return data if no filter
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Apply a filter
+      const dateInput = screen.getByPlaceholderText(
+        /select date range/i
+      ) as HTMLInputElement
+      fireEvent.change(dateInput, { target: { value: '2030-01-01' } })
+      await userEvent.click(
+        screen.getByRole('button', { name: /apply filters/i })
+      )
+
+      // Verify filtered empty state is shown
+      await waitFor(() => {
+        expect(
+          screen.getByText(/no results match your filters/i)
+        ).toBeInTheDocument()
+      })
+
+      expect(
+        screen.getByText(/try adjusting your filter criteria/i)
+      ).toBeInTheDocument()
+
+      // Verify Clear Filters button is available
+      expect(
+        screen.getAllByRole('button', { name: /clear filters/i }).length
+      ).toBeGreaterThan(0)
+    })
+
+    it('clears filters and reloads all invoices', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          const filterParam = req.url.searchParams.get('filter')
+          // Return filtered results
+          if (filterParam) {
+            return res(
+              ctx.json({
+                pagination: {
+                  page: 1,
+                  page_size: 10,
+                  total_pages: 1,
+                  total_entries: 1,
+                },
+                invoices: [mockInvoice],
+              })
+            )
+          }
+          // Return all invoices
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 2,
+              },
+              invoices: [mockInvoice, { ...mockInvoice, id: 2 }],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Initially should show 2 invoices
+      await waitFor(() => {
+        expect(screen.getByText('INV-1')).toBeInTheDocument()
+      })
+      expect(screen.getByText('INV-2')).toBeInTheDocument()
+
+      // Apply a filter
+      const dateInput = screen.getByPlaceholderText(
+        /select date range/i
+      ) as HTMLInputElement
+      fireEvent.change(dateInput, { target: { value: '2024-01-01' } })
+      await userEvent.click(
+        screen.getByRole('button', { name: /apply filters/i })
+      )
+
+      // Wait for filtered results (1 invoice)
+      await waitFor(() => {
+        expect(screen.getByText(/active filters/i)).toBeInTheDocument()
+      })
+
+      // Clear Filters or Reset button should now be visible
+      const clearButton = screen.getByRole('button', {
+        name: /(clear filters|reset)/i,
+      })
+      expect(clearButton).toBeInTheDocument()
+
+      // Click Clear Filters / Reset
+      await userEvent.click(clearButton)
+
+      // Verify filters are cleared
+      await waitFor(() => {
+        expect(screen.queryByText(/active filters/i)).not.toBeInTheDocument()
+      })
+
+      // Verify all invoices are shown again
+      await waitFor(() => {
+        expect(screen.getByText('INV-1')).toBeInTheDocument()
+      })
+      expect(screen.getByText('INV-2')).toBeInTheDocument()
     })
   })
 })
