@@ -566,7 +566,6 @@ const InvoicesList = (): React.ReactElement => {
                     startDate={filterForm.dateRange[0]}
                     endDate={filterForm.dateRange[1]}
                     onChange={(update: [Date | null, Date | null]) => {
-                      console.log('DatePicker onChange:', update)
                       setFilterForm({ ...filterForm, dateRange: update })
                     }}
                     placeholderText="Select date range"

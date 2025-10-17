@@ -31,8 +31,8 @@ export const useApiHealth = (): ApiHealthState => {
     const checkApiHealth = async () => {
       try {
         // Make a lightweight API call to verify connection
-        // Using getInvoices with limit to minimize data transfer
-        await api.getInvoices(null, { per_page: 1 })
+        // Using getInvoices with per_page=1 to minimize data transfer
+        await api.getInvoices({ per_page: 1 })
 
         setState({
           isChecking: false,

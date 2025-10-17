@@ -12,6 +12,8 @@ import {
   AsyncStatus,
   ApiError,
 } from '../types/invoice.types'
+import { Paths } from '../api/gen/client'
+import { logger } from '../utils/logger'
 
 interface Pagination {
   page: number
@@ -61,7 +63,7 @@ export const useInvoices = (
         setError(null)
 
         // Build filter query param if filters provided
-        const params: any = {
+        const params: Paths.GetInvoices.QueryParameters = {
           page: currentPage ?? page,
           per_page: currentPerPage ?? perPage,
         }
@@ -96,7 +98,7 @@ export const useInvoices = (
         setPagination(paginationData)
         setStatus('success')
       } catch (err: any) {
-        console.error('Failed to fetch invoices:', err)
+        logger.error('Failed to fetch invoices:', err)
 
         const apiError: ApiError = {
           error: err.name || 'FetchError',
@@ -169,7 +171,7 @@ export const useInvoice = (invoiceId: string) => {
       setInvoice(mappedInvoice)
       setStatus('success')
     } catch (err: any) {
-      console.error(`Failed to fetch invoice ${invoiceId}:`, err)
+      logger.error(`Failed to fetch invoice ${invoiceId}:`, err)
 
       const apiError: ApiError = {
         error: err.name || 'FetchError',
