@@ -9,7 +9,6 @@ import {
   calculateLineItem,
   calculateInvoiceTotals,
   formatCurrency,
-  formatNumber,
   parseFormattedNumber,
   isValidCurrencyAmount,
   roundToDecimals,
@@ -20,11 +19,11 @@ import { InvoiceLineItem } from '../types/invoice.types'
 describe('Financial Calculations', () => {
   describe('toCents and fromCents', () => {
     it('should correctly convert between cents and decimal', () => {
-      expect(toCents(10.50)).toBe(1050)
+      expect(toCents(10.5)).toBe(1050)
       expect(toCents(0.01)).toBe(1)
       expect(toCents(99.99)).toBe(9999)
 
-      expect(fromCents(1050)).toBe(10.50)
+      expect(fromCents(1050)).toBe(10.5)
       expect(fromCents(1)).toBe(0.01)
       expect(fromCents(9999)).toBe(99.99)
     })
@@ -34,7 +33,7 @@ describe('Financial Calculations', () => {
       const amount = 0.1 + 0.2
       const cents = toCents(amount)
       expect(cents).toBe(30)
-      expect(fromCents(cents)).toBe(0.30)
+      expect(fromCents(cents)).toBe(0.3)
     })
 
     it('should round correctly for edge cases', () => {
@@ -49,58 +48,58 @@ describe('Financial Calculations', () => {
       label: 'Test Item',
       quantity: 10,
       unit: 'hours',
-      unit_price: 50.00,
+      unit_price: 50.0,
       vat_rate: 20,
     }
 
     it('should calculate basic line item without discount', () => {
       const result = calculateLineItem(baseItem)
 
-      expect(result.subtotal).toBe(500.00) // 10 * 50
+      expect(result.subtotal).toBe(500.0) // 10 * 50
       expect(result.discountAmount).toBe(0)
-      expect(result.taxableAmount).toBe(500.00)
-      expect(result.vatAmount).toBe(100.00) // 500 * 0.20
-      expect(result.total).toBe(600.00) // 500 + 100
+      expect(result.taxableAmount).toBe(500.0)
+      expect(result.vatAmount).toBe(100.0) // 500 * 0.20
+      expect(result.total).toBe(600.0) // 500 + 100
     })
 
     it('should calculate with percentage discount', () => {
       const item = { ...baseItem, discount: 10 } // 10% discount
       const result = calculateLineItem(item)
 
-      expect(result.subtotal).toBe(500.00)
-      expect(result.discountAmount).toBe(50.00) // 500 * 0.10
-      expect(result.taxableAmount).toBe(450.00) // 500 - 50
-      expect(result.vatAmount).toBe(90.00) // 450 * 0.20
-      expect(result.total).toBe(540.00) // 450 + 90
+      expect(result.subtotal).toBe(500.0)
+      expect(result.discountAmount).toBe(50.0) // 500 * 0.10
+      expect(result.taxableAmount).toBe(450.0) // 500 - 50
+      expect(result.vatAmount).toBe(90.0) // 450 * 0.20
+      expect(result.total).toBe(540.0) // 450 + 90
     })
 
     it('should calculate with fixed amount discount', () => {
-      const item = { ...baseItem, discount_amount: 25.50 }
+      const item = { ...baseItem, discount_amount: 25.5 }
       const result = calculateLineItem(item)
 
-      expect(result.subtotal).toBe(500.00)
-      expect(result.discountAmount).toBe(25.50)
-      expect(result.taxableAmount).toBe(474.50) // 500 - 25.50
-      expect(result.vatAmount).toBe(94.90) // 474.50 * 0.20
-      expect(result.total).toBe(569.40) // 474.50 + 94.90
+      expect(result.subtotal).toBe(500.0)
+      expect(result.discountAmount).toBe(25.5)
+      expect(result.taxableAmount).toBe(474.5) // 500 - 25.50
+      expect(result.vatAmount).toBe(94.9) // 474.50 * 0.20
+      expect(result.total).toBe(569.4) // 474.50 + 94.90
     })
 
     it('should handle fractional quantities correctly', () => {
-      const item = { ...baseItem, quantity: 2.5, unit_price: 40.00 }
+      const item = { ...baseItem, quantity: 2.5, unit_price: 40.0 }
       const result = calculateLineItem(item)
 
-      expect(result.subtotal).toBe(100.00) // 2.5 * 40
-      expect(result.vatAmount).toBe(20.00) // 100 * 0.20
-      expect(result.total).toBe(120.00)
+      expect(result.subtotal).toBe(100.0) // 2.5 * 40
+      expect(result.vatAmount).toBe(20.0) // 100 * 0.20
+      expect(result.total).toBe(120.0)
     })
 
     it('should handle zero VAT rate', () => {
       const item = { ...baseItem, vat_rate: 0 }
       const result = calculateLineItem(item)
 
-      expect(result.subtotal).toBe(500.00)
+      expect(result.subtotal).toBe(500.0)
       expect(result.vatAmount).toBe(0)
-      expect(result.total).toBe(500.00)
+      expect(result.total).toBe(500.0)
     })
 
     it('should handle complex decimal calculations', () => {
@@ -121,7 +120,7 @@ describe('Financial Calculations', () => {
       // 66.57 - 4.99 = 61.58
       expect(result.taxableAmount).toBe(61.58)
       // 61.58 * 0.19 = 11.7002 → 11.70 (rounded)
-      expect(result.vatAmount).toBe(11.70)
+      expect(result.vatAmount).toBe(11.7)
       // 61.58 + 11.70 = 73.28
       expect(result.total).toBe(73.28)
     })
@@ -161,15 +160,15 @@ describe('Financial Calculations', () => {
       // Item 2: 5 * 50 = 250, Discount = 25, Taxable = 225, VAT = 22.50, Total = 247.50
       // Item 3: 1 * 300 = 300, Discount = 50, Taxable = 250, VAT = 50, Total = 300
 
-      expect(result.subtotal).toBe(750.00) // 200 + 250 + 300
-      expect(result.totalDiscount).toBe(75.00) // 0 + 25 + 50
-      expect(result.taxableAmount).toBe(675.00) // 750 - 75
-      expect(result.totalVat).toBe(112.50) // 40 + 22.50 + 50
-      expect(result.grandTotal).toBe(787.50) // 675 + 112.50
+      expect(result.subtotal).toBe(750.0) // 200 + 250 + 300
+      expect(result.totalDiscount).toBe(75.0) // 0 + 25 + 50
+      expect(result.taxableAmount).toBe(675.0) // 750 - 75
+      expect(result.totalVat).toBe(112.5) // 40 + 22.50 + 50
+      expect(result.grandTotal).toBe(787.5) // 675 + 112.50
 
       // VAT breakdown
-      expect(result.vatBreakdown[20]).toBe(90.00) // Items 1 & 3
-      expect(result.vatBreakdown[10]).toBe(22.50) // Item 2
+      expect(result.vatBreakdown[20]).toBe(90.0) // Items 1 & 3
+      expect(result.vatBreakdown[10]).toBe(22.5) // Item 2
     })
 
     it('should handle empty line items array', () => {
@@ -193,8 +192,8 @@ describe('Financial Calculations', () => {
 
       const result = calculateInvoiceTotals(lineItems)
 
-      expect(result.vatBreakdown[20]).toBe(40.00) // 2 items at 20%
-      expect(result.vatBreakdown[10]).toBe(10.00) // 1 item at 10%
+      expect(result.vatBreakdown[20]).toBe(40.0) // 2 items at 20%
+      expect(result.vatBreakdown[10]).toBe(10.0) // 1 item at 10%
       expect(result.vatBreakdown[0]).toBe(0) // 1 item at 0%
     })
   })
@@ -242,7 +241,7 @@ describe('Financial Calculations', () => {
   describe('isValidCurrencyAmount', () => {
     it('should validate currency amounts', () => {
       expect(isValidCurrencyAmount(100)).toBe(true)
-      expect(isValidCurrencyAmount(100.50)).toBe(true)
+      expect(isValidCurrencyAmount(100.5)).toBe(true)
       expect(isValidCurrencyAmount(0)).toBe(true)
       expect(isValidCurrencyAmount(-100)).toBe(true)
 

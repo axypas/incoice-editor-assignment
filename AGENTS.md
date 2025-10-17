@@ -71,9 +71,14 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
   - Differentiate between validation errors (user fixable) and system errors (retry)
 
 ## Testing Strategy
-- **Unit/Integration (Jest + RTL)**  
-  - Cover the **happy path** per story + at least one **error** path.  
-  - Mock `useApi()` to simulate network; assert **filter** param structure and action calls.
+- **Unit/Integration (Jest + RTL)**
+  - Cover the **happy path** per story + at least one **error** path.
+  - **NEVER use `jest.mock()` to mock modules**. Use **MSW (Mock Service Worker)** to intercept network requests instead.
+    - MSW provides realistic network mocking that works the same way in tests, dev, and storybook.
+    - See: https://testing-library.com/docs/react-testing-library/example-intro/#mock
+    - Example: Mock API responses with `server.use(http.get('/api/invoices', () => HttpResponse.json({ invoices: [] })))`
+  - Only exception: mock child React components in isolated unit tests (e.g., `jest.mock('./ChildComponent')` to test parent logic).
+  - Assert **filter** param structure and action calls via MSW request handlers.
 - Prioritize business-critical path coverage over raw percentage targets; invest first in tests that protect customer-impacting flows.
 - **E2E (Playwright)**  
   - **Mock network with `page.route`** for `https://jean-test-api.herokuapp.com/**`. Provide fixtures per scenario.  
@@ -97,6 +102,7 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
 - **PR template**: problem, solution, screenshots (states), tests added, trade‑offs.
   - Add a short “Principles Applied” note (which principles, how) and “User Impact” summary (who benefits, stress reduced).
 - **Checks**: typecheck, lint, tests. One `yarn ci` script should run all.
+- **Committing**: always ask before creating any commit.
 
 ## Performance & UX
 - Optimistic updates only where safe (finalize/delete can be optimistic with rollback).

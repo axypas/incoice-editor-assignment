@@ -253,7 +253,8 @@ describe('Validation Utilities', () => {
         ...validForm,
         invoice_lines: [
           { ...validForm.invoice_lines[0] }, // Valid
-          { // Invalid
+          {
+            // Invalid
             label: '',
             quantity: '0',
             unit: '',
@@ -266,7 +267,9 @@ describe('Validation Utilities', () => {
 
       expect(result.valid).toBe(false)
       // Should have errors for the second line item
-      expect(result.errors.some(e => e.field.startsWith('invoice_lines.1'))).toBe(true)
+      expect(
+        result.errors.some((e) => e.field.startsWith('invoice_lines.1'))
+      ).toBe(true)
     })
 
     it('should validate notes and terms length', () => {

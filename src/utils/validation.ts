@@ -164,7 +164,10 @@ export const validateInvoiceForm = (
         message: 'Please enter a valid due date (YYYY-MM-DD)',
         code: 'format',
       })
-    } else if (formData.date && new Date(formData.deadline) < new Date(formData.date)) {
+    } else if (
+      formData.date &&
+      new Date(formData.deadline) < new Date(formData.date)
+    ) {
       errors.push({
         field: 'deadline',
         message: 'Due date cannot be before invoice date',
@@ -220,9 +223,19 @@ export const isValidDate = (dateString: string): boolean => {
   const dateRegex = /^\d{4}-\d{2}-\d{2}$/
   if (!dateRegex.test(dateString)) return false
 
+  // Parse the components
+  const [year, month, day] = dateString.split('-').map(Number)
+
   // Check if it's a valid date
   const date = new Date(dateString + 'T00:00:00')
-  return date instanceof Date && !isNaN(date.getTime())
+  if (!(date instanceof Date) || isNaN(date.getTime())) return false
+
+  // Verify the date components match (catches invalid dates like 2024-02-30)
+  return (
+    date.getFullYear() === year &&
+    date.getMonth() === month - 1 && // getMonth is 0-indexed
+    date.getDate() === day
+  )
 }
 
 /**
@@ -250,7 +263,7 @@ export const getFieldError = (
   errors: ValidationError[],
   fieldName: string
 ): string | undefined => {
-  const error = errors.find(e => e.field === fieldName)
+  const error = errors.find((e) => e.field === fieldName)
   return error?.message
 }
 
@@ -261,7 +274,7 @@ export const hasFieldError = (
   errors: ValidationError[],
   fieldName: string
 ): boolean => {
-  return errors.some(e => e.field === fieldName)
+  return errors.some((e) => e.field === fieldName)
 }
 
 /**
@@ -272,7 +285,7 @@ export const groupErrorsByField = (
 ): Record<string, string[]> => {
   const grouped: Record<string, string[]> = {}
 
-  errors.forEach(error => {
+  errors.forEach((error) => {
     if (!grouped[error.field]) {
       grouped[error.field] = []
     }

@@ -1,0 +1,42 @@
+#!/bin/sh
+# Pre-commit hook - implements US1 (Pre-commit hooks guard quality gates)
+# Set SKIP_PRECOMMIT=1 to bypass this hook (documented opt-out)
+
+if [ "$SKIP_PRECOMMIT" = "1" ]; then
+  echo "⚠️  Skipping pre-commit checks (SKIP_PRECOMMIT=1)"
+  exit 0
+fi
+
+echo "🔍 Running pre-commit checks..."
+echo ""
+
+# Run prettier format check
+echo "📝 Checking formatting..."
+yarn format:check || {
+  echo "❌ Formatting check failed. Run 'yarn format' to fix."
+  exit 1
+}
+
+# Run ESLint
+echo "🔎 Linting code..."
+yarn lint || {
+  echo "❌ Linting failed. Fix the issues above."
+  exit 1
+}
+
+# Run TypeScript type check
+echo "📘 Type checking..."
+yarn typecheck || {
+  echo "❌ Type check failed. Fix the type errors above."
+  exit 1
+}
+
+# Run tests
+echo "🧪 Running tests..."
+yarn test:ci || {
+  echo "❌ Tests failed. Fix the failing tests."
+  exit 1
+}
+
+echo ""
+echo "✅ All pre-commit checks passed!"

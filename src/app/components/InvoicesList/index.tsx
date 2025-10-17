@@ -1,6 +1,7 @@
 import { useApi } from 'api'
 import { Invoice } from 'types'
 import { useEffect, useCallback, useState } from 'react'
+import { logger } from 'utils/logger'
 
 const InvoicesList = (): React.ReactElement => {
   const api = useApi()
@@ -8,8 +9,13 @@ const InvoicesList = (): React.ReactElement => {
   const [invoicesList, setInvoicesList] = useState<Invoice[]>([])
 
   const fetchInvoices = useCallback(async () => {
-    const { data } = await api.getInvoices()
-    setInvoicesList(data.invoices)
+    try {
+      const { data } = await api.getInvoices()
+      setInvoicesList(data?.invoices || [])
+    } catch (error) {
+      logger.error('Failed to fetch invoices:', error)
+      setInvoicesList([])
+    }
   }, [api])
 
   useEffect(() => {

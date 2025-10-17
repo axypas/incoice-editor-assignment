@@ -152,7 +152,10 @@ export type InvoiceAction =
   | 'view'
 
 // Permission check for actions based on invoice state
-export const canPerformAction = (invoice: Invoice, action: InvoiceAction): boolean => {
+export const canPerformAction = (
+  invoice: Invoice,
+  action: InvoiceAction
+): boolean => {
   switch (action) {
     case 'edit':
       return !invoice.finalized
@@ -171,15 +174,19 @@ export const canPerformAction = (invoice: Invoice, action: InvoiceAction): boole
 
 // Type guards
 export const isInvoice = (obj: any): obj is Invoice => {
-  return obj &&
+  return (
+    obj &&
     typeof obj.invoice_number === 'string' &&
     typeof obj.customer_id === 'string' &&
     Array.isArray(obj.invoice_lines)
+  )
 }
 
 export const isValidLineItem = (item: any): item is InvoiceLineItem => {
-  return item &&
+  return (
+    item &&
     typeof item.label === 'string' &&
     typeof item.quantity === 'number' &&
     typeof item.unit_price === 'number'
+  )
 }

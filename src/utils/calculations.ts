@@ -33,7 +33,9 @@ export const fromCents = (cents: number): number => {
  * Calculates line item totals with proper decimal precision
  * Formula: (quantity × unit_price - discount) × (1 + vat_rate)
  */
-export const calculateLineItem = (item: InvoiceLineItem): LineItemCalculation => {
+export const calculateLineItem = (
+  item: InvoiceLineItem
+): LineItemCalculation => {
   // Convert to cents for precision
   const unitPriceCents = toCents(item.unit_price)
   const quantity = item.quantity
@@ -45,7 +47,7 @@ export const calculateLineItem = (item: InvoiceLineItem): LineItemCalculation =>
   let discountCents = 0
   if (item.discount) {
     // Percentage discount
-    discountCents = Math.round(subtotalCents * item.discount / 100)
+    discountCents = Math.round((subtotalCents * item.discount) / 100)
   } else if (item.discount_amount) {
     // Fixed amount discount
     discountCents = toCents(item.discount_amount)
@@ -56,7 +58,7 @@ export const calculateLineItem = (item: InvoiceLineItem): LineItemCalculation =>
 
   // Calculate VAT
   const vatRate = item.vat_rate || 0
-  const vatAmountCents = Math.round(taxableAmountCents * vatRate / 100)
+  const vatAmountCents = Math.round((taxableAmountCents * vatRate) / 100)
 
   // Total with VAT
   const totalCents = taxableAmountCents + vatAmountCents
@@ -83,7 +85,7 @@ export const calculateInvoiceTotals = (
   const vatBreakdownCents: Record<number, number> = {}
 
   // Calculate each line item
-  lineItems.forEach(item => {
+  lineItems.forEach((item) => {
     const calc = calculateLineItem(item)
 
     // Accumulate totals (convert back to cents for precision)
@@ -233,7 +235,10 @@ export const getDaysUntilDue = (deadline: string): number => {
  * Rounds a number to specified decimal places
  * More reliable than toFixed for financial calculations
  */
-export const roundToDecimals = (value: number, decimals: number = 2): number => {
+export const roundToDecimals = (
+  value: number,
+  decimals: number = 2
+): number => {
   const factor = Math.pow(10, decimals)
   return Math.round(value * factor) / factor
 }

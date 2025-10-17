@@ -155,18 +155,22 @@ export const getPaymentStatusLabel = (
     const due = new Date(deadline)
 
     if (now > due) {
-      const daysOverdue = Math.ceil((now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24))
+      const daysOverdue = Math.ceil(
+        (now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)
+      )
       return {
         label: `${daysOverdue} days overdue`,
-        color: 'danger'
+        color: 'danger',
       }
     }
 
-    const daysUntilDue = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    const daysUntilDue = Math.ceil(
+      (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    )
     if (daysUntilDue <= 7) {
       return {
         label: `Due in ${daysUntilDue} days`,
-        color: 'warning'
+        color: 'warning',
       }
     }
   }
@@ -183,10 +187,7 @@ export const formatQuantity = (
   unit: string = 'item'
 ): string => {
   const isWholeNumber = quantity % 1 === 0
-  const formatted = formatNumber(
-    quantity,
-    isWholeNumber ? 0 : 2
-  )
+  const formatted = formatNumber(quantity, isWholeNumber ? 0 : 2)
 
   // Add unit if it's singular/plural aware
   if (quantity === 1) {

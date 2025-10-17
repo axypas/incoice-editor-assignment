@@ -15,7 +15,11 @@ const defaultAdditional = { page: 1 }
 const ProductAutocomplete = ({ value, onChange }: Props) => {
   const api = useApi()
 
-  const loadOptions: LoadOptions<Product, GroupBase<Product>, {page: number}> = useCallback(
+  const loadOptions: LoadOptions<
+    Product,
+    GroupBase<Product>,
+    { page: number }
+  > = useCallback(
     async (search, loadedOptions, additional) => {
       const page = additional?.page ?? 1
       const { data } = await api.getSearchProducts({

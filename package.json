@@ -6,10 +6,17 @@
     "start": "HOST=localhost react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "CI=true react-scripts test --passWithNoTests",
     "eject": "react-scripts eject",
     "eject_ts": "./bin/eject_ts",
     "openapi:gen": "yarn -s typegen src/api/schema.yml > src/api/gen/client.d.ts && yarn openapi:convert",
-    "openapi:convert": "npx @redocly/openapi-cli bundle ./src/api/schema.yml -o ./src/api/gen/schema.json --format json"
+    "openapi:convert": "npx @redocly/openapi-cli bundle ./src/api/schema.yml -o ./src/api/gen/schema.json --format json",
+    "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "lint": "eslint src --ext .ts,.tsx,.js,.jsx --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "ci": "yarn typecheck && yarn lint && yarn format:check && yarn test:ci",
+    "prepare": "husky"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "6.4.0",
@@ -41,6 +48,11 @@
       "react-app/jest"
     ]
   },
+  "jest": {
+    "transformIgnorePatterns": [
+      "node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|until-async|@inquirer|statuses|yoctocolors-cjs)/)"
+    ]
+  },
   "resolutions": {
     "axios": "0.27.2"
   },
@@ -70,6 +82,9 @@
     "@types/react-dom": "18.2.7",
     "@types/react-router-dom": "5.3.3",
     "@types/react-table": "7.7.14",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
+    "msw": "^2.11.5",
     "openapi-client-axios-typegen": "7.3.1",
     "prettier": "3.0.0",
     "react-scripts": "5.0.1",
