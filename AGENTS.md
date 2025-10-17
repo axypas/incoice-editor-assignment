@@ -8,13 +8,67 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
 - **Filtering**: build the `filter` param as a JSON array of `{ field, operator, value }` (operators: `eq`, `gteq`, `in`, etc.). :contentReference[oaicite:7]{index=7}
 - **Finalization semantics**: once an invoice is finalized it cannot be edited. Reflect this in UI/logic. :contentReference[oaicite:8]{index=8}
 
+## Design Principles (Pennylane → Operationalized)
+- Challenge the Basics
+  - Ship the smallest thing that solves the user’s current job. Avoid add-ons (avatars, complex sorting, bulk modes) until a real need surfaces.
+  - Prefer clear, textual information over decorative UI. Keep the table lean: only must-have columns and actions.
+  - Don’t pre-optimize navigation. Start with a single list + focused filters (date from, invoice number). Add tabs/pagination only if data proves it.
+  - Measure friction through feedback and logs; iterate with evidence.
+- Empathize Relentlessly
+  - Design for stressed accountants: predictable states, safe actions, and clear copy. Preserve user input on errors; never lose data.
+  - Errors use human language (“Couldn’t finalize — already locked”). Log details to console in dev, never expose tokens.
+  - Respect immutability: once finalized, hide edit affordances to prevent accidental changes.
+  - Keyboard-first flows: focus management, ESC behavior, accessible labels by default.
+- Embrace Speed
+  - Favor small PRs that complete end-to-end slices (UI + hook + test). Learn from usage quickly.
+  - Co-locate data calls inside feature hooks/components; avoid global state. Keep types strict at the API edge.
+  - Mock the network in unit/e2e tests to keep feedback fast and deterministic.
+  - When safe, use optimistic updates with rollback (finalize/delete) for perceived speed.
+- Build Excitement
+  - Advocate long-term wins (autosave, bulk actions, PDF preview) but keep them in `FUTURE_WORK.md` until justified.
+  - Micro-success feedback (toasts, subtle state changes) helps users feel progress.
+  - Prefer clarity over flash: great copy and resilient flows create trust and delight.
+
 ## Code Quality
 - **TypeScript** strict; avoid `any`. Narrow types at the edge (API).
 - **Naming**: domain-first (Invoice, InvoiceLine, FinalizeInvoiceDialog).
 - **Components**: small, focused, accessible by default (labels, roles).
 - **Side effects**: isolate in hooks (`useInvoices`, `useFinalizeInvoice`), return `{ run, status, error }`.
 - **Error handling**: user-facing messages + logs in dev console; never swallow errors.
-- **No needless deps**: use the skeleton’s deps; any new dep must be justified in README.
+- **No needless deps**: use the skeleton's deps; any new dep must be justified in README.
+
+## Financial Accuracy & Validation
+### Decimal Precision
+- **Always use 2 decimal places** for currency display and storage
+- **Avoid floating point errors**: use libraries like decimal.js for calculations if needed
+- **Round at display time**, not during intermediate calculations
+- **Test edge cases**: 0.1 + 0.2, large numbers, negative values
+
+### Validation Principles
+- **Validate on blur** (when user leaves field), not while typing
+- **Inline errors** next to fields with:
+  - Red border and error icon (use both for accessibility)
+  - Complete sentences: "Invoice amount must be greater than 0"
+  - Positive language: "Please enter a valid email address"
+  - Specific guidance: "Use format: YYYY-MM-DD"
+- **Field-level validation**:
+  - Required fields: clear asterisk (*) and aria-required
+  - Numeric fields: prevent negative where inappropriate
+  - Date fields: validate format and logical ranges
+  - Currency: proper formatting with locale (Intl.NumberFormat)
+- **Form-level validation**:
+  - At least one line item required
+  - Total calculations must match sum of lines
+  - Business rules (e.g., invoice date ≤ due date)
+
+### Error Recovery
+- **Never lose user input** on validation failure
+- **Local storage backup** for form data
+- **Conflict resolution**: When concurrent edits detected, let user choose
+- **Network resilience**:
+  - Queue failed requests for retry
+  - Show connection status
+  - Differentiate between validation errors (user fixable) and system errors (retry)
 
 ## Testing Strategy
 - **Unit/Integration (Jest + RTL)**  
@@ -33,14 +87,36 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
   - Accessibility smoke: dialog focus trap, escape behavior, button labels.
 - **What not to do**: brittle snapshots; network‑dependent e2e; testing implementation details.
 
+### Principle Hooks for Tests
+- “Challenge the Basics”: assert only essential UI exists (no hidden edit affordances on finalized, no unused filters).
+- “Empathize”: verify error messages are actionable and input is preserved on failure.
+- “Embrace Speed”: keep tests focused on business-critical flows with fast, deterministic mocks.
+- “Build Excitement”: confirm success feedback is visible and non-blocking.
+
 ## Pull Requests & CI
 - **PR template**: problem, solution, screenshots (states), tests added, trade‑offs.
+  - Add a short “Principles Applied” note (which principles, how) and “User Impact” summary (who benefits, stress reduced).
 - **Checks**: typecheck, lint, tests. One `yarn ci` script should run all.
 
 ## Performance & UX
 - Optimistic updates only where safe (finalize/delete can be optimistic with rollback).
 - Use `Intl.NumberFormat` for money; display ISO date with a human format.
+- **Auto-save**: Debounced at 30-60 second intervals with status indicators
+- **Loading states**: Skeleton loaders for tables, inline spinners for actions
+- **Focus management**: Return focus after dialogs, trap focus in modals
 
 ## Documentation
 - **README**: run/test instructions, architecture map, API usage (`useApi`), filters examples.  
 - **FUTURE_WORK.md**: 3–5 features with *why / prototype / missing*.
+
+## Non-Goals (until justified by user needs)
+- Avatars, tag colors, or heavy visual theming.
+- Inline editing for finalized invoices; any edit affordance after finalization.
+- Complex filter builders beyond the documented date-from + invoice number.
+- Server-side pagination/sorting before real data sizes demand it.
+
+## Authoring Stories (checklist)
+- Start with the user’s stress/context and the minimal job to be done.
+- Define happy path + one realistic failure that preserves user input.
+- Specify accessible states (focus, labels, keyboard escape) and copy tone.
+- Call out finalization immutability and filter serialization when relevant.
