@@ -673,6 +673,7 @@ const InvoicesList = (): React.ReactElement => {
                 variant="outline-secondary"
                 size="sm"
                 style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                onClick={() => navigate(`/invoice/${invoice.id}`)}
               >
                 View
               </Button>
