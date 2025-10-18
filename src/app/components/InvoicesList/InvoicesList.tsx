@@ -3,10 +3,6 @@
  * Displays invoices in a well-formatted table with sorting, filtering, and actions
  * Uses react-table for table functionality
  * Supports filtering by date range, due date range, status, payment, customer, and product
- *
- * NOTE: Invoice number/ID filtering was removed because the backend API does not support
- * the 'start_with' operator on the 'id' field. The API only supports exact match ('eq')
- * for ID filtering, which is not useful for user search scenarios.
  */
 
 import { Invoice } from 'types/invoice.types'
@@ -56,6 +52,7 @@ import {
 } from 'hooks/useInvoiceFilters'
 import { useInvoiceSort } from 'hooks/useInvoiceSort'
 import { useInvoiceDelete } from 'hooks/useInvoiceDelete'
+import InvoicesPagination from 'app/components/InvoicesPagination'
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: 'All' },
@@ -950,40 +947,12 @@ const InvoicesList = (): React.ReactElement => {
       </div>
 
       {/* Pagination Footer */}
-      {pagination && (
-        <Card className="mt-3 shadow-sm" style={{ borderRadius: '0.75rem' }}>
-          <div
-            className="d-flex justify-content-between align-items-center p-3"
-            style={{ backgroundColor: '#f8fafc' }}
-          >
-            <span className="text-secondary" style={{ fontSize: '0.875rem' }}>
-              Page {currentPage} of {pagination.total_pages} ·{' '}
-              {pagination.total_entries} invoice
-              {pagination.total_entries !== 1 ? 's' : ''}
-            </span>
-            <div className="d-flex gap-2">
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage - 1)}
-                disabled={currentPage === 1 || isLoading}
-                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => setCurrentPage(currentPage + 1)}
-                disabled={currentPage === pagination.total_pages || isLoading}
-                style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </Card>
-      )}
+      <InvoicesPagination
+        pagination={pagination}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        isLoading={isLoading}
+      />
 
       {/* Delete Invoice Dialog */}
       <DeleteInvoiceDialog
