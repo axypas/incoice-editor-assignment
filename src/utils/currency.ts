@@ -102,44 +102,6 @@ export const formatDateRange = (
 }
 
 /**
- * Gets relative time string (e.g., "2 days ago", "in 3 days")
- */
-export const getRelativeTime = (
-  date: string | Date,
-  locale: string = 'en-US'
-): string => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date
-  const now = new Date()
-  const diffMs = dateObj.getTime() - now.getTime()
-  const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Tomorrow'
-  if (diffDays === -1) return 'Yesterday'
-
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
-  return rtf.format(diffDays, 'day')
-}
-
-/**
- * Formats invoice number with consistent pattern
- */
-export const formatInvoiceNumber = (number: string): string => {
-  // If already formatted, return as is
-  if (number.includes('-')) return number
-
-  // Try to extract year and sequence
-  const match = number.match(/(\d{4})(\d+)/)
-  if (match) {
-    const [, year, seq] = match
-    return `INV-${year}-${seq.padStart(4, '0')}`
-  }
-
-  // Default format
-  return `INV-${number}`
-}
-
-/**
  * Gets display-friendly payment status
  */
 export const getPaymentStatusLabel = (
