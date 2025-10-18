@@ -38,7 +38,6 @@ import {
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { useApi } from 'api'
 import { useInvoices } from 'hooks/useInvoices'
 import {
   formatCurrency,
@@ -56,6 +55,7 @@ import {
   type PaymentFilter,
 } from 'hooks/useInvoiceFilters'
 import { useInvoiceSort } from 'hooks/useInvoiceSort'
+import { useInvoiceDelete } from 'hooks/useInvoiceDelete'
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: 'All' },
@@ -71,7 +71,6 @@ const paymentOptions: Array<{ value: PaymentFilter; label: string }> = [
 
 const InvoicesList = (): React.ReactElement => {
   const navigate = useNavigate()
-  const api = useApi()
 
   // Filter state managed via custom hook
   const {
@@ -93,21 +92,6 @@ const InvoicesList = (): React.ReactElement => {
   // Sort state managed via custom hook
   const { sortField, sortDirection, sortParam, handleSort } = useInvoiceSort()
 
-  // Delete state
-  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-
-  // Toast state
-  const [showToast, setShowToast] = useState(false)
-  const [toastMessage, setToastMessage] = useState('')
-  const [toastVariant, setToastVariant] = useState<
-    'success' | 'danger' | 'warning'
-  >('success')
-
-  // Live region for accessibility announcements
-  const [liveRegionMessage, setLiveRegionMessage] = useState('')
-
   // Fetch invoices with active filters, sorting, and pagination
   // The hook auto-fetches when filters, sort, page, or perPage change
   const { invoices, pagination, isLoading, isError, error, refetch } =
@@ -117,6 +101,19 @@ const InvoicesList = (): React.ReactElement => {
       perPage,
       sort: sortParam,
     })
+
+  // Delete state managed via custom hook
+  const {
+    invoiceToDelete,
+    showDeleteDialog,
+    isDeleting,
+    toastState,
+    liveRegionMessage,
+    handleDeleteClick,
+    handleDeleteConfirm,
+    handleDeleteCancel,
+    setToastShow,
+  } = useInvoiceDelete(refetch)
 
   // Handle status filter change
   const handleStatusChange = useCallback(
@@ -148,92 +145,6 @@ const InvoicesList = (): React.ReactElement => {
     handleClearFilters()
     setCurrentPage(1) // Reset to first page when filters are cleared
   }, [handleClearFilters])
-
-  // Helper to show toast notifications
-  const showToastNotification = useCallback(
-    (message: string, variant: 'success' | 'danger' | 'warning') => {
-      setToastMessage(message)
-      setToastVariant(variant)
-      setShowToast(true)
-    },
-    []
-  )
-
-  // Handle delete button click
-  const handleDeleteClick = useCallback((invoice: Invoice) => {
-    setInvoiceToDelete(invoice)
-    setShowDeleteDialog(true)
-  }, [])
-
-  // Handle delete confirmation
-  const handleDeleteConfirm = useCallback(async () => {
-    if (!invoiceToDelete) return
-
-    setIsDeleting(true)
-
-    // Save invoice number before clearing state
-    const invoiceNumber = invoiceToDelete.invoice_number
-
-    try {
-      // Call delete API
-      await api.deleteInvoice(invoiceToDelete.id)
-
-      // Success: show success messages first (before clearing state)
-      showToastNotification(
-        `Invoice #${invoiceNumber} has been deleted`,
-        'success'
-      )
-
-      // Announce to screen readers
-      setLiveRegionMessage(`Invoice #${invoiceNumber} deleted successfully`)
-
-      // Then close dialog and clear state
-      setShowDeleteDialog(false)
-      setInvoiceToDelete(null)
-
-      // Refetch invoices to update the list
-      refetch()
-    } catch (err: any) {
-      console.error('Failed to delete invoice:', err)
-
-      // Handle specific error cases based on HTTP status
-      const status = err?.response?.status
-
-      if (status === 404) {
-        // Invoice was already deleted
-        showToastNotification(
-          'This invoice has already been deleted',
-          'warning'
-        )
-        setLiveRegionMessage('Invoice was already deleted')
-        setShowDeleteDialog(false)
-        setInvoiceToDelete(null)
-        refetch() // Refresh to remove from UI
-      } else if (status === 403 || status === 409) {
-        // Invoice is finalized or cannot be deleted
-        showToastNotification('Cannot delete finalized invoice', 'danger')
-        setLiveRegionMessage('Cannot delete finalized invoice')
-        setShowDeleteDialog(false)
-        setInvoiceToDelete(null)
-        refetch() // Refresh to get updated state
-      } else {
-        // Generic error
-        showToastNotification(
-          'Failed to delete invoice. Please try again.',
-          'danger'
-        )
-        setLiveRegionMessage('Failed to delete invoice')
-      }
-    } finally {
-      setIsDeleting(false)
-    }
-  }, [invoiceToDelete, api, refetch, showToastNotification])
-
-  // Handle delete cancel
-  const handleDeleteCancel = useCallback(() => {
-    setShowDeleteDialog(false)
-    setInvoiceToDelete(null)
-  }, [])
 
   // Render expandable row content
   const renderRowSubComponent = useCallback(
@@ -1090,25 +1001,25 @@ const InvoicesList = (): React.ReactElement => {
         style={{ zIndex: 9999 }}
       >
         <Toast
-          show={showToast}
-          onClose={() => setShowToast(false)}
+          show={toastState.show}
+          onClose={() => setToastShow(false)}
           delay={5000}
           autohide
-          bg={toastVariant}
+          bg={toastState.variant}
         >
           <Toast.Header>
             <strong className="me-auto">
-              {toastVariant === 'success'
+              {toastState.variant === 'success'
                 ? 'Success'
-                : toastVariant === 'warning'
+                : toastState.variant === 'warning'
                 ? 'Notice'
                 : 'Error'}
             </strong>
           </Toast.Header>
           <Toast.Body
-            className={toastVariant === 'success' ? 'text-white' : ''}
+            className={toastState.variant === 'success' ? 'text-white' : ''}
           >
-            {toastMessage}
+            {toastState.message}
           </Toast.Body>
         </Toast>
       </ToastContainer>
