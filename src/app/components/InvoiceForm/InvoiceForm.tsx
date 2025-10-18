@@ -427,9 +427,18 @@ const InvoiceForm: React.FC = () => {
     [getValues, insert]
   )
 
-  const handleFinalizeClick = useCallback(() => {
-    setShowFinalizeModal(true)
-  }, [])
+  const handleFinalizeClick = useCallback(async () => {
+    // Trigger form validation first
+    await handleSubmit(
+      () => {
+        // If validation passes, show the modal
+        setShowFinalizeModal(true)
+      },
+      () => {
+        // If validation fails, do nothing (errors will be shown)
+      }
+    )()
+  }, [handleSubmit])
 
   const handleFinalizeCancel = useCallback(() => {
     setShowFinalizeModal(false)
