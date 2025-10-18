@@ -9,9 +9,8 @@
  * for ID filtering, which is not useful for user search scenarios.
  */
 
-import { Invoice, InvoiceFilter } from 'types/invoice.types'
-import { Customer, Product } from 'types'
-import React, { useState, useMemo, useCallback, useRef } from 'react'
+import { Invoice } from 'types/invoice.types'
+import React, { useState, useMemo, useCallback } from 'react'
 import {
   useTable,
   useExpanded,
@@ -50,19 +49,13 @@ import { calculateLineItem } from 'utils/calculations'
 import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
 import ProductAutocomplete from 'app/components/ProductAutocomplete'
 import DeleteInvoiceDialog from 'app/components/DeleteInvoiceDialog'
-import { useForm, Controller } from 'react-hook-form'
-
-type StatusFilter = 'all' | 'draft' | 'finalized'
-type PaymentFilter = 'all' | 'paid' | 'unpaid'
-
-interface FilterFormData {
-  dateRange: [Date | null, Date | null]
-  dueDateRange: [Date | null, Date | null]
-  status: StatusFilter
-  payment: PaymentFilter
-  customer: Customer | null
-  product: Product | null
-}
+import { Controller } from 'react-hook-form'
+import {
+  useInvoiceFilters,
+  type StatusFilter,
+  type PaymentFilter,
+} from 'hooks/useInvoiceFilters'
+import { useInvoiceSort } from 'hooks/useInvoiceSort'
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: 'All' },
@@ -80,67 +73,25 @@ const InvoicesList = (): React.ReactElement => {
   const navigate = useNavigate()
   const api = useApi()
 
-  // Filter state managed via react-hook-form
-  const defaultFilterValuesRef = useRef<FilterFormData>({
-    dateRange: [null, null],
-    dueDateRange: [null, null],
-    status: 'all',
-    payment: 'all',
-    customer: null,
-    product: null,
-  })
+  // Filter state managed via custom hook
   const {
-    control: filterControl,
-    handleSubmit: handleFilterFormSubmit,
-    reset: resetFilterForm,
-    watch: watchFilterForm,
-    setValue: setFilterValue,
-  } = useForm<FilterFormData>({
-    mode: 'onSubmit',
-    defaultValues: defaultFilterValuesRef.current,
-  })
-  const filterFormValues = watchFilterForm()
-  const currentFilters = filterFormValues as FilterFormData
-  const [activeFilters, setActiveFilters] = useState<InvoiceFilter[]>([])
+    filterControl,
+    handleFilterSubmit: handleFilterFormSubmit,
+    handleClearFilters,
+    activeFilters,
+    hasActiveFilters,
+    hasChangedFilters,
+    filterSummary,
+    currentFilters,
+    setFilterValue,
+  } = useInvoiceFilters()
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const perPage = 10
 
-  // Sort state
-  const [sortField, setSortField] = useState<string>('date')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
-
-  // Mapping between UI column IDs and backend sort field names
-  const sortFieldMapping: Record<string, string> = useMemo(
-    () => ({
-      id: 'id',
-      date: 'date',
-      deadline: 'deadline',
-      total: 'total',
-      status: 'finalized',
-    }),
-    []
-  )
-
-  // Build sort parameter for API (e.g., "-date" or "+customer.first_name")
-  const backendSortField = sortFieldMapping[sortField] || sortField
-  const sortParam = `${sortDirection === 'desc' ? '-' : '+'}${backendSortField}`
-
-  // Handle column sort
-  const handleSort = useCallback(
-    (field: string) => {
-      if (field === sortField) {
-        // Toggle direction if clicking the same field
-        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
-      } else {
-        // New field, default to ascending
-        setSortField(field)
-        setSortDirection('asc')
-      }
-    },
-    [sortField, sortDirection]
-  )
+  // Sort state managed via custom hook
+  const { sortField, sortDirection, sortParam, handleSort } = useInvoiceSort()
 
   // Delete state
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null)
@@ -167,91 +118,6 @@ const InvoicesList = (): React.ReactElement => {
       sort: sortParam,
     })
 
-  // Format date to YYYY-MM-DD for API
-  const formatDateForAPI = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-
-  // Build filters based on current form state
-  const buildFilters = useCallback(
-    (formData: FilterFormData): InvoiceFilter[] => {
-      const filters: InvoiceFilter[] = []
-
-      const [startDate, endDate] = formData.dateRange
-      const [dueDateStart, dueDateEnd] = formData.dueDateRange
-
-      if (startDate) {
-        filters.push({
-          field: 'date',
-          operator: 'gteq',
-          value: formatDateForAPI(startDate),
-        })
-      }
-
-      if (endDate) {
-        filters.push({
-          field: 'date',
-          operator: 'lteq',
-          value: formatDateForAPI(endDate),
-        })
-      }
-
-      if (dueDateStart) {
-        filters.push({
-          field: 'deadline',
-          operator: 'gteq',
-          value: formatDateForAPI(dueDateStart),
-        })
-      }
-
-      if (dueDateEnd) {
-        filters.push({
-          field: 'deadline',
-          operator: 'lteq',
-          value: formatDateForAPI(dueDateEnd),
-        })
-      }
-
-      if (formData.status !== 'all') {
-        filters.push({
-          field: 'finalized',
-          operator: 'eq',
-          value: formData.status === 'finalized' ? 'true' : 'false',
-        })
-      }
-
-      if (formData.payment !== 'all') {
-        filters.push({
-          field: 'paid',
-          operator: 'eq',
-          value: formData.payment === 'paid' ? 'true' : 'false',
-        })
-      }
-
-      if (formData.customer) {
-        filters.push({
-          field: 'customer_id',
-          operator: 'eq',
-          value: formData.customer.id.toString(),
-        })
-      }
-
-      if (formData.product) {
-        filters.push({
-          field: 'invoice_lines.product_id',
-          operator: 'eq',
-          value: formData.product.id.toString(),
-        })
-      }
-
-      return filters
-    },
-    []
-  )
-
   // Handle status filter change
   const handleStatusChange = useCallback(
     (value: StatusFilter) => {
@@ -268,22 +134,20 @@ const InvoicesList = (): React.ReactElement => {
     [setFilterValue]
   )
 
-  // Handle filter form submission
-  const onFilterSubmit = useCallback(
-    (values: FilterFormData) => {
-      setActiveFilters(buildFilters(values))
+  // Wrap filter submit to also reset page
+  const handleFilterSubmit = useCallback(
+    async (e?: React.BaseSyntheticEvent) => {
+      await handleFilterFormSubmit(e)
       setCurrentPage(1) // Reset to first page when filters change
     },
-    [buildFilters]
+    [handleFilterFormSubmit]
   )
-  const handleFilterSubmit = handleFilterFormSubmit(onFilterSubmit)
 
-  // Clear all filters
-  const handleClearFilters = useCallback(() => {
-    resetFilterForm(defaultFilterValuesRef.current)
-    setActiveFilters([])
+  // Wrap clear filters to also reset page
+  const handleClearFiltersWithPageReset = useCallback(() => {
+    handleClearFilters()
     setCurrentPage(1) // Reset to first page when filters are cleared
-  }, [resetFilterForm])
+  }, [handleClearFilters])
 
   // Helper to show toast notifications
   const showToastNotification = useCallback(
@@ -370,84 +234,6 @@ const InvoicesList = (): React.ReactElement => {
     setShowDeleteDialog(false)
     setInvoiceToDelete(null)
   }, [])
-
-  // Check if any filters are active
-  const hasActiveFilters = activeFilters.length > 0
-
-  // Compare two filter arrays for equality
-  const areFiltersEqual = useCallback(
-    (filters1: InvoiceFilter[], filters2: InvoiceFilter[]): boolean => {
-      if (filters1.length !== filters2.length) return false
-
-      // Sort both arrays by field, operator, and value for consistent comparison
-      const sort = (f: InvoiceFilter[]) =>
-        [...f].sort((a, b) => {
-          const fieldCompare = a.field.localeCompare(b.field)
-          if (fieldCompare !== 0) return fieldCompare
-          const opCompare = a.operator.localeCompare(b.operator)
-          if (opCompare !== 0) return opCompare
-          return String(a.value).localeCompare(String(b.value))
-        })
-
-      const sorted1 = sort(filters1)
-      const sorted2 = sort(filters2)
-
-      return sorted1.every(
-        (f1, idx) =>
-          f1.field === sorted2[idx].field &&
-          f1.operator === sorted2[idx].operator &&
-          f1.value === sorted2[idx].value
-      )
-    },
-    []
-  )
-
-  // Check if filter form values differ from currently active filters
-  const hasChangedFilters = useMemo(() => {
-    const formFilters = buildFilters(currentFilters)
-    return !areFiltersEqual(formFilters, activeFilters)
-  }, [currentFilters, activeFilters, buildFilters, areFiltersEqual])
-
-  // Format active filter summary
-  const getFilterSummary = () => {
-    const parts: string[] = []
-
-    if (currentFilters.status !== 'all') {
-      parts.push(`Status: ${currentFilters.status}`)
-    }
-    if (currentFilters.payment !== 'all') {
-      parts.push(`Payment: ${currentFilters.payment}`)
-    }
-    if (currentFilters.customer) {
-      const customerName =
-        `${currentFilters.customer.first_name} ${currentFilters.customer.last_name}`.trim()
-      parts.push(`Customer: ${customerName}`)
-    }
-    if (currentFilters.product) {
-      parts.push(`Product: ${currentFilters.product.label}`)
-    }
-
-    activeFilters.forEach((f) => {
-      if (f.field === 'date') {
-        if (f.operator === 'gteq') {
-          parts.push(`Date from ${f.value}`)
-        }
-        if (f.operator === 'lteq') {
-          parts.push(`Date to ${f.value}`)
-        }
-      }
-      if (f.field === 'deadline') {
-        if (f.operator === 'gteq') {
-          parts.push(`Due date from ${f.value}`)
-        }
-        if (f.operator === 'lteq') {
-          parts.push(`Due date to ${f.value}`)
-        }
-      }
-    })
-
-    return parts.join(', ')
-  }
 
   // Render expandable row content
   const renderRowSubComponent = useCallback(
@@ -839,7 +625,7 @@ const InvoicesList = (): React.ReactElement => {
                 <Button
                   type="button"
                   variant="outline-secondary"
-                  onClick={handleClearFilters}
+                  onClick={handleClearFiltersWithPageReset}
                 >
                   Clear Filters
                 </Button>
@@ -848,7 +634,7 @@ const InvoicesList = (): React.ReactElement => {
             {hasActiveFilters && (
               <div className="mt-3">
                 <small className="text-muted">
-                  <strong>Active filters:</strong> {getFilterSummary()}
+                  <strong>Active filters:</strong> {filterSummary}
                 </small>
               </div>
             )}
@@ -859,7 +645,10 @@ const InvoicesList = (): React.ReactElement => {
               Try adjusting your filter criteria or clear filters to see all
               invoices
             </p>
-            <Button variant="outline-primary" onClick={handleClearFilters}>
+            <Button
+              variant="outline-primary"
+              onClick={handleClearFiltersWithPageReset}
+            >
               Clear Filters
             </Button>
           </div>
@@ -1104,7 +893,7 @@ const InvoicesList = (): React.ReactElement => {
               <Button
                 type="button"
                 variant="outline-secondary"
-                onClick={handleClearFilters}
+                onClick={handleClearFiltersWithPageReset}
               >
                 Clear Filters
               </Button>
@@ -1114,7 +903,7 @@ const InvoicesList = (): React.ReactElement => {
           {hasActiveFilters && (
             <div className="mt-3">
               <small className="text-muted">
-                <strong>Active filters:</strong> {getFilterSummary()}
+                <strong>Active filters:</strong> {filterSummary}
               </small>
             </div>
           )}
