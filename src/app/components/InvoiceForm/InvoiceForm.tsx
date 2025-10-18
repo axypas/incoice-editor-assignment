@@ -35,6 +35,7 @@ import {
   useInvoice,
   useUpdateInvoice,
 } from 'app/components/InvoicesList/hooks/useInvoices'
+import FinalizeConfirmationModal from './components/FinalizeConfirmationModal'
 import 'react-datepicker/dist/react-datepicker.css'
 
 const STORAGE_KEY = 'invoice_draft'
@@ -108,6 +109,8 @@ const InvoiceForm: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isFormInitialized, setIsFormInitialized] = useState(false)
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false)
+  const [shouldFinalize, setShouldFinalize] = useState(false)
 
   const defaultValuesRef = useRef<InvoiceFormValues>(createDefaultValues())
   const skipUnsavedTrackingRef = useRef(true)
@@ -424,6 +427,14 @@ const InvoiceForm: React.FC = () => {
     [getValues, insert]
   )
 
+  const handleFinalizeClick = useCallback(() => {
+    setShowFinalizeModal(true)
+  }, [])
+
+  const handleFinalizeCancel = useCallback(() => {
+    setShowFinalizeModal(false)
+  }, [])
+
   const onSubmit = useCallback(
     async (values: InvoiceFormValues) => {
       setSubmitError(null)
@@ -503,11 +514,13 @@ const InvoiceForm: React.FC = () => {
               ? values.deadline.toISOString().split('T')[0]
               : null,
             paid: values.paid,
+            finalized: shouldFinalize,
             invoice_lines_attributes,
           }
 
           await updateInvoice(invoiceId, updatePayload as any)
           localStorage.removeItem(storageKey)
+          setShouldFinalize(false)
           navigate('/')
         } else {
           // Create mode
@@ -528,12 +541,13 @@ const InvoiceForm: React.FC = () => {
               ? values.deadline.toISOString().split('T')[0]
               : null,
             invoice_lines_attributes,
-            finalized: false,
+            finalized: shouldFinalize,
             paid: values.paid,
           }
 
           await api.postInvoices(null, { invoice: invoiceData })
           localStorage.removeItem(storageKey)
+          setShouldFinalize(false)
           resetForm()
           navigate('/')
         }
@@ -603,8 +617,16 @@ const InvoiceForm: React.FC = () => {
       updateInvoice,
       existingInvoice,
       storageKey,
+      shouldFinalize,
     ]
   )
+
+  const handleFinalizeConfirm = useCallback(() => {
+    setShowFinalizeModal(false)
+    setShouldFinalize(true)
+    // Trigger form submission
+    handleSubmit(onSubmit)()
+  }, [handleSubmit, onSubmit])
 
   const { totals, perLine, lineItems } = useMemo(() => {
     const items = watchedValues?.lineItems ?? []
@@ -1153,8 +1175,24 @@ const InvoiceForm: React.FC = () => {
               'Create Invoice'
             )}
           </Button>
+          <Button
+            variant="success"
+            onClick={handleFinalizeClick}
+            disabled={isSubmitting || isUpdating || hasValidationErrors}
+          >
+            {isEditMode
+              ? 'Save and Finalize Invoice'
+              : 'Create and Finalize Invoice'}
+          </Button>
         </div>
       </Form>
+
+      <FinalizeConfirmationModal
+        show={showFinalizeModal}
+        isEditMode={isEditMode}
+        onConfirm={handleFinalizeConfirm}
+        onCancel={handleFinalizeCancel}
+      />
     </div>
   )
 }
