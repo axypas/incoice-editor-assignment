@@ -110,10 +110,10 @@ const InvoiceForm: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isFormInitialized, setIsFormInitialized] = useState(false)
   const [showFinalizeModal, setShowFinalizeModal] = useState(false)
-  const [shouldFinalize, setShouldFinalize] = useState(false)
 
   const defaultValuesRef = useRef<InvoiceFormValues>(createDefaultValues())
   const skipUnsavedTrackingRef = useRef(true)
+  const shouldFinalizeRef = useRef(false)
   const storageKey =
     isEditMode && invoiceId ? getEditStorageKey(invoiceId) : STORAGE_KEY
 
@@ -523,13 +523,13 @@ const InvoiceForm: React.FC = () => {
               ? values.deadline.toISOString().split('T')[0]
               : null,
             paid: values.paid,
-            finalized: shouldFinalize,
+            finalized: shouldFinalizeRef.current,
             invoice_lines_attributes,
           }
 
           await updateInvoice(invoiceId, updatePayload as any)
           localStorage.removeItem(storageKey)
-          setShouldFinalize(false)
+          shouldFinalizeRef.current = false
           navigate('/')
         } else {
           // Create mode
@@ -550,13 +550,13 @@ const InvoiceForm: React.FC = () => {
               ? values.deadline.toISOString().split('T')[0]
               : null,
             invoice_lines_attributes,
-            finalized: shouldFinalize,
+            finalized: shouldFinalizeRef.current,
             paid: values.paid,
           }
 
           await api.postInvoices(null, { invoice: invoiceData })
           localStorage.removeItem(storageKey)
-          setShouldFinalize(false)
+          shouldFinalizeRef.current = false
           resetForm()
           navigate('/')
         }
@@ -626,13 +626,12 @@ const InvoiceForm: React.FC = () => {
       updateInvoice,
       existingInvoice,
       storageKey,
-      shouldFinalize,
     ]
   )
 
   const handleFinalizeConfirm = useCallback(() => {
     setShowFinalizeModal(false)
-    setShouldFinalize(true)
+    shouldFinalizeRef.current = true
     // Trigger form submission
     handleSubmit(onSubmit)()
   }, [handleSubmit, onSubmit])
