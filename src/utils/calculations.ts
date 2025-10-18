@@ -56,8 +56,11 @@ export const calculateLineItem = (
   // Taxable amount after discount
   const taxableAmountCents = subtotalCents - discountCents
 
-  // Calculate VAT
-  const vatRate = item.vat_rate || 0
+  // Calculate VAT (convert string to number if needed)
+  const vatRate =
+    typeof item.vat_rate === 'string'
+      ? parseFloat(item.vat_rate)
+      : item.vat_rate || 0
   const vatAmountCents = Math.round((taxableAmountCents * vatRate) / 100)
 
   // Total with VAT
@@ -93,8 +96,11 @@ export const calculateInvoiceTotals = (
     totalDiscountCents += toCents(calc.discountAmount)
     totalVatCents += toCents(calc.vatAmount)
 
-    // Track VAT breakdown by rate
-    const vatRate = item.vat_rate || 0
+    // Track VAT breakdown by rate (convert string to number if needed)
+    const vatRate =
+      typeof item.vat_rate === 'string'
+        ? parseFloat(item.vat_rate)
+        : item.vat_rate || 0
     if (!vatBreakdownCents[vatRate]) {
       vatBreakdownCents[vatRate] = 0
     }

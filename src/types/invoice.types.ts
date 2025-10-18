@@ -3,6 +3,8 @@
  * Following Pennylane's domain-first naming convention
  */
 
+import { Product as APIProduct } from 'types'
+
 export interface Customer {
   id: string
   label: string
@@ -18,24 +20,15 @@ export interface Customer {
   vat_number?: string
 }
 
-export interface Product {
-  id: string
-  label: string
-  unit: string
-  vat_rate: number
-  unit_price: number
-  currency?: string
-}
-
 export interface InvoiceLineItem {
   id?: string
   product_id?: string
-  product?: Product
+  product?: APIProduct | null
   label: string
   quantity: number
-  unit: string
+  unit: string // Enum: "hour" | "day" | "piece"
   unit_price: number
-  vat_rate: number
+  vat_rate: string | number // API expects string enum: "0" | "5.5" | "10" | "20"
   discount?: number // Percentage discount (0-100)
   discount_amount?: number // Fixed amount discount
 }
@@ -56,6 +49,9 @@ export interface Invoice {
   notes?: string
   terms?: string
 }
+
+// Re-export API Product type for convenience
+export type { APIProduct as Product }
 
 // Form-specific types for create/edit
 export interface InvoiceFormData {

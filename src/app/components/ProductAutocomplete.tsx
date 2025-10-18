@@ -8,11 +8,16 @@ import { GroupBase } from 'react-select'
 interface Props {
   value: Product | null
   onChange: (product: Product | null) => void
+  onBlur?: () => void
 }
 
 const defaultAdditional = { page: 1 }
 
-const ProductAutocomplete = ({ value, onChange }: Props) => {
+const getProductLabel = (product: Product) => {
+  return product.label
+}
+
+const ProductAutocomplete = ({ value, onChange, onBlur }: Props) => {
   const api = useApi()
 
   const loadOptions: LoadOptions<
@@ -42,15 +47,24 @@ const ProductAutocomplete = ({ value, onChange }: Props) => {
   return (
     <AsyncPaginate
       placeholder="Search a product"
+      getOptionLabel={getProductLabel}
       additional={defaultAdditional}
+      menuPortalTarget={document.body}
       value={value}
       onChange={onChange}
+      onBlur={onBlur}
       loadOptions={loadOptions}
       loadingMessage={() => 'Loading products...'}
       noOptionsMessage={({ inputValue }) =>
         inputValue ? 'No products found' : 'Start typing to search'
       }
       isClearable
+      styles={{
+        control: (base) => ({
+          ...base,
+          cursor: 'pointer',
+        }),
+      }}
     />
   )
 }

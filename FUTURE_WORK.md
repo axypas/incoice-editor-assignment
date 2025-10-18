@@ -10,6 +10,18 @@
 5. **Basic Validation** - Client-side form validation
 6. **Auto-save Drafts** - Every 30 seconds with local storage backup
 
+### Current UI Limitations (Not Supported by Backend)
+1. **Line Item Discounts** - The UI shows a "Disc %" field for user convenience and calculation preview, but discounts are NOT sent to the backend API. The API only accepts `product_id` and `quantity` for line items. To add discount support, the backend API would need to be extended with a discount field.
+2. **Custom Line Item Fields** - Fields like `label`, `unit`, `vat_rate`, and `unit_price` are displayed from the selected product but cannot be customized when creating an invoice. The backend uses the product catalog values.
+3. **Currency** - The backend API does not return currency information for invoices or products. The UI assumes all amounts are in EUR (Euros) and formats them accordingly using `formatCurrency()`. To support multi-currency, the backend would need to add a `currency` field to invoices and products.
+
+### Current UI Assumptions (May Need Validation)
+1. **Auto-calculated Payment Deadline** - When selecting an invoice date, the payment deadline is automatically set to 30 days later (NET 30 terms). This assumption may not fit all business models. We should validate with users if:
+   - 30 days is the right default payment term
+   - Users prefer to set deadlines manually
+   - Different customers need different payment terms (e.g., NET 15, NET 45, NET 60)
+   - The auto-calculation should be optional or configurable
+
 ### What We're Intentionally Skipping (and why)
 1. **Authentication/Authorization** - Assume single-user context for prototype
 2. **Edit Existing Invoices** - Focus on create flow first (simpler state management)
@@ -120,7 +132,37 @@ const CustomerSelect = () => {
 ### 💰 Phase 3: Financial Features (Next 6-9 sprints)
 *Focus: Professional invoicing and compliance*
 
-#### 5. PDF Generation & Preview (High Impact, High Effort)
+#### 5. Line Item Discounts (Medium Impact, Medium Effort)
+**Why:** Businesses often offer discounts for bulk orders, promotions, or valued customers. Currently users cannot apply discounts, forcing them to manually adjust prices or create special discounted products.
+
+**User Story:** As a user, I want to apply percentage or fixed discounts to line items so I can offer promotional pricing without creating duplicate products.
+
+**Prototype Implementation:**
+```typescript
+// Add discount fields to line items
+interface InvoiceLineCreatePayload {
+  product_id: number
+  quantity: number
+  discount_percent?: number  // 0-100
+  discount_amount?: number   // Fixed amount
+}
+
+// Backend calculates:
+// line_total = (quantity * product.unit_price) - discount
+```
+
+**What's Missing:**
+- Backend API support for discount fields
+- Discount validation (can't exceed line total)
+- Discount reason/notes field for accounting
+- Volume discount rules (automatic application)
+- Discount approval workflow for large discounts
+
+**Complexity:** Medium - Requires API changes and financial calculation updates
+
+---
+
+#### 6. PDF Generation & Preview (High Impact, High Effort)
 **Why:** Customers expect professional PDF invoices. Currently users must manually recreate in Word/Excel.
 
 **User Story:** As a user, I want to generate a PDF invoice so I can email professional documents to customers.

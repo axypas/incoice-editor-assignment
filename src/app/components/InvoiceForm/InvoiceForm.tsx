@@ -8,7 +8,7 @@
  * - Dynamic line items (add/remove/duplicate)
  * - Real-time calculations with proper decimal precision
  * - Field-level validation on blur
- * - Auto-save with status indicator
+ * - Auto-save on form changes (debounced 500ms)
  * - Local storage backup to prevent data loss
  */
 
@@ -29,6 +29,7 @@ import { InvoiceLineItem } from 'types/invoice.types'
 import { Customer } from 'types'
 import { useApi } from 'api'
 import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
+import ProductAutocomplete from 'app/components/ProductAutocomplete'
 import {
   calculateLineItem,
   calculateInvoiceTotals,
@@ -52,20 +53,20 @@ const InvoiceForm: React.FC = () => {
 
   // Form state
   const [customer, setCustomer] = useState<Customer | null>(null)
-  const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [date, setDate] = useState<Date>(new Date())
+  const [date, setDate] = useState<Date | null>(new Date())
   const [deadline, setDeadline] = useState<Date | null>(null)
-  const [notes, setNotes] = useState('')
-  const [terms, setTerms] = useState('')
+  const [paid, setPaid] = useState(false)
 
-  // Line items state
+  // Line items state - each line needs a product
   const [lineItems, setLineItems] = useState<InvoiceLineItem[]>([
     {
+      product: null,
+      product_id: undefined,
       label: '',
       quantity: 1,
-      unit: 'unit',
+      unit: '-',
       unit_price: 0,
-      vat_rate: 20,
+      vat_rate: '-',
     },
   ])
 
@@ -81,15 +82,6 @@ const InvoiceForm: React.FC = () => {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  // Generate invoice number on mount
-  useEffect(() => {
-    const year = new Date().getFullYear()
-    const randomNum = Math.floor(Math.random() * 1000)
-      .toString()
-      .padStart(3, '0')
-    setInvoiceNumber(`${year}-${randomNum}`)
-  }, [])
-
   // Auto-save function
   const handleAutoSave = useCallback(async () => {
     // Only auto-save if we have minimum required fields
@@ -102,11 +94,8 @@ const InvoiceForm: React.FC = () => {
       // Save to local storage as backup
       const backup = {
         customer,
-        invoiceNumber,
-        date: date.toISOString(),
+        date: date?.toISOString() || null,
         deadline: deadline?.toISOString() || null,
-        notes,
-        terms,
         lineItems,
       }
       localStorage.setItem('invoice_draft', JSON.stringify(backup))
@@ -118,28 +107,38 @@ const InvoiceForm: React.FC = () => {
     } finally {
       setIsSaving(false)
     }
-  }, [customer, invoiceNumber, date, deadline, notes, terms, lineItems])
+  }, [customer, date, deadline, lineItems])
 
-  // Auto-save every 30 seconds
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('invoice_draft')
+      if (saved) {
+        const backup = JSON.parse(saved)
+        setCustomer(backup.customer)
+        setDate(backup.date ? new Date(backup.date) : null)
+        setDeadline(backup.deadline ? new Date(backup.deadline) : null)
+        setLineItems(backup.lineItems)
+        setIsDirty(false) // Don't mark as dirty on restore
+      }
+    } catch (error) {
+      console.error('Failed to restore draft:', error)
+    }
+    // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Auto-save on form changes
   useEffect(() => {
     if (!isDirty) return
 
+    // Debounce to avoid too many saves while typing
     const timer = setTimeout(() => {
       handleAutoSave()
-    }, 30000) // 30 seconds
+    }, 500) // 500ms debounce
 
     return () => clearTimeout(timer)
-  }, [
-    isDirty,
-    customer,
-    invoiceNumber,
-    date,
-    deadline,
-    notes,
-    terms,
-    lineItems,
-    handleAutoSave,
-  ])
+  }, [customer, date, deadline, lineItems, isDirty, handleAutoSave])
 
   // Warn on navigation if unsaved changes
   useEffect(() => {
@@ -158,7 +157,7 @@ const InvoiceForm: React.FC = () => {
   // Mark form as dirty when fields change
   useEffect(() => {
     setIsDirty(true)
-  }, [customer, invoiceNumber, date, deadline, notes, terms, lineItems])
+  }, [customer, date, deadline, paid, lineItems])
 
   // Validation functions
   const validateField = (field: string, value: any): string | null => {
@@ -166,11 +165,18 @@ const InvoiceForm: React.FC = () => {
       case 'customer':
         if (!value) return 'Please select a customer'
         return null
-      case 'invoiceNumber':
-        if (!value || value.trim() === '') return 'Invoice number is required'
-        return null
       case 'date':
         if (!value) return 'Invoice date is required'
+        // Check if date is in the future
+        if (value && new Date(value) > new Date()) {
+          return 'Invoice date cannot be in the future'
+        }
+        return null
+      case 'deadline':
+        // Optional field, but if provided should be after invoice date
+        if (value && date && new Date(value) < new Date(date)) {
+          return 'Payment deadline must be after invoice date'
+        }
         return null
       default:
         return null
@@ -182,19 +188,12 @@ const InvoiceForm: React.FC = () => {
     field: string
   ): string | null => {
     switch (field) {
-      case 'label':
-        if (!item.label || item.label.trim() === '')
-          return 'Description is required'
+      case 'product':
+      case 'product_id':
+        if (!item.product_id) return 'Please select a product'
         return null
       case 'quantity':
         if (item.quantity <= 0) return 'Quantity must be greater than 0'
-        return null
-      case 'unit_price':
-        if (item.unit_price < 0) return 'Please enter a valid price'
-        return null
-      case 'vat_rate':
-        if (item.vat_rate < 0 || item.vat_rate > 100)
-          return 'Tax rate must be between 0 and 100'
         return null
       default:
         return null
@@ -211,6 +210,55 @@ const InvoiceForm: React.FC = () => {
       const { [field]: _, ...rest } = errors
       setErrors(rest)
     }
+  }
+
+  const handleProductSelect = (index: number, product: any | null) => {
+    const updated = [...lineItems]
+    if (product) {
+      // Auto-populate fields from product
+      updated[index] = {
+        ...updated[index],
+        product,
+        product_id: String(product.id),
+        label: product.label,
+        unit: product.unit, // Keep as string from API
+        vat_rate: product.vat_rate, // Keep as string from API (enum: "0", "5.5", "10", "20")
+        unit_price: parseFloat(product.unit_price_without_tax) || 0,
+      }
+      // Clear the error for this field since we now have a product
+      if (lineErrors[index]?.product_id) {
+        const { product_id: _, ...restErrors } = lineErrors[index]
+        if (Object.keys(restErrors).length === 0) {
+          const { [index]: __, ...restLineErrors } = lineErrors
+          setLineErrors(restLineErrors)
+        } else {
+          setLineErrors({
+            ...lineErrors,
+            [index]: restErrors,
+          })
+        }
+      }
+    } else {
+      // Clear product fields
+      updated[index] = {
+        ...updated[index],
+        product: null,
+        product_id: undefined,
+        label: '',
+        unit: 'piece',
+        vat_rate: '20', // String enum value
+        unit_price: 0,
+      }
+      // Set error since product is now cleared
+      setLineErrors({
+        ...lineErrors,
+        [index]: {
+          ...lineErrors[index],
+          product_id: 'Please select a product',
+        },
+      })
+    }
+    setLineItems(updated)
   }
 
   const handleLineItemChange = (
@@ -250,11 +298,13 @@ const InvoiceForm: React.FC = () => {
     setLineItems([
       ...lineItems,
       {
+        product: null,
+        product_id: undefined,
         label: '',
         quantity: 1,
-        unit: 'unit',
+        unit: 'piece',
         unit_price: 0,
-        vat_rate: 20,
+        vat_rate: '20', // String enum value
       },
     ])
   }
@@ -275,6 +325,53 @@ const InvoiceForm: React.FC = () => {
     setLineItems(updated)
   }
 
+  // Reset form to initial state
+  const resetForm = () => {
+    setCustomer(null)
+    setDate(null)
+    setDeadline(null)
+    setPaid(false)
+    setLineItems([
+      {
+        product: null,
+        product_id: undefined,
+        label: '',
+        quantity: 1,
+        unit: 'piece',
+        unit_price: 0,
+        vat_rate: '20',
+      },
+    ])
+    setErrors({})
+    setLineErrors({})
+    setTouched({})
+    setLastSaved(null)
+    setIsDirty(false)
+    setSubmitError(null)
+  }
+
+  // Handle cancel with confirmation if form has data
+  const handleCancel = () => {
+    // Check if form has any data
+    const hasData =
+      customer !== null ||
+      lineItems.some((item) => item.product_id !== undefined)
+
+    if (hasData) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to cancel?'
+      )
+      if (confirmed) {
+        // Clear draft and navigate away
+        localStorage.removeItem('invoice_draft')
+        navigate('/')
+      }
+    } else {
+      // No data, just navigate away
+      navigate('/')
+    }
+  }
+
   // Calculate totals
   const calculations = calculateInvoiceTotals(lineItems)
 
@@ -286,19 +383,18 @@ const InvoiceForm: React.FC = () => {
     // Validate all fields
     const newErrors: ValidationErrors = {}
     if (!customer) newErrors.customer = 'Please select a customer'
-    if (!invoiceNumber) newErrors.invoiceNumber = 'Invoice number is required'
     if (!date) newErrors.date = 'Invoice date is required'
 
     // Validate line items
     const newLineErrors: LineItemErrors = {}
     lineItems.forEach((item, index) => {
       const itemErrors: { [key: string]: string } = {}
-      const labelError = validateLineItem(item, 'label')
+      const productError = validateLineItem(item, 'product_id')
       const quantityError = validateLineItem(item, 'quantity')
       const priceError = validateLineItem(item, 'unit_price')
       const vatError = validateLineItem(item, 'vat_rate')
 
-      if (labelError) itemErrors.label = labelError
+      if (productError) itemErrors.product_id = productError
       if (quantityError) itemErrors.quantity = quantityError
       if (priceError) itemErrors.unit_price = priceError
       if (vatError) itemErrors.vat_rate = vatError
@@ -320,16 +416,19 @@ const InvoiceForm: React.FC = () => {
     try {
       setIsSaving(true)
 
+      // Prepare line items for API - only product_id and quantity
+      const invoice_lines_attributes = lineItems.map((item) => ({
+        product_id: parseInt(item.product_id!, 10),
+        quantity: item.quantity,
+      }))
+
       const invoiceData = {
         customer_id: customer!.id,
-        invoice_number: invoiceNumber,
-        date: date.toISOString().split('T')[0],
-        deadline: deadline?.toISOString().split('T')[0],
-        invoice_lines: lineItems,
-        notes,
-        terms,
+        date: date!.toISOString().split('T')[0],
+        deadline: deadline?.toISOString().split('T')[0] || null,
+        invoice_lines_attributes,
         finalized: false,
-        paid: false,
+        paid,
       }
 
       await api.postInvoices(null, { invoice: invoiceData })
@@ -337,27 +436,20 @@ const InvoiceForm: React.FC = () => {
       // Clear local storage backup
       localStorage.removeItem('invoice_draft')
 
-      // Navigate to invoice list
-      navigate('/')
+      // Reset form to create another invoice
+      resetForm()
     } catch (error: any) {
       if (error.response?.status === 422) {
         // Validation error from server
         const serverErrors = error.response.data?.errors || {}
         setErrors(serverErrors)
         setSubmitError('Please fix the validation errors and try again.')
-      } else if (error.message?.includes('already exists')) {
-        setErrors({
-          invoiceNumber:
-            'This invoice number already exists. Please use a different number.',
-        })
-        setSubmitError(
-          'This invoice number already exists. Please use a different number.'
-        )
       } else {
         setSubmitError(
           'Unable to create invoice. Please check your connection and try again.'
         )
       }
+      console.error('Invoice creation error:', error)
     } finally {
       setIsSaving(false)
     }
@@ -367,7 +459,7 @@ const InvoiceForm: React.FC = () => {
     <div className="pb-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Create Invoice</h2>
-        <Button variant="outline-secondary" onClick={() => navigate('/')}>
+        <Button variant="outline-secondary" onClick={handleCancel}>
           Cancel
         </Button>
       </div>
@@ -411,8 +503,8 @@ const InvoiceForm: React.FC = () => {
           <Card.Body className="p-4">
             <h5 className="mb-3">Invoice Details</h5>
             <Row className="g-3">
-              <Col md={6}>
-                <Form.Group controlId="customer">
+              <Col md={12}>
+                <Form.Group controlId="customer" className="flex flex-col">
                   <Form.Label>
                     Customer <span className="text-danger">*</span>
                   </Form.Label>
@@ -420,48 +512,33 @@ const InvoiceForm: React.FC = () => {
                     value={customer}
                     onChange={(c) => {
                       setCustomer(c)
-                      handleFieldBlur('customer', c)
                     }}
+                    onBlur={() => handleFieldBlur('customer', customer)}
                   />
                   {touched.customer && errors.customer && (
                     <Form.Text className="text-danger">
                       {errors.customer}
                     </Form.Text>
                   )}
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group controlId="invoiceNumber">
-                  <Form.Label>
-                    Invoice Number <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={invoiceNumber}
-                    onChange={(e) => setInvoiceNumber(e.target.value)}
-                    onBlur={(e) =>
-                      handleFieldBlur('invoiceNumber', e.target.value)
-                    }
-                    isInvalid={touched.invoiceNumber && !!errors.invoiceNumber}
-                  />
-                  <Form.Control.Feedback type="invalid">
-                    {errors.invoiceNumber}
-                  </Form.Control.Feedback>
+                  <Form.Text className="text-muted">
+                    Invoice number will be generated automatically
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
             <Row className="g-3 mt-2">
               <Col md={6}>
-                <Form.Group controlId="date">
+                <Form.Group controlId="date" className="flex flex-col">
                   <Form.Label>
                     Invoice Date <span className="text-danger">*</span>
                   </Form.Label>
                   <DatePicker
                     selected={date}
-                    onChange={(d: Date) => {
+                    isClearable
+                    onChange={(d: Date | null) => {
                       setDate(d)
                       // Auto-calculate deadline (30 days)
-                      if (!deadline) {
+                      if (d && !deadline) {
                         const newDeadline = new Date(d)
                         newDeadline.setDate(newDeadline.getDate() + 30)
                         setDeadline(newDeadline)
@@ -481,20 +558,43 @@ const InvoiceForm: React.FC = () => {
                 </Form.Group>
               </Col>
               <Col md={6}>
-                <Form.Group controlId="deadline">
+                <Form.Group controlId="deadline" className="flex flex-col">
                   <Form.Label>Payment Deadline</Form.Label>
                   <DatePicker
                     selected={deadline}
-                    onChange={(d: Date | null) => setDeadline(d)}
+                    onChange={(d: Date | null) => {
+                      setDeadline(d)
+                      handleFieldBlur('deadline', d)
+                    }}
                     dateFormat="yyyy-MM-dd"
                     className="form-control"
                     isClearable
                     placeholderText="Select payment deadline"
+                    onBlur={() => handleFieldBlur('deadline', deadline)}
                   />
+                  {touched.deadline && errors.deadline && (
+                    <Form.Text className="text-danger">
+                      {errors.deadline}
+                    </Form.Text>
+                  )}
                   <Form.Text className="text-muted">
                     When payment is due
                   </Form.Text>
                 </Form.Group>
+              </Col>
+            </Row>
+            <Row className="g-3 mt-2">
+              <Col md={12}>
+                <Form.Check
+                  type="checkbox"
+                  id="paid"
+                  label="Mark as paid"
+                  checked={paid}
+                  onChange={(e) => setPaid(e.target.checked)}
+                />
+                <Form.Text className="text-muted">
+                  Check this if the invoice has already been paid
+                </Form.Text>
               </Col>
             </Row>
           </Card.Body>
@@ -514,16 +614,18 @@ const InvoiceForm: React.FC = () => {
               <Table hover>
                 <thead style={{ backgroundColor: '#f8fafc' }}>
                   <tr>
-                    <th style={{ width: '30%' }}>Description</th>
-                    <th style={{ width: '10%' }}>Quantity</th>
+                    <th style={{ width: '26%' }}>Product</th>
+                    <th style={{ width: '10%' }}>Qty</th>
                     <th style={{ width: '10%' }}>Unit</th>
-                    <th style={{ width: '12%' }}>Unit Price</th>
+                    <th style={{ width: '12%' }}>Price</th>
                     <th style={{ width: '10%' }}>Tax %</th>
-                    <th style={{ width: '10%' }}>Discount %</th>
+                    <th style={{ width: '12%' }} className="text-end">
+                      Tax Amount
+                    </th>
                     <th style={{ width: '12%' }} className="text-end">
                       Total
                     </th>
-                    <th style={{ width: '6%' }}></th>
+                    <th style={{ width: '8%' }}></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -532,26 +634,20 @@ const InvoiceForm: React.FC = () => {
                     const hasError = lineErrors[index]
 
                     return (
-                      <tr key={index}>
+                      <tr key={index} className="align-middle">
                         <td>
-                          <Form.Control
-                            type="text"
-                            size="sm"
-                            value={item.label}
-                            onChange={(e) =>
-                              handleLineItemChange(
-                                index,
-                                'label',
-                                e.target.value
-                              )
+                          <ProductAutocomplete
+                            value={item.product || null}
+                            onChange={(product) =>
+                              handleProductSelect(index, product)
                             }
-                            onBlur={() => handleLineItemBlur(index, 'label')}
-                            isInvalid={!!(hasError && hasError.label)}
-                            placeholder="Description"
+                            onBlur={() =>
+                              handleLineItemBlur(index, 'product_id')
+                            }
                           />
-                          {hasError && hasError.label && (
+                          {hasError && hasError.product_id && (
                             <Form.Text className="text-danger">
-                              {hasError.label}
+                              {hasError.product_id}
                             </Form.Text>
                           )}
                         </td>
@@ -570,7 +666,8 @@ const InvoiceForm: React.FC = () => {
                             onBlur={() => handleLineItemBlur(index, 'quantity')}
                             isInvalid={!!(hasError && hasError.quantity)}
                             min="0"
-                            step="0.01"
+                            step="1"
+                            disabled={!item.product_id}
                           />
                           {hasError && hasError.quantity && (
                             <Form.Text className="text-danger">
@@ -590,7 +687,8 @@ const InvoiceForm: React.FC = () => {
                                 e.target.value
                               )
                             }
-                            placeholder="unit"
+                            disabled={true}
+                            readOnly
                           />
                         </td>
                         <td>
@@ -598,67 +696,26 @@ const InvoiceForm: React.FC = () => {
                             type="number"
                             size="sm"
                             value={item.unit_price}
-                            onChange={(e) =>
-                              handleLineItemChange(
-                                index,
-                                'unit_price',
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            onBlur={() =>
-                              handleLineItemBlur(index, 'unit_price')
-                            }
-                            isInvalid={!!(hasError && hasError.unit_price)}
-                            min="0"
-                            step="0.01"
+                            disabled={true}
                           />
-                          {hasError && hasError.unit_price && (
-                            <Form.Text className="text-danger">
-                              {hasError.unit_price}
-                            </Form.Text>
-                          )}
                         </td>
                         <td>
                           <Form.Control
-                            type="number"
+                            type="text"
                             size="sm"
                             value={item.vat_rate}
-                            onChange={(e) =>
-                              handleLineItemChange(
-                                index,
-                                'vat_rate',
-                                parseFloat(e.target.value) || 0
-                              )
-                            }
-                            onBlur={() => handleLineItemBlur(index, 'vat_rate')}
-                            isInvalid={!!(hasError && hasError.vat_rate)}
-                            min="0"
-                            max="100"
-                            step="0.01"
+                            disabled={true}
                           />
-                          {hasError && hasError.vat_rate && (
-                            <Form.Text className="text-danger">
-                              {hasError.vat_rate}
-                            </Form.Text>
-                          )}
                         </td>
-                        <td>
-                          <Form.Control
-                            type="number"
-                            size="sm"
-                            value={item.discount || ''}
-                            onChange={(e) =>
-                              handleLineItemChange(
-                                index,
-                                'discount',
-                                parseFloat(e.target.value) || undefined
-                              )
-                            }
-                            placeholder="0"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                          />
+                        <td className="text-end">
+                          <strong>
+                            {formatCurrency(
+                              item.product?.unit_tax
+                                ? item.quantity *
+                                    parseFloat(item.product.unit_tax)
+                                : 0
+                            )}
+                          </strong>
                         </td>
                         <td className="text-end">
                           <strong>{formatCurrency(calc.total)}</strong>
@@ -669,18 +726,18 @@ const InvoiceForm: React.FC = () => {
                               variant="outline-secondary"
                               size="sm"
                               onClick={() => duplicateLineItem(index)}
-                              title="Duplicate line"
+                              title="Duplicate this line"
                             >
-                              <i className="bi bi-files"></i>
+                              Copy
                             </Button>
                             <Button
                               variant="outline-danger"
                               size="sm"
                               onClick={() => removeLineItem(index)}
                               disabled={lineItems.length === 1}
-                              title="Remove line"
+                              title="Remove this line"
                             >
-                              <i className="bi bi-trash"></i>
+                              Remove
                             </Button>
                           </div>
                         </td>
@@ -742,43 +799,11 @@ const InvoiceForm: React.FC = () => {
           </Card.Body>
         </Card>
 
-        {/* Notes Section */}
-        <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
-          <Card.Body className="p-4">
-            <Row>
-              <Col md={6}>
-                <Form.Group controlId="notes">
-                  <Form.Label>Notes</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Additional notes for the customer"
-                  />
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group controlId="terms">
-                  <Form.Label>Terms & Conditions</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={terms}
-                    onChange={(e) => setTerms(e.target.value)}
-                    placeholder="Payment terms and conditions"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-
         {/* Action Buttons */}
         <div className="d-flex justify-content-end gap-2">
           <Button
             variant="outline-secondary"
-            onClick={() => navigate('/')}
+            onClick={handleCancel}
             disabled={isSaving}
           >
             Cancel

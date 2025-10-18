@@ -8,6 +8,7 @@ import { GroupBase } from 'react-select'
 interface Props {
   value: Customer | null
   onChange: (Customer: Customer | null) => void
+  onBlur?: () => void
 }
 
 const defaultAdditional = { page: 1 }
@@ -16,7 +17,7 @@ const getCustomerLabel = (customer: Customer) => {
   return `${customer.first_name} ${customer.last_name}`
 }
 
-const CustomerAutocomplete = ({ value, onChange }: Props) => {
+const CustomerAutocomplete = ({ value, onChange, onBlur }: Props) => {
   const api = useApi()
 
   const loadOptions: LoadOptions<
@@ -50,12 +51,19 @@ const CustomerAutocomplete = ({ value, onChange }: Props) => {
       additional={defaultAdditional}
       value={value}
       onChange={onChange}
+      onBlur={onBlur}
       loadOptions={loadOptions}
       loadingMessage={() => 'Loading customers...'}
       noOptionsMessage={({ inputValue }) =>
         inputValue ? 'No customers found' : 'Start typing to search'
       }
       isClearable
+      styles={{
+        control: (base) => ({
+          ...base,
+          cursor: 'pointer',
+        }),
+      }}
     />
   )
 }
