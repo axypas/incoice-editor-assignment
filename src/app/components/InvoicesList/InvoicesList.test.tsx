@@ -69,6 +69,7 @@ const renderInvoicesList = () => {
 // Sample invoice data
 const mockInvoice = {
   id: 1,
+  invoice_number: '1',
   customer_id: 1,
   customer: {
     id: 1,
@@ -959,6 +960,362 @@ describe('InvoicesList - US1', () => {
         expect(screen.getByText('#1')).toBeInTheDocument()
       })
       expect(screen.getByText('#2')).toBeInTheDocument()
+    })
+  })
+
+  describe('Delete Functionality - US5', () => {
+    it('shows delete button only for draft invoices', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 2,
+              },
+              invoices: [
+                { ...mockInvoice, id: 1, finalized: false },
+                { ...mockInvoice, id: 2, finalized: true },
+              ],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Should have 1 Delete button (only for draft invoice)
+      const deleteButtons = screen.queryAllByRole('button', { name: /delete/i })
+      expect(deleteButtons).toHaveLength(1)
+    })
+
+    it('opens delete dialog when clicking Delete button', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Click Delete button
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      // Verify dialog is shown by checking for unique modal content
+      await waitFor(() => {
+        expect(
+          screen.getByText(/are you sure you want to delete invoice/i)
+        ).toBeInTheDocument()
+      })
+
+      // Verify other dialog content
+      expect(
+        screen.getByText(/this action cannot be undone/i)
+      ).toBeInTheDocument()
+
+      // Verify invoice number is shown in the dialog (in <strong> tag)
+      const invoiceNumberInDialog = screen.getAllByText((content, element) => {
+        return element?.tagName === 'STRONG' && content.includes('#1')
+      })
+      expect(invoiceNumberInDialog.length).toBeGreaterThan(0)
+    })
+
+    it('closes dialog when clicking Cancel', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/are you sure you want to delete invoice/i)
+        ).toBeInTheDocument()
+      })
+
+      // Click Cancel
+      await userEvent.click(
+        screen.getByRole('button', { name: /cancel deletion/i })
+      )
+
+      // Verify dialog is closed
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/are you sure you want to delete invoice/i)
+        ).not.toBeInTheDocument()
+      })
+    })
+
+    it('deletes invoice successfully and shows success toast', async () => {
+      let deleteWasCalled = false
+
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.delete(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          deleteWasCalled = true
+          return res(ctx.status(204))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/are you sure you want to delete invoice/i)
+        ).toBeInTheDocument()
+      })
+
+      // Confirm deletion
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm deletion/i })
+      )
+
+      // Verify API was called
+      await waitFor(() => {
+        expect(deleteWasCalled).toBe(true)
+      })
+
+      // Verify success toast is shown
+      await waitFor(
+        () => {
+          expect(screen.getByText(/#1 has been deleted/i)).toBeInTheDocument()
+        },
+        { timeout: 3000 }
+      )
+
+      // Verify dialog is closed
+      expect(
+        screen.queryByText(/are you sure you want to delete invoice/i)
+      ).not.toBeInTheDocument()
+    })
+
+    it('handles 404 error (invoice already deleted) with warning toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.delete(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(404))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm deletion
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm deletion/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm deletion/i })
+      )
+
+      // Verify warning toast is shown
+      await waitFor(() => {
+        expect(screen.getByText(/already been deleted/i)).toBeInTheDocument()
+      })
+
+      // Verify dialog is closed
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/are you sure you want to delete invoice/i)
+        ).not.toBeInTheDocument()
+      })
+    })
+
+    it('handles 409 error (finalized invoice) with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.delete(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(409))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm deletion
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm deletion/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm deletion/i })
+      )
+
+      // Verify error toast is shown
+      await waitFor(
+        () => {
+          const toastMessages = screen.queryAllByText(
+            /cannot delete finalized invoice/i
+          )
+          expect(toastMessages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+
+      // Verify dialog is closed
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/are you sure you want to delete invoice/i)
+        ).not.toBeInTheDocument()
+      })
+    })
+
+    it('announces deletion to screen readers via live region', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.delete(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(204))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm deletion
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm deletion/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm deletion/i })
+      )
+
+      // Verify live region contains announcement
+      await waitFor(
+        () => {
+          const liveRegion = screen.getByRole('status')
+          expect(liveRegion).toHaveTextContent(/#1 deleted successfully/i)
+        },
+        { timeout: 3000 }
+      )
     })
   })
 })

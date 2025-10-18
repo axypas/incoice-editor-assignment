@@ -35,10 +35,15 @@ import {
   Col,
   Card,
   ButtonGroup,
+  Toast,
+  ToastContainer,
+  OverlayTrigger,
+  Tooltip,
 } from 'react-bootstrap'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
+import { useApi } from 'api'
 import { useInvoices } from 'hooks/useInvoices'
 import {
   formatCurrency,
@@ -48,6 +53,7 @@ import {
 import { calculateLineItem } from 'utils/calculations'
 import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
 import ProductAutocomplete from 'app/components/ProductAutocomplete'
+import DeleteInvoiceDialog from 'app/components/DeleteInvoiceDialog'
 
 type ColumnWithSort<D extends object> = HeaderGroup<D> & UseSortByColumnProps<D>
 
@@ -77,6 +83,7 @@ const paymentOptions: Array<{ value: PaymentFilter; label: string }> = [
 
 const InvoicesList = (): React.ReactElement => {
   const navigate = useNavigate()
+  const api = useApi()
 
   // Filter state
   const [filterForm, setFilterForm] = useState<FilterFormData>({
@@ -92,6 +99,21 @@ const InvoicesList = (): React.ReactElement => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const perPage = 10
+
+  // Delete state
+  const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // Toast state
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastVariant, setToastVariant] = useState<
+    'success' | 'danger' | 'warning'
+  >('success')
+
+  // Live region for accessibility announcements
+  const [liveRegionMessage, setLiveRegionMessage] = useState('')
 
   // Fetch invoices with active filters and pagination
   // The hook auto-fetches when filters, page, or perPage change
@@ -239,6 +261,92 @@ const InvoicesList = (): React.ReactElement => {
     setFilterForm(resetForm)
     setActiveFilters([])
     setCurrentPage(1) // Reset to first page when filters are cleared
+  }, [])
+
+  // Helper to show toast notifications
+  const showToastNotification = useCallback(
+    (message: string, variant: 'success' | 'danger' | 'warning') => {
+      setToastMessage(message)
+      setToastVariant(variant)
+      setShowToast(true)
+    },
+    []
+  )
+
+  // Handle delete button click
+  const handleDeleteClick = useCallback((invoice: Invoice) => {
+    setInvoiceToDelete(invoice)
+    setShowDeleteDialog(true)
+  }, [])
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!invoiceToDelete) return
+
+    setIsDeleting(true)
+
+    // Save invoice number before clearing state
+    const invoiceNumber = invoiceToDelete.invoice_number
+
+    try {
+      // Call delete API
+      await api.deleteInvoice(invoiceToDelete.id)
+
+      // Success: show success messages first (before clearing state)
+      showToastNotification(
+        `Invoice #${invoiceNumber} has been deleted`,
+        'success'
+      )
+
+      // Announce to screen readers
+      setLiveRegionMessage(`Invoice #${invoiceNumber} deleted successfully`)
+
+      // Then close dialog and clear state
+      setShowDeleteDialog(false)
+      setInvoiceToDelete(null)
+
+      // Refetch invoices to update the list
+      refetch()
+    } catch (err: any) {
+      console.error('Failed to delete invoice:', err)
+
+      // Handle specific error cases based on HTTP status
+      const status = err?.response?.status
+
+      if (status === 404) {
+        // Invoice was already deleted
+        showToastNotification(
+          'This invoice has already been deleted',
+          'warning'
+        )
+        setLiveRegionMessage('Invoice was already deleted')
+        setShowDeleteDialog(false)
+        setInvoiceToDelete(null)
+        refetch() // Refresh to remove from UI
+      } else if (status === 403 || status === 409) {
+        // Invoice is finalized or cannot be deleted
+        showToastNotification('Cannot delete finalized invoice', 'danger')
+        setLiveRegionMessage('Cannot delete finalized invoice')
+        setShowDeleteDialog(false)
+        setInvoiceToDelete(null)
+        refetch() // Refresh to get updated state
+      } else {
+        // Generic error
+        showToastNotification(
+          'Failed to delete invoice. Please try again.',
+          'danger'
+        )
+        setLiveRegionMessage('Failed to delete invoice')
+      }
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [invoiceToDelete, api, refetch, showToastNotification])
+
+  // Handle delete cancel
+  const handleDeleteCancel = useCallback(() => {
+    setShowDeleteDialog(false)
+    setInvoiceToDelete(null)
   }, [])
 
   // Check if any filters are active
@@ -558,10 +666,10 @@ const InvoicesList = (): React.ReactElement => {
             )}
             {!invoice.finalized && (
               <Button
-                variant="outline-secondary"
+                variant="outline-danger"
                 size="sm"
-                className="text-danger"
                 style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                onClick={() => handleDeleteClick(invoice)}
               >
                 Delete
               </Button>
@@ -572,7 +680,7 @@ const InvoicesList = (): React.ReactElement => {
         id: 'actions',
       },
     ],
-    []
+    [handleDeleteClick]
   )
 
   const tableInstance = useTable(
@@ -674,13 +782,28 @@ const InvoicesList = (): React.ReactElement => {
                 </Form.Group>
               </Col>
               <Col md={4} className="d-flex align-items-end gap-2">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={!hasChangedFilters}
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id="apply-filters-tooltip">
+                      Please select at least one filter to apply
+                    </Tooltip>
+                  }
+                  show={!hasChangedFilters ? undefined : false}
                 >
-                  Apply Filters
-                </Button>
+                  <span className="d-inline-block">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      disabled={!hasChangedFilters}
+                      style={{
+                        pointerEvents: !hasChangedFilters ? 'none' : 'auto',
+                      }}
+                    >
+                      Apply Filters
+                    </Button>
+                  </span>
+                </OverlayTrigger>
                 <Button
                   type="button"
                   variant="outline-secondary"
@@ -896,13 +1019,28 @@ const InvoicesList = (): React.ReactElement => {
           {/* Line 4: Buttons */}
           <BsRow className="g-3 mt-3">
             <Col className="d-flex gap-2">
-              <Button
-                type="submit"
-                variant="primary"
-                disabled={!hasChangedFilters}
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id="apply-filters-tooltip-main">
+                    Please select at least one filter to apply
+                  </Tooltip>
+                }
+                show={!hasChangedFilters ? undefined : false}
               >
-                Apply Filters
-              </Button>
+                <span className="d-inline-block">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    disabled={!hasChangedFilters}
+                    style={{
+                      pointerEvents: !hasChangedFilters ? 'none' : 'auto',
+                    }}
+                  >
+                    Apply Filters
+                  </Button>
+                </span>
+              </OverlayTrigger>
               <Button
                 type="button"
                 variant="outline-secondary"
@@ -1078,6 +1216,55 @@ const InvoicesList = (): React.ReactElement => {
           </div>
         </Card>
       )}
+
+      {/* Delete Invoice Dialog */}
+      <DeleteInvoiceDialog
+        invoice={invoiceToDelete}
+        show={showDeleteDialog}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
+        isDeleting={isDeleting}
+      />
+
+      {/* Toast Notifications */}
+      <ToastContainer
+        position="top-end"
+        className="p-3"
+        style={{ zIndex: 9999 }}
+      >
+        <Toast
+          show={showToast}
+          onClose={() => setShowToast(false)}
+          delay={5000}
+          autohide
+          bg={toastVariant}
+        >
+          <Toast.Header>
+            <strong className="me-auto">
+              {toastVariant === 'success'
+                ? 'Success'
+                : toastVariant === 'warning'
+                ? 'Notice'
+                : 'Error'}
+            </strong>
+          </Toast.Header>
+          <Toast.Body
+            className={toastVariant === 'success' ? 'text-white' : ''}
+          >
+            {toastMessage}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
+
+      {/* Live region for accessibility announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="visually-hidden"
+      >
+        {liveRegionMessage}
+      </div>
     </div>
   )
 }

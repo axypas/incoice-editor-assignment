@@ -8,7 +8,7 @@
  * - Dynamic line items (add/remove/duplicate)
  * - Real-time calculations with proper decimal precision
  * - Field-level validation on blur
- * - Auto-save on form changes (debounced 500ms)
+ * - Auto-save on form changes (debounced ~30s)
  * - Local storage backup to prevent data loss
  */
 
@@ -64,9 +64,9 @@ const InvoiceForm: React.FC = () => {
       product_id: undefined,
       label: '',
       quantity: 1,
-      unit: '-',
+      unit: 'piece',
       unit_price: 0,
-      vat_rate: '-',
+      vat_rate: '0',
     },
   ])
 
@@ -76,7 +76,8 @@ const InvoiceForm: React.FC = () => {
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({})
 
   // Save state
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -88,7 +89,7 @@ const InvoiceForm: React.FC = () => {
     if (!customer || lineItems.length === 0) return
 
     try {
-      setIsSaving(true)
+      setIsAutoSaving(true)
       setSaveError(null)
 
       // Save to local storage as backup
@@ -105,7 +106,7 @@ const InvoiceForm: React.FC = () => {
     } catch (error: any) {
       setSaveError('Unable to save. Your changes are preserved locally.')
     } finally {
-      setIsSaving(false)
+      setIsAutoSaving(false)
     }
   }, [customer, date, deadline, lineItems])
 
@@ -132,10 +133,10 @@ const InvoiceForm: React.FC = () => {
   useEffect(() => {
     if (!isDirty) return
 
-    // Debounce to avoid too many saves while typing
+    // Debounce autosave to reduce unnecessary writes while editing
     const timer = setTimeout(() => {
       handleAutoSave()
-    }, 500) // 500ms debounce
+    }, 30000) // 30s debounce to reduce churn
 
     return () => clearTimeout(timer)
   }, [customer, date, deadline, lineItems, isDirty, handleAutoSave])
@@ -246,7 +247,7 @@ const InvoiceForm: React.FC = () => {
         product_id: undefined,
         label: '',
         unit: 'piece',
-        vat_rate: '20', // String enum value
+        vat_rate: '0', // String enum value
         unit_price: 0,
       }
       // Set error since product is now cleared
@@ -304,7 +305,7 @@ const InvoiceForm: React.FC = () => {
         quantity: 1,
         unit: 'piece',
         unit_price: 0,
-        vat_rate: '20', // String enum value
+        vat_rate: '0', // String enum value
       },
     ])
   }
@@ -339,7 +340,7 @@ const InvoiceForm: React.FC = () => {
         quantity: 1,
         unit: 'piece',
         unit_price: 0,
-        vat_rate: '20',
+        vat_rate: '0',
       },
     ])
     setErrors({})
@@ -391,13 +392,9 @@ const InvoiceForm: React.FC = () => {
       const itemErrors: { [key: string]: string } = {}
       const productError = validateLineItem(item, 'product_id')
       const quantityError = validateLineItem(item, 'quantity')
-      const priceError = validateLineItem(item, 'unit_price')
-      const vatError = validateLineItem(item, 'vat_rate')
 
       if (productError) itemErrors.product_id = productError
       if (quantityError) itemErrors.quantity = quantityError
-      if (priceError) itemErrors.unit_price = priceError
-      if (vatError) itemErrors.vat_rate = vatError
 
       if (Object.keys(itemErrors).length > 0) {
         newLineErrors[index] = itemErrors
@@ -414,7 +411,7 @@ const InvoiceForm: React.FC = () => {
     }
 
     try {
-      setIsSaving(true)
+      setIsSubmitting(true)
 
       // Prepare line items for API - only product_id and quantity
       const invoice_lines_attributes = lineItems.map((item) => ({
@@ -451,7 +448,7 @@ const InvoiceForm: React.FC = () => {
       }
       console.error('Invoice creation error:', error)
     } finally {
-      setIsSaving(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -459,21 +456,18 @@ const InvoiceForm: React.FC = () => {
     <div className="pb-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2>Create Invoice</h2>
-        <Button variant="outline-secondary" onClick={handleCancel}>
-          Cancel
-        </Button>
       </div>
 
       {/* Auto-save status */}
-      {(isSaving || lastSaved || saveError) && (
+      {(isAutoSaving || lastSaved || saveError) && (
         <Alert variant={saveError ? 'warning' : 'info'} className="mb-3">
-          {isSaving && (
+          {isAutoSaving && (
             <>
               <Spinner animation="border" size="sm" className="me-2" />
-              Saving...
+              Saving draft...
             </>
           )}
-          {!isSaving && lastSaved && !saveError && (
+          {!isAutoSaving && lastSaved && !saveError && (
             <>
               Draft saved at{' '}
               {lastSaved.toLocaleTimeString([], {
@@ -804,16 +798,16 @@ const InvoiceForm: React.FC = () => {
           <Button
             variant="outline-secondary"
             onClick={handleCancel}
-            disabled={isSaving}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
           <Button
             variant="primary"
             type="submit"
-            disabled={isSaving || Object.keys(errors).length > 0}
+            disabled={isSubmitting || Object.keys(errors).length > 0}
           >
-            {isSaving ? (
+            {isSubmitting ? (
               <>
                 <Spinner animation="border" size="sm" className="me-2" />
                 Creating...
