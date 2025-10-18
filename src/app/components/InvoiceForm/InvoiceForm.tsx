@@ -31,7 +31,10 @@ import {
   calculateInvoiceTotals,
   formatCurrency,
 } from 'utils/calculations'
-import { useInvoice, useUpdateInvoice } from 'hooks/useInvoices'
+import {
+  useInvoice,
+  useUpdateInvoice,
+} from 'app/components/InvoicesList/hooks/useInvoices'
 import 'react-datepicker/dist/react-datepicker.css'
 
 const STORAGE_KEY = 'invoice_draft'

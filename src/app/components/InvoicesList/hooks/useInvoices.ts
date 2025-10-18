@@ -5,15 +5,15 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { useApi } from '../api'
+import { useApi } from '../../../../api'
 import {
   Invoice,
   InvoiceFilter,
   AsyncStatus,
   ApiError,
-} from '../types/invoice.types'
-import { Paths } from '../api/gen/client'
-import { logger } from '../utils/logger'
+} from '../../../../types/invoice.types'
+import { Paths } from '../../../../api/gen/client'
+import { logger } from '../../../../utils/logger'
 
 interface Pagination {
   page: number

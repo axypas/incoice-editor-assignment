@@ -4,7 +4,7 @@
  */
 import { useRef, useEffect } from 'react'
 import { Modal, Button } from 'react-bootstrap'
-import { Invoice } from '../../types/invoice.types'
+import { Invoice } from '../../../../types/invoice.types'
 
 interface Props {
   invoice: Invoice | null

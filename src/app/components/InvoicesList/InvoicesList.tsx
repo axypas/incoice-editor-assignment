@@ -34,7 +34,7 @@ import {
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { useNavigate } from 'react-router-dom'
-import { useInvoices } from 'hooks/useInvoices'
+import { useInvoices } from 'app/components/InvoicesList/hooks/useInvoices'
 import {
   formatCurrency,
   formatDate,
@@ -43,16 +43,16 @@ import {
 import { calculateLineItem } from 'utils/calculations'
 import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
 import ProductAutocomplete from 'app/components/ProductAutocomplete'
-import DeleteInvoiceDialog from 'app/components/DeleteInvoiceDialog'
+import DeleteInvoiceDialog from 'app/components/InvoicesList/components/DeleteInvoiceDialog'
 import { Controller } from 'react-hook-form'
 import {
   useInvoiceFilters,
   type StatusFilter,
   type PaymentFilter,
-} from 'hooks/useInvoiceFilters'
-import { useInvoiceSort } from 'hooks/useInvoiceSort'
-import { useInvoiceDelete } from 'hooks/useInvoiceDelete'
-import InvoicesPagination from 'app/components/InvoicesPagination'
+} from 'app/components/InvoicesList/hooks/useInvoiceFilters'
+import { useInvoiceSort } from 'app/components/InvoicesList/hooks/useInvoiceSort'
+import { useInvoiceDelete } from 'app/components/InvoicesList/hooks/useInvoiceDelete'
+import InvoicesPagination from 'app/components/InvoicesList/components/InvoicesPagination'
 
 const statusOptions: Array<{ value: StatusFilter; label: string }> = [
   { value: 'all', label: 'All' },

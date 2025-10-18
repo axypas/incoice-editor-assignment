@@ -6,7 +6,7 @@
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, Button, Alert, Spinner, Table, Badge } from 'react-bootstrap'
-import { useInvoice } from 'hooks/useInvoices'
+import { useInvoice } from 'app/components/InvoicesList/hooks/useInvoices'
 import { formatCurrency } from 'utils/calculations'
 
 const InvoiceShow: React.FC = () => {
