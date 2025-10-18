@@ -155,13 +155,13 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                   {customer.address}
                 </div>
               )}
-              {(customer.city || customer.country || customer.country_code) && (
+              {(customer.city || customer.country_code) && (
                 <div className="text-muted" style={{ fontSize: '0.75rem' }}>
                   {customer.city && <span>{customer.city}</span>}
-                  {(customer.country || customer.country_code) && (
+                  {customer.country_code && (
                     <span>
                       {customer.city && ', '}
-                      {customer.country || customer.country_code}
+                      {customer.country_code}
                     </span>
                   )}
                 </div>
