@@ -38,6 +38,7 @@ interface UseInvoicesOptions {
   autoFetch?: boolean
   page?: number
   perPage?: number
+  sort?: string
 }
 
 /**
@@ -48,7 +49,13 @@ interface UseInvoicesOptions {
 export const useInvoices = (
   options: UseInvoicesOptions = {}
 ): UseInvoicesResult => {
-  const { filters = [], autoFetch = true, page = 1, perPage = 10 } = options
+  const {
+    filters = [],
+    autoFetch = true,
+    page = 1,
+    perPage = 10,
+    sort,
+  } = options
   const api = useApi()
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -63,15 +70,18 @@ export const useInvoices = (
         setError(null)
 
         // Build filter query param if filters provided
-        const params: Paths.GetInvoices.QueryParameters = {
+        const params: Paths.GetInvoices.QueryParameters & { sort?: string } = {
           page: currentPage ?? page,
           per_page: currentPerPage ?? perPage,
         }
         if (filters.length > 0) {
           params.filter = JSON.stringify(filters)
         }
+        if (sort) {
+          params.sort = sort
+        }
 
-        // Call API with filters and pagination
+        // Call API with filters, sorting, and pagination
         const response = await api.getInvoices(params)
 
         // Extract invoices array and pagination from response
@@ -110,7 +120,7 @@ export const useInvoices = (
         setStatus('error')
       }
     },
-    [api, filters, page, perPage]
+    [api, filters, page, perPage, sort]
   )
 
   // Auto-fetch on mount and when filters change

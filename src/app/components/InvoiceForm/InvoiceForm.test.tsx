@@ -4,12 +4,23 @@
  * Uses MSW to mock API responses
  */
 
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { API_BASE } from 'test/constants'
+import { rest } from 'msw'
+import { server } from 'test/server'
 import { ApiProvider } from '../../../api'
 import InvoiceForm from './InvoiceForm'
+
+const mockNavigate = jest.fn()
+jest.mock('react-router-dom', () => {
+  const actual = jest.requireActual('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+  }
+})
 
 // Mock react-datepicker to make it testable
 jest.mock('react-datepicker', () => {
@@ -19,7 +30,14 @@ jest.mock('react-datepicker', () => {
     selected,
     placeholderText,
     isClearable,
-    ...props
+    className,
+    onBlur,
+    maxDate: _maxDate,
+    dateFormat: _dateFormat,
+    selectsRange: _selectsRange,
+    startDate: _startDate,
+    endDate: _endDate,
+    ...rest
   }: any) {
     const [inputValue, setInputValue] = React.useState(
       selected ? selected.toISOString().split('T')[0] : ''
@@ -27,9 +45,11 @@ jest.mock('react-datepicker', () => {
 
     return (
       <input
-        data-testid={props['data-testid'] || 'mock-datepicker'}
+        data-testid={rest['data-testid'] || 'mock-datepicker'}
         placeholder={placeholderText}
+        className={className}
         value={inputValue}
+        onBlur={onBlur}
         onChange={(e) => {
           const value = e.target.value
           setInputValue(value)
@@ -47,7 +67,7 @@ jest.mock('react-datepicker', () => {
             onChange(null)
           }
         }}
-        {...props}
+        {...rest}
       />
     )
   }
@@ -147,6 +167,7 @@ describe('InvoiceForm - US3', () => {
   beforeEach(() => {
     localStorageMock.clear()
     mockConfirm.mockClear()
+    mockNavigate.mockClear()
     jest.clearAllTimers()
   })
 
@@ -364,6 +385,42 @@ describe('InvoiceForm - US3', () => {
         screen.getByRole('button', { name: /create invoice/i })
       ).toBeInTheDocument()
     })
+
+    it('navigates back to invoices list after successful submission', async () => {
+      server.use(
+        rest.post(`${API_BASE}/invoices`, (_req, res, ctx) =>
+          res(
+            ctx.status(201),
+            ctx.json({
+              invoice: { id: 1 },
+            })
+          )
+        )
+      )
+
+      renderInvoiceForm()
+
+      fireEvent.change(screen.getByTestId('customer-autocomplete'), {
+        target: { value: 'John Doe' },
+      })
+
+      fireEvent.change(screen.getByTestId('product-autocomplete'), {
+        target: { value: 'Sample Product' },
+      })
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
+      })
+
+      const submitButton = screen.getByRole('button', {
+        name: /create invoice/i,
+      })
+      await userEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
+    })
   })
 
   describe('Form Reset After Submission', () => {
@@ -450,7 +507,9 @@ describe('InvoiceForm - US3', () => {
       })
 
       // Trigger auto-save by advancing timers
-      jest.advanceTimersByTime(500)
+      await act(async () => {
+        jest.advanceTimersByTime(30000)
+      })
 
       await waitFor(() => {
         expect(localStorageMock.getItem('invoice_draft')).toBeTruthy()
@@ -477,7 +536,9 @@ describe('InvoiceForm - US3', () => {
       })
 
       // Advance timer for auto-save
-      jest.advanceTimersByTime(500)
+      await act(async () => {
+        jest.advanceTimersByTime(30000)
+      })
 
       await waitFor(() => {
         expect(screen.getByText(/draft saved at/i)).toBeInTheDocument()

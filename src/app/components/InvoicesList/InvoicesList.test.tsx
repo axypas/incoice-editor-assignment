@@ -21,20 +21,32 @@ jest.mock('react-datepicker', () => {
     placeholderText,
     startDate,
     endDate,
-    ...props
+    selectsRange: _selectsRange,
+    isClearable: _isClearable,
+    dateFormat: _dateFormat,
+    className,
+    onBlur,
+    ...rest
   }: any) {
-    const [inputValue, setInputValue] = React.useState('')
+    const [inputValue, setInputValue] = React.useState(
+      startDate
+        ? `${startDate.getFullYear()}-${String(
+            startDate.getMonth() + 1
+          ).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+        : ''
+    )
 
     return (
       <input
         data-testid="mock-datepicker"
         placeholder={placeholderText}
+        className={className}
         value={inputValue}
+        onBlur={onBlur}
         onChange={(e) => {
           const value = e.target.value
           setInputValue(value)
           if (value) {
-            // Parse date as local time to avoid timezone issues
             const parts = value.split('-')
             if (parts.length === 3) {
               const date = new Date(
@@ -42,14 +54,13 @@ jest.mock('react-datepicker', () => {
                 parseInt(parts[1]) - 1,
                 parseInt(parts[2])
               )
-              // For range picker, pass [startDate, null] when a single date is entered
-              onChange([date, null])
+              onChange([date, endDate ?? null])
             }
           } else {
             onChange([null, null])
           }
         }}
-        {...props}
+        {...rest}
       />
     )
   }
@@ -284,7 +295,7 @@ describe('InvoicesList - US1', () => {
       })
     })
 
-    it('hides amount for unpaid invoices', async () => {
+    it('shows amount for unpaid invoices', async () => {
       server.use(
         rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
           return res(
@@ -307,8 +318,8 @@ describe('InvoicesList - US1', () => {
         expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      // Amount should show '—' for unpaid invoice
-      expect(screen.queryByText(/1\s?250,50\s?€/)).not.toBeInTheDocument()
+      // Amount should be displayed even for unpaid invoice
+      expect(screen.getByText(/1\s?250,50\s?€/)).toBeInTheDocument()
     })
 
     it('shows Draft status badge for non-finalized invoice', async () => {
@@ -401,24 +412,23 @@ describe('InvoicesList - US1', () => {
   })
 
   describe('Sorting', () => {
-    it('sorts by date descending by default', async () => {
-      const invoices = [
-        { ...mockInvoice, id: 1, date: '2024-01-15' },
-        { ...mockInvoice, id: 2, date: '2024-01-10' },
-        { ...mockInvoice, id: 3, date: '2024-01-20' },
-      ]
+    it('sends default sort parameter (-date) to API', async () => {
+      let capturedParams: any = null
 
       server.use(
         rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          capturedParams = {
+            sort: req.url.searchParams.get('sort'),
+          }
           return res(
             ctx.json({
               pagination: {
                 page: 1,
                 page_size: 10,
                 total_pages: 1,
-                total_entries: 3,
+                total_entries: 1,
               },
-              invoices,
+              invoices: [mockInvoice],
             })
           )
         })
@@ -428,56 +438,36 @@ describe('InvoicesList - US1', () => {
 
       // Wait for table and data to load
       await waitFor(() => {
-        expect(screen.getByText('#1')).toBeInTheDocument()
+        expect(screen.getByRole('table')).toBeInTheDocument()
       })
-      expect(screen.getByRole('table')).toBeInTheDocument()
 
-      // Verify rows are sorted by date descending (newest first)
-      // initialState sorts the data but doesn't set visual indicator until user interaction
-      const rows = screen.getAllByRole('row')
-      expect(rows.length).toBe(4) // 1 header + 3 data rows
-
-      // Check dates appear in descending order (newest to oldest)
-      expect(rows[1]).toHaveTextContent('#3')
-      expect(rows[1]).toHaveTextContent('Jan 20, 2024')
-
-      expect(rows[2]).toHaveTextContent('#1')
-      expect(rows[2]).toHaveTextContent('Jan 15, 2024')
-
-      expect(rows[3]).toHaveTextContent('#2')
-      expect(rows[3]).toHaveTextContent('Jan 10, 2024')
+      // Verify API was called with default sort parameter
+      expect(capturedParams).toBeTruthy()
+      expect(capturedParams.sort).toBe('-date')
     })
 
-    it('sorts invoices when clicking column headers', async () => {
-      // Use IDs in reverse order of dates to show sorting change
-      const invoices = [
-        {
-          ...mockInvoice,
-          id: 2,
-          total: '500.00',
-          date: '2024-01-15',
-          paid: true,
-        },
-        {
-          ...mockInvoice,
-          id: 1,
-          total: '1000.00',
-          date: '2024-01-20',
-          paid: true,
-        },
-      ]
+    it('sends updated sort parameter when clicking column headers', async () => {
+      let capturedParams: any = null
+      let requestCount = 0
 
       server.use(
         rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          requestCount++
+          if (requestCount > 1) {
+            // Capture params from second request (after sort changed)
+            capturedParams = {
+              sort: req.url.searchParams.get('sort'),
+            }
+          }
           return res(
             ctx.json({
               pagination: {
                 page: 1,
                 page_size: 10,
                 total_pages: 1,
-                total_entries: 2,
+                total_entries: 1,
               },
-              invoices,
+              invoices: [{ ...mockInvoice, paid: true }],
             })
           )
         })
@@ -487,35 +477,97 @@ describe('InvoicesList - US1', () => {
 
       // Wait for table and data to load
       await waitFor(() => {
-        expect(screen.getByText('#1')).toBeInTheDocument()
+        expect(screen.getByRole('table')).toBeInTheDocument()
       })
-      expect(screen.getByRole('table')).toBeInTheDocument()
 
-      // Initially sorted by date desc: ID 1 (Jan 20) should come before ID 2 (Jan 15)
-      let rows = screen.getAllByRole('row')
-      expect(rows[1]).toHaveTextContent('#1')
-      expect(rows[1]).toHaveTextContent('Jan 20, 2024')
-      expect(rows[2]).toHaveTextContent('#2')
-      expect(rows[2]).toHaveTextContent('Jan 15, 2024')
-
-      // Find and click on Amount column header to sort by amount ascending
+      // Find and click on Amount column header to sort by amount
       const amountHeader = screen.getByRole('button', { name: /amount/i })
       await userEvent.click(amountHeader)
 
-      // After clicking, should sort by amount ascending
-      // ID 2 ($500) should come before ID 1 ($1000)
+      // Verify API was called with new sort parameter
       await waitFor(() => {
-        rows = screen.getAllByRole('row')
-        // After sort by amount, ID 2 (500) comes first
-        expect(rows[1]).toHaveTextContent('#2')
+        expect(capturedParams).toBeTruthy()
+      })
+      expect(capturedParams.sort).toBe('+total')
+    })
+
+    it('toggles sort direction when clicking same column header twice', async () => {
+      let capturedParams: any = null
+
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          capturedParams = {
+            sort: req.url.searchParams.get('sort'),
+          }
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      // Wait for table and data to load
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      // Verify full sort order
-      rows = screen.getAllByRole('row')
-      expect(rows[1]).toHaveTextContent('#2')
-      expect(rows[1]).toHaveTextContent('500')
-      expect(rows[2]).toHaveTextContent('#1')
-      expect(rows[2]).toHaveTextContent('1 000')
+      // Initial sort should be -date (desc)
+      expect(capturedParams.sort).toBe('-date')
+
+      // Click date header to toggle to ascending (name includes sort indicator)
+      const dateHeader = screen.getByRole('button', { name: /^date/i })
+      await userEvent.click(dateHeader)
+
+      // Verify sort changed to +date (asc)
+      await waitFor(() => {
+        expect(capturedParams.sort).toBe('+date')
+      })
+
+      // Click again to toggle back to descending
+      await userEvent.click(dateHeader)
+
+      // Verify sort changed back to -date (desc)
+      await waitFor(() => {
+        expect(capturedParams.sort).toBe('-date')
+      })
+    })
+
+    it('shows sort indicator on sorted column', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      // Wait for table and data to load
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Date column should show descending indicator by default
+      const dateHeader = screen.getByRole('button', { name: /^date ▼$/i })
+      expect(dateHeader).toHaveTextContent('▼')
     })
   })
 
@@ -540,7 +592,7 @@ describe('InvoicesList - US1', () => {
       renderInvoicesList()
 
       await waitFor(() => {
-        // Should have multiple '—' (customer name and amount for unpaid invoice)
+        // Should have at least one '—' for missing customer name
         expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(1)
       })
     })
