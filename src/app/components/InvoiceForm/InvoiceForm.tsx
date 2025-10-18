@@ -809,13 +809,6 @@ const InvoiceForm: React.FC = () => {
                     rules={{
                       validate: (value) => {
                         if (!value) return 'Invoice date is required'
-                        const today = new Date()
-                        today.setHours(0, 0, 0, 0)
-                        const normalizedValue = new Date(value)
-                        normalizedValue.setHours(0, 0, 0, 0)
-                        if (normalizedValue > today) {
-                          return 'Invoice date cannot be in the future'
-                        }
                         return true
                       },
                     }}
@@ -835,7 +828,6 @@ const InvoiceForm: React.FC = () => {
                               })
                             }
                           }}
-                          maxDate={new Date()}
                           dateFormat="yyyy-MM-dd"
                           className="form-control"
                           onBlur={field.onBlur}
@@ -849,7 +841,7 @@ const InvoiceForm: React.FC = () => {
                     )}
                   />
                   <Form.Text className="text-muted">
-                    Cannot be in the future
+                    Date of the invoice
                   </Form.Text>
                 </Form.Group>
               </Col>
