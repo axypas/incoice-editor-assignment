@@ -67,6 +67,7 @@ function App() {
             <Router>
               <Routes>
                 <Route path="/invoices/new" Component={InvoiceForm} />
+                <Route path="/invoices/:id/edit" Component={InvoiceForm} />
                 <Route path="/invoice/:id" Component={InvoiceShow} />
                 <Route path="/" Component={InvoicesList} />
               </Routes>

@@ -11,17 +11,13 @@
 
 import { Invoice, InvoiceFilter } from 'types/invoice.types'
 import { Customer, Product } from 'types'
-import React, { useState, useMemo, FormEvent, useCallback } from 'react'
+import React, { useState, useMemo, useCallback, useRef } from 'react'
 import {
   useTable,
-  useSortBy,
   useExpanded,
   Column,
   CellProps,
-  UseSortByColumnProps,
   UseExpandedRowProps,
-  HeaderGroup,
-  TableState,
   Row,
 } from 'react-table'
 import {
@@ -54,8 +50,7 @@ import { calculateLineItem } from 'utils/calculations'
 import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
 import ProductAutocomplete from 'app/components/ProductAutocomplete'
 import DeleteInvoiceDialog from 'app/components/DeleteInvoiceDialog'
-
-type ColumnWithSort<D extends object> = HeaderGroup<D> & UseSortByColumnProps<D>
+import { useForm, Controller } from 'react-hook-form'
 
 type StatusFilter = 'all' | 'draft' | 'finalized'
 type PaymentFilter = 'all' | 'paid' | 'unpaid'
@@ -85,8 +80,8 @@ const InvoicesList = (): React.ReactElement => {
   const navigate = useNavigate()
   const api = useApi()
 
-  // Filter state
-  const [filterForm, setFilterForm] = useState<FilterFormData>({
+  // Filter state managed via react-hook-form
+  const defaultFilterValuesRef = useRef<FilterFormData>({
     dateRange: [null, null],
     dueDateRange: [null, null],
     status: 'all',
@@ -94,11 +89,58 @@ const InvoicesList = (): React.ReactElement => {
     customer: null,
     product: null,
   })
+  const {
+    control: filterControl,
+    handleSubmit: handleFilterFormSubmit,
+    reset: resetFilterForm,
+    watch: watchFilterForm,
+    setValue: setFilterValue,
+  } = useForm<FilterFormData>({
+    mode: 'onSubmit',
+    defaultValues: defaultFilterValuesRef.current,
+  })
+  const filterFormValues = watchFilterForm()
+  const currentFilters = filterFormValues as FilterFormData
   const [activeFilters, setActiveFilters] = useState<InvoiceFilter[]>([])
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const perPage = 10
+
+  // Sort state
+  const [sortField, setSortField] = useState<string>('date')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+
+  // Mapping between UI column IDs and backend sort field names
+  const sortFieldMapping: Record<string, string> = useMemo(
+    () => ({
+      id: 'id',
+      date: 'date',
+      deadline: 'deadline',
+      total: 'total',
+      status: 'finalized',
+    }),
+    []
+  )
+
+  // Build sort parameter for API (e.g., "-date" or "+customer.first_name")
+  const backendSortField = sortFieldMapping[sortField] || sortField
+  const sortParam = `${sortDirection === 'desc' ? '-' : '+'}${backendSortField}`
+
+  // Handle column sort
+  const handleSort = useCallback(
+    (field: string) => {
+      if (field === sortField) {
+        // Toggle direction if clicking the same field
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+      } else {
+        // New field, default to ascending
+        setSortField(field)
+        setSortDirection('asc')
+      }
+    },
+    [sortField, sortDirection]
+  )
 
   // Delete state
   const [invoiceToDelete, setInvoiceToDelete] = useState<Invoice | null>(null)
@@ -115,13 +157,14 @@ const InvoicesList = (): React.ReactElement => {
   // Live region for accessibility announcements
   const [liveRegionMessage, setLiveRegionMessage] = useState('')
 
-  // Fetch invoices with active filters and pagination
-  // The hook auto-fetches when filters, page, or perPage change
+  // Fetch invoices with active filters, sorting, and pagination
+  // The hook auto-fetches when filters, sort, page, or perPage change
   const { invoices, pagination, isLoading, isError, error, refetch } =
     useInvoices({
       filters: activeFilters,
       page: currentPage,
       perPage,
+      sort: sortParam,
     })
 
   // Format date to YYYY-MM-DD for API
@@ -212,56 +255,35 @@ const InvoicesList = (): React.ReactElement => {
   // Handle status filter change
   const handleStatusChange = useCallback(
     (value: StatusFilter) => {
-      setFilterForm({ ...filterForm, status: value })
+      setFilterValue('status', value, { shouldDirty: true })
     },
-    [filterForm]
+    [setFilterValue]
   )
 
   // Handle payment filter change
   const handlePaymentChange = useCallback(
     (value: PaymentFilter) => {
-      setFilterForm({ ...filterForm, payment: value })
+      setFilterValue('payment', value, { shouldDirty: true })
     },
-    [filterForm]
-  )
-
-  // Handle customer filter change
-  const handleCustomerChange = useCallback(
-    (customer: Customer | null) => {
-      setFilterForm({ ...filterForm, customer })
-    },
-    [filterForm]
-  )
-
-  // Handle product filter change
-  const handleProductChange = useCallback(
-    (product: Product | null) => {
-      setFilterForm({ ...filterForm, product })
-    },
-    [filterForm]
+    [setFilterValue]
   )
 
   // Handle filter form submission
-  const handleFilterSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    setActiveFilters(buildFilters(filterForm))
-    setCurrentPage(1) // Reset to first page when filters change
-  }
+  const onFilterSubmit = useCallback(
+    (values: FilterFormData) => {
+      setActiveFilters(buildFilters(values))
+      setCurrentPage(1) // Reset to first page when filters change
+    },
+    [buildFilters]
+  )
+  const handleFilterSubmit = handleFilterFormSubmit(onFilterSubmit)
 
   // Clear all filters
   const handleClearFilters = useCallback(() => {
-    const resetForm: FilterFormData = {
-      dateRange: [null, null],
-      dueDateRange: [null, null],
-      status: 'all',
-      payment: 'all',
-      customer: null,
-      product: null,
-    }
-    setFilterForm(resetForm)
+    resetFilterForm(defaultFilterValuesRef.current)
     setActiveFilters([])
     setCurrentPage(1) // Reset to first page when filters are cleared
-  }, [])
+  }, [resetFilterForm])
 
   // Helper to show toast notifications
   const showToastNotification = useCallback(
@@ -382,27 +404,27 @@ const InvoicesList = (): React.ReactElement => {
 
   // Check if filter form values differ from currently active filters
   const hasChangedFilters = useMemo(() => {
-    const formFilters = buildFilters(filterForm)
+    const formFilters = buildFilters(currentFilters)
     return !areFiltersEqual(formFilters, activeFilters)
-  }, [filterForm, activeFilters, buildFilters, areFiltersEqual])
+  }, [currentFilters, activeFilters, buildFilters, areFiltersEqual])
 
   // Format active filter summary
   const getFilterSummary = () => {
     const parts: string[] = []
 
-    if (filterForm.status !== 'all') {
-      parts.push(`Status: ${filterForm.status}`)
+    if (currentFilters.status !== 'all') {
+      parts.push(`Status: ${currentFilters.status}`)
     }
-    if (filterForm.payment !== 'all') {
-      parts.push(`Payment: ${filterForm.payment}`)
+    if (currentFilters.payment !== 'all') {
+      parts.push(`Payment: ${currentFilters.payment}`)
     }
-    if (filterForm.customer) {
+    if (currentFilters.customer) {
       const customerName =
-        `${filterForm.customer.first_name} ${filterForm.customer.last_name}`.trim()
+        `${currentFilters.customer.first_name} ${currentFilters.customer.last_name}`.trim()
       parts.push(`Customer: ${customerName}`)
     }
-    if (filterForm.product) {
-      parts.push(`Product: ${filterForm.product.label}`)
+    if (currentFilters.product) {
+      parts.push(`Product: ${currentFilters.product.label}`)
     }
 
     activeFilters.forEach((f) => {
@@ -593,12 +615,11 @@ const InvoicesList = (): React.ReactElement => {
         Header: 'Amount',
         accessor: 'total',
         Cell: ({ value, row }: CellProps<Invoice, number | undefined>) => {
-          const total = value || 0
-          const isPaid = row.original.paid
+          const total = value
 
           return (
             <span className="fw-semibold text-dark">
-              {isPaid ? formatCurrency(total) : '—'}
+              {total ? formatCurrency(total) : '—'}
             </span>
           )
         },
@@ -642,6 +663,7 @@ const InvoicesList = (): React.ReactElement => {
                 variant="outline-secondary"
                 size="sm"
                 style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                onClick={() => navigate(`/invoices/${invoice.id}/edit`)}
               >
                 Edit
               </Button>
@@ -680,19 +702,14 @@ const InvoicesList = (): React.ReactElement => {
         id: 'actions',
       },
     ],
-    [handleDeleteClick]
+    [handleDeleteClick, navigate]
   )
 
   const tableInstance = useTable(
     {
       columns,
       data: invoices,
-      // Type assertion needed because useSortBy plugin extends TableState with sortBy
-      initialState: {
-        sortBy: [{ id: 'date', desc: true }],
-      } as unknown as Partial<TableState<Invoice>>,
     },
-    useSortBy,
     useExpanded
   )
 
@@ -742,18 +759,25 @@ const InvoicesList = (): React.ReactElement => {
               <Col md={4}>
                 <Form.Group controlId="dateRange">
                   <Form.Label>Date Range</Form.Label>
-                  <DatePicker
-                    selectsRange
-                    startDate={filterForm.dateRange[0]}
-                    endDate={filterForm.dateRange[1]}
-                    onChange={(update: [Date | null, Date | null]) => {
-                      setFilterForm({ ...filterForm, dateRange: update })
-                    }}
-                    placeholderText="Select date range"
-                    dateFormat="yyyy-MM-dd"
-                    className="form-control"
-                    isClearable
-                    aria-describedby="dateRangeHelp"
+                  <Controller
+                    name="dateRange"
+                    control={filterControl}
+                    render={({ field }) => (
+                      <DatePicker
+                        selectsRange
+                        startDate={field.value?.[0] ?? null}
+                        endDate={field.value?.[1] ?? null}
+                        onChange={(update: [Date | null, Date | null]) =>
+                          field.onChange(update)
+                        }
+                        placeholderText="Select date range"
+                        dateFormat="yyyy-MM-dd"
+                        className="form-control"
+                        isClearable
+                        aria-describedby="dateRangeHelp"
+                        onBlur={field.onBlur}
+                      />
+                    )}
                   />
                   <Form.Text id="dateRangeHelp" muted>
                     Filter by invoice date
@@ -763,18 +787,25 @@ const InvoicesList = (): React.ReactElement => {
               <Col md={4}>
                 <Form.Group controlId="dueDateRange">
                   <Form.Label>Due Date Range</Form.Label>
-                  <DatePicker
-                    selectsRange
-                    startDate={filterForm.dueDateRange[0]}
-                    endDate={filterForm.dueDateRange[1]}
-                    onChange={(update: [Date | null, Date | null]) => {
-                      setFilterForm({ ...filterForm, dueDateRange: update })
-                    }}
-                    placeholderText="Select due date range"
-                    dateFormat="yyyy-MM-dd"
-                    className="form-control"
-                    isClearable
-                    aria-describedby="dueDateRangeHelp"
+                  <Controller
+                    name="dueDateRange"
+                    control={filterControl}
+                    render={({ field }) => (
+                      <DatePicker
+                        selectsRange
+                        startDate={field.value?.[0] ?? null}
+                        endDate={field.value?.[1] ?? null}
+                        onChange={(update: [Date | null, Date | null]) =>
+                          field.onChange(update)
+                        }
+                        placeholderText="Select due date range"
+                        dateFormat="yyyy-MM-dd"
+                        className="form-control"
+                        isClearable
+                        aria-describedby="dueDateRangeHelp"
+                        onBlur={field.onBlur}
+                      />
+                    )}
                   />
                   <Form.Text id="dueDateRangeHelp" muted>
                     Filter by payment deadline
@@ -888,7 +919,7 @@ const InvoicesList = (): React.ReactElement => {
                       key={option.value}
                       type="button"
                       variant={
-                        filterForm.status === option.value
+                        currentFilters.status === option.value
                           ? 'primary'
                           : 'outline-secondary'
                       }
@@ -914,7 +945,7 @@ const InvoicesList = (): React.ReactElement => {
                       key={option.value}
                       type="button"
                       variant={
-                        filterForm.payment === option.value
+                        currentFilters.payment === option.value
                           ? 'primary'
                           : 'outline-secondary'
                       }
@@ -938,9 +969,16 @@ const InvoicesList = (): React.ReactElement => {
                 >
                   Customer
                 </Form.Label>
-                <CustomerAutocomplete
-                  value={filterForm.customer}
-                  onChange={handleCustomerChange}
+                <Controller
+                  name="customer"
+                  control={filterControl}
+                  render={({ field }) => (
+                    <CustomerAutocomplete
+                      value={field.value}
+                      onChange={(customer) => field.onChange(customer)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               </Form.Group>
             </Col>
@@ -952,9 +990,16 @@ const InvoicesList = (): React.ReactElement => {
                 >
                   Product
                 </Form.Label>
-                <ProductAutocomplete
-                  value={filterForm.product}
-                  onChange={handleProductChange}
+                <Controller
+                  name="product"
+                  control={filterControl}
+                  render={({ field }) => (
+                    <ProductAutocomplete
+                      value={field.value}
+                      onChange={(product) => field.onChange(product)}
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
               </Form.Group>
             </Col>
@@ -970,18 +1015,25 @@ const InvoicesList = (): React.ReactElement => {
                 >
                   Date Range
                 </Form.Label>
-                <DatePicker
-                  selectsRange
-                  startDate={filterForm.dateRange[0]}
-                  endDate={filterForm.dateRange[1]}
-                  onChange={(update: [Date | null, Date | null]) => {
-                    setFilterForm({ ...filterForm, dateRange: update })
-                  }}
-                  placeholderText="Select date range"
-                  dateFormat="yyyy-MM-dd"
-                  className="form-control"
-                  isClearable
-                  aria-describedby="dateRangeHelp"
+                <Controller
+                  name="dateRange"
+                  control={filterControl}
+                  render={({ field }) => (
+                    <DatePicker
+                      selectsRange
+                      startDate={field.value?.[0] ?? null}
+                      endDate={field.value?.[1] ?? null}
+                      onChange={(update: [Date | null, Date | null]) =>
+                        field.onChange(update)
+                      }
+                      placeholderText="Select date range"
+                      dateFormat="yyyy-MM-dd"
+                      className="form-control"
+                      isClearable
+                      aria-describedby="dateRangeHelp"
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
                 <Form.Text id="dateRangeHelp" muted>
                   Filter by invoice date
@@ -996,18 +1048,25 @@ const InvoicesList = (): React.ReactElement => {
                 >
                   Due Date Range
                 </Form.Label>
-                <DatePicker
-                  selectsRange
-                  startDate={filterForm.dueDateRange[0]}
-                  endDate={filterForm.dueDateRange[1]}
-                  onChange={(update: [Date | null, Date | null]) => {
-                    setFilterForm({ ...filterForm, dueDateRange: update })
-                  }}
-                  placeholderText="Select due date range"
-                  dateFormat="yyyy-MM-dd"
-                  className="form-control"
-                  isClearable
-                  aria-describedby="dueDateRangeHelp"
+                <Controller
+                  name="dueDateRange"
+                  control={filterControl}
+                  render={({ field }) => (
+                    <DatePicker
+                      selectsRange
+                      startDate={field.value?.[0] ?? null}
+                      endDate={field.value?.[1] ?? null}
+                      onChange={(update: [Date | null, Date | null]) =>
+                        field.onChange(update)
+                      }
+                      placeholderText="Select due date range"
+                      dateFormat="yyyy-MM-dd"
+                      className="form-control"
+                      isClearable
+                      aria-describedby="dueDateRangeHelp"
+                      onBlur={field.onBlur}
+                    />
+                  )}
                 />
                 <Form.Text id="dueDateRangeHelp" muted>
                   Filter by payment deadline
@@ -1105,28 +1164,36 @@ const InvoicesList = (): React.ReactElement => {
                 {headerGroups.map((headerGroup) => (
                   <tr {...headerGroup.getHeaderGroupProps()}>
                     {headerGroup.headers.map((column) => {
-                      const sortColumn = column as ColumnWithSort<Invoice>
+                      // Determine if column is sortable (all except expander, customer, and actions)
+                      const isSortable =
+                        column.id !== 'expander' &&
+                        column.id !== 'customer' &&
+                        column.id !== 'actions'
+                      const isSorted = sortField === column.id
+                      const sortIcon = isSorted
+                        ? sortDirection === 'desc'
+                          ? ' ▼'
+                          : ' ▲'
+                        : ''
+
                       return (
                         <th
-                          {...column.getHeaderProps(
-                            sortColumn.getSortByToggleProps()
-                          )}
+                          {...column.getHeaderProps()}
+                          onClick={() =>
+                            isSortable && handleSort(column.id as string)
+                          }
                           style={{
-                            cursor: sortColumn.canSort ? 'pointer' : 'default',
+                            cursor: isSortable ? 'pointer' : 'default',
                             padding: '0.75rem 1.25rem',
                             fontWeight: 500,
                             color: '#64748b',
                             borderBottom: '1px solid #e2e8f0',
                           }}
-                          role={sortColumn.canSort ? 'button' : undefined}
-                          tabIndex={sortColumn.canSort ? 0 : undefined}
+                          role={isSortable ? 'button' : undefined}
+                          tabIndex={isSortable ? 0 : undefined}
                         >
                           {column.render('Header')}
-                          {sortColumn.isSorted
-                            ? sortColumn.isSortedDesc
-                              ? ' ▼'
-                              : ' ▲'
-                            : ''}
+                          {sortIcon}
                         </th>
                       )
                     })}

@@ -4,12 +4,25 @@
  * Uses MSW to mock API responses
  */
 
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { API_BASE } from 'test/constants'
+import { rest } from 'msw'
+import { server } from 'test/server'
 import { ApiProvider } from '../../../api'
 import InvoiceForm from './InvoiceForm'
+
+const mockNavigate = jest.fn()
+const mockUseParams = jest.fn()
+jest.mock('react-router-dom', () => {
+  const actual = jest.requireActual('react-router-dom')
+  return {
+    ...actual,
+    useNavigate: () => mockNavigate,
+    useParams: () => mockUseParams(),
+  }
+})
 
 // Mock react-datepicker to make it testable
 jest.mock('react-datepicker', () => {
@@ -19,7 +32,14 @@ jest.mock('react-datepicker', () => {
     selected,
     placeholderText,
     isClearable,
-    ...props
+    className,
+    onBlur,
+    maxDate: _maxDate,
+    dateFormat: _dateFormat,
+    selectsRange: _selectsRange,
+    startDate: _startDate,
+    endDate: _endDate,
+    ...rest
   }: any) {
     const [inputValue, setInputValue] = React.useState(
       selected ? selected.toISOString().split('T')[0] : ''
@@ -27,9 +47,11 @@ jest.mock('react-datepicker', () => {
 
     return (
       <input
-        data-testid={props['data-testid'] || 'mock-datepicker'}
+        data-testid={rest['data-testid'] || 'mock-datepicker'}
         placeholder={placeholderText}
+        className={className}
         value={inputValue}
+        onBlur={onBlur}
         onChange={(e) => {
           const value = e.target.value
           setInputValue(value)
@@ -47,7 +69,7 @@ jest.mock('react-datepicker', () => {
             onChange(null)
           }
         }}
-        {...props}
+        {...rest}
       />
     )
   }
@@ -145,9 +167,17 @@ Object.defineProperty(window, 'confirm', {
 
 describe('InvoiceForm - US3', () => {
   beforeEach(() => {
+    jest.useFakeTimers()
     localStorageMock.clear()
     mockConfirm.mockClear()
+    mockNavigate.mockClear()
+    mockUseParams.mockReturnValue({}) // Default to create mode
     jest.clearAllTimers()
+  })
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers()
+    jest.useRealTimers()
   })
 
   describe('Form Rendering', () => {
@@ -281,7 +311,7 @@ describe('InvoiceForm - US3', () => {
       })
 
       // Click Copy button
-      const copyButton = screen.getByRole('button', { name: /copy/i })
+      const copyButton = screen.getByRole('button', { name: /duplicate/i })
       await userEvent.click(copyButton)
 
       await waitFor(() => {
@@ -363,6 +393,42 @@ describe('InvoiceForm - US3', () => {
       expect(
         screen.getByRole('button', { name: /create invoice/i })
       ).toBeInTheDocument()
+    })
+
+    it('navigates back to invoices list after successful submission', async () => {
+      server.use(
+        rest.post(`${API_BASE}/invoices`, (_req, res, ctx) =>
+          res(
+            ctx.status(201),
+            ctx.json({
+              invoice: { id: 1 },
+            })
+          )
+        )
+      )
+
+      renderInvoiceForm()
+
+      fireEvent.change(screen.getByTestId('customer-autocomplete'), {
+        target: { value: 'John Doe' },
+      })
+
+      fireEvent.change(screen.getByTestId('product-autocomplete'), {
+        target: { value: 'Sample Product' },
+      })
+
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
+      })
+
+      const submitButton = screen.getByRole('button', {
+        name: /create invoice/i,
+      })
+      await userEvent.click(submitButton)
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
     })
   })
 
@@ -450,7 +516,9 @@ describe('InvoiceForm - US3', () => {
       })
 
       // Trigger auto-save by advancing timers
-      jest.advanceTimersByTime(500)
+      await act(async () => {
+        jest.advanceTimersByTime(30000)
+      })
 
       await waitFor(() => {
         expect(localStorageMock.getItem('invoice_draft')).toBeTruthy()
@@ -477,7 +545,9 @@ describe('InvoiceForm - US3', () => {
       })
 
       // Advance timer for auto-save
-      jest.advanceTimersByTime(500)
+      await act(async () => {
+        jest.advanceTimersByTime(30000)
+      })
 
       await waitFor(() => {
         expect(screen.getByText(/draft saved at/i)).toBeInTheDocument()
@@ -550,6 +620,315 @@ describe('InvoiceForm - US3', () => {
       expect(screen.getByText('Subtotal:')).toBeInTheDocument()
       expect(screen.getByText('Total VAT:')).toBeInTheDocument()
       expect(screen.getByText('Grand Total:')).toBeInTheDocument()
+    })
+  })
+
+  describe('Edit Mode - US4', () => {
+    const mockInvoice = {
+      id: 123,
+      invoice_number: '123',
+      customer_id: 1,
+      customer: {
+        id: 1,
+        first_name: 'Jane',
+        last_name: 'Doe',
+        address: '123 Main St',
+        zip_code: '12345',
+        city: 'City',
+        country: 'Country',
+        country_code: 'CC',
+      },
+      date: '2024-01-15',
+      deadline: '2024-02-15',
+      paid: false,
+      finalized: false,
+      total: '120.00',
+      tax: '20.00',
+      invoice_lines: [
+        {
+          id: '1',
+          product_id: '1',
+          product: {
+            id: 1,
+            label: 'Product A',
+            unit: 'piece',
+            vat_rate: '20',
+            unit_price_without_tax: '100',
+            unit_tax: '20',
+          },
+          label: 'Product A',
+          quantity: 1,
+          unit: 'piece',
+          unit_price: 100,
+          vat_rate: '20',
+        },
+      ],
+    }
+
+    beforeEach(() => {
+      // Mock useParams to return an invoice ID for edit mode
+      mockUseParams.mockReturnValue({ id: '123' })
+
+      // Mock getInvoice API response
+      server.use(
+        rest.get(`${API_BASE}/invoices/:id`, (_req, res, ctx) => {
+          return res(ctx.json(mockInvoice))
+        })
+      )
+    })
+
+    it('loads invoice data in edit mode', async () => {
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      // Verify invoice data is pre-populated
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument()
+      })
+
+      expect(screen.getByDisplayValue('Product A')).toBeInTheDocument()
+    })
+
+    it('shows loading state while fetching invoice', () => {
+      renderInvoiceForm()
+
+      expect(screen.getByText('Loading invoice...')).toBeInTheDocument()
+    })
+
+    it('shows error state if invoice fails to load', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices/:id`, (_req, res, ctx) => {
+          return res(ctx.status(404), ctx.json({ error: 'Not found' }))
+        })
+      )
+
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Error Loading Invoice')).toBeInTheDocument()
+      })
+    })
+
+    it('shows read-only view for finalized invoices', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices/:id`, (_req, res, ctx) => {
+          return res(
+            ctx.json({
+              ...mockInvoice,
+              finalized: true,
+            })
+          )
+        })
+      )
+
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Invoice Finalized')).toBeInTheDocument()
+      })
+
+      expect(
+        screen.getByText('This invoice is finalized and cannot be edited.')
+      ).toBeInTheDocument()
+    })
+
+    it('submits update with correct payload structure', async () => {
+      let updatePayload: any = null
+
+      server.use(
+        rest.put(`${API_BASE}/invoices/:id`, async (req, res, ctx) => {
+          updatePayload = await req.json()
+          return res(ctx.json(mockInvoice))
+        })
+      )
+
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      // Wait for form to load
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument()
+      })
+
+      // Modify a field (change paid status)
+      const paidCheckbox = screen.getByLabelText('Mark as paid')
+      await userEvent.click(paidCheckbox)
+
+      // Submit form
+      const saveButton = screen.getByRole('button', { name: /save changes/i })
+      await userEvent.click(saveButton)
+
+      await waitFor(() => {
+        expect(updatePayload).toBeTruthy()
+      })
+
+      expect(updatePayload.invoice.id).toBe(123)
+      expect(updatePayload.invoice.customer_id).toBe(1)
+      expect(updatePayload.invoice.paid).toBe(true)
+      expect(updatePayload.invoice.invoice_lines_attributes).toBeDefined()
+    })
+
+    it('handles line item updates correctly', async () => {
+      let updatePayload: any = null
+
+      server.use(
+        rest.put(`${API_BASE}/invoices/:id`, async (req, res, ctx) => {
+          updatePayload = await req.json()
+          return res(ctx.json(mockInvoice))
+        })
+      )
+
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      // Wait for form to load
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Product A')).toBeInTheDocument()
+      })
+
+      // Modify quantity
+      const quantityInput = screen.getAllByRole('spinbutton')[0]
+      await userEvent.clear(quantityInput)
+      await userEvent.type(quantityInput, '5')
+
+      // Submit form
+      const saveButton = screen.getByRole('button', { name: /save changes/i })
+      await userEvent.click(saveButton)
+
+      await waitFor(() => {
+        expect(updatePayload).toBeTruthy()
+      })
+
+      const lineAttrs = updatePayload.invoice.invoice_lines_attributes
+      expect(lineAttrs[0]).toMatchObject({
+        id: 1,
+        quantity: 5,
+      })
+    })
+
+    it('uses separate localStorage key for edit mode', async () => {
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      // Wait for form to load
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument()
+      })
+
+      // Modify a field to trigger autosave
+      const paidCheckbox = screen.getByLabelText('Mark as paid')
+      await userEvent.click(paidCheckbox)
+
+      // Fast-forward to trigger autosave
+      jest.advanceTimersByTime(31000)
+
+      // Verify it uses invoice-specific key
+      await waitFor(() => {
+        const savedDraft = localStorageMock.getItem('draft-invoice-123')
+        expect(savedDraft).toBeTruthy()
+      })
+    })
+
+    it('displays "Save Changes" button in edit mode', async () => {
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /save changes/i })
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('handles 409 conflict error', async () => {
+      server.use(
+        rest.put(`${API_BASE}/invoices/:id`, (_req, res, ctx) => {
+          return res(ctx.status(409), ctx.json({ error: 'Conflict' }))
+        })
+      )
+
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      // Wait for form to load
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument()
+      })
+
+      // Submit form
+      const saveButton = screen.getByRole('button', { name: /save changes/i })
+      await userEvent.click(saveButton)
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/this invoice was updated by someone else/i)
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('adds aria-labels to remove line buttons', async () => {
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      // Wait for form to load
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Product A')).toBeInTheDocument()
+      })
+
+      // Check for aria-label on remove button
+      const removeButton = screen.getByRole('button', {
+        name: /remove line item/i,
+      })
+      expect(removeButton).toBeInTheDocument()
+      expect(removeButton).toHaveAttribute('aria-label')
+    })
+
+    it('navigates to list after successful update', async () => {
+      server.use(
+        rest.put(`${API_BASE}/invoices/:id`, (_req, res, ctx) => {
+          return res(ctx.json(mockInvoice))
+        })
+      )
+
+      renderInvoiceForm()
+
+      await waitFor(() => {
+        expect(screen.getByText('Edit Invoice')).toBeInTheDocument()
+      })
+
+      // Wait for form to load
+      await waitFor(() => {
+        expect(screen.getByDisplayValue('Jane Doe')).toBeInTheDocument()
+      })
+
+      // Submit form
+      const saveButton = screen.getByRole('button', { name: /save changes/i })
+      await userEvent.click(saveButton)
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
     })
   })
 })

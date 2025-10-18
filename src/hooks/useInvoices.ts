@@ -38,6 +38,7 @@ interface UseInvoicesOptions {
   autoFetch?: boolean
   page?: number
   perPage?: number
+  sort?: string
 }
 
 /**
@@ -48,7 +49,13 @@ interface UseInvoicesOptions {
 export const useInvoices = (
   options: UseInvoicesOptions = {}
 ): UseInvoicesResult => {
-  const { filters = [], autoFetch = true, page = 1, perPage = 10 } = options
+  const {
+    filters = [],
+    autoFetch = true,
+    page = 1,
+    perPage = 10,
+    sort,
+  } = options
   const api = useApi()
 
   const [invoices, setInvoices] = useState<Invoice[]>([])
@@ -63,15 +70,18 @@ export const useInvoices = (
         setError(null)
 
         // Build filter query param if filters provided
-        const params: Paths.GetInvoices.QueryParameters = {
+        const params: Paths.GetInvoices.QueryParameters & { sort?: string } = {
           page: currentPage ?? page,
           per_page: currentPerPage ?? perPage,
         }
         if (filters.length > 0) {
           params.filter = JSON.stringify(filters)
         }
+        if (sort) {
+          params.sort = sort
+        }
 
-        // Call API with filters and pagination
+        // Call API with filters, sorting, and pagination
         const response = await api.getInvoices(params)
 
         // Extract invoices array and pagination from response
@@ -110,7 +120,7 @@ export const useInvoices = (
         setStatus('error')
       }
     },
-    [api, filters, page, perPage]
+    [api, filters, page, perPage, sort]
   )
 
   // Auto-fetch on mount and when filters change
@@ -196,5 +206,101 @@ export const useInvoice = (invoiceId: string) => {
     isLoading: status === 'loading',
     isError: status === 'error',
     isSuccess: status === 'success',
+  }
+}
+
+/**
+ * Hook for updating an invoice
+ * Returns { updateInvoice, status, error }
+ */
+interface UpdateInvoicePayload {
+  id: number
+  customer_id?: number
+  date?: string | null
+  deadline?: string | null
+  paid?: boolean
+  invoice_lines_attributes?: Array<{
+    id?: number
+    _destroy?: boolean
+    product_id?: number
+    quantity?: number
+    label?: string
+  }>
+}
+
+interface UseUpdateInvoiceResult {
+  updateInvoice: (
+    invoiceId: string,
+    payload: UpdateInvoicePayload
+  ) => Promise<Invoice>
+  status: AsyncStatus
+  error: ApiError | null
+  isUpdating: boolean
+}
+
+export const useUpdateInvoice = (): UseUpdateInvoiceResult => {
+  const api = useApi()
+
+  const [status, setStatus] = useState<AsyncStatus>('idle')
+  const [error, setError] = useState<ApiError | null>(null)
+
+  const updateInvoice = useCallback(
+    async (
+      invoiceId: string,
+      payload: UpdateInvoicePayload
+    ): Promise<Invoice> => {
+      try {
+        setStatus('loading')
+        setError(null)
+
+        const response = await api.putInvoice(
+          { id: parseInt(invoiceId, 10) },
+          { invoice: payload }
+        )
+
+        const inv = response.data
+
+        // Map API type to domain type
+        const mappedInvoice = {
+          ...inv,
+          id: inv.id?.toString(),
+          customer_id: inv.customer_id?.toString(),
+          invoice_number: inv.id?.toString(),
+          total: parseFloat((inv as any).total || '0'),
+          tax: parseFloat((inv as any).tax || '0'),
+          invoice_lines: ((inv as any).invoice_lines || []).map(
+            (line: any) => ({
+              ...line,
+              id: line.id?.toString(),
+              unit_price: parseFloat(line.price || '0'),
+              vat_rate: parseFloat(line.vat_rate || '0'),
+            })
+          ),
+        } as Invoice
+
+        setStatus('success')
+        return mappedInvoice
+      } catch (err: any) {
+        logger.error(`Failed to update invoice ${invoiceId}:`, err)
+
+        const apiError: ApiError = {
+          error: err.name || 'UpdateError',
+          message: err.message || 'Failed to update invoice. Please try again.',
+          statusCode: err.response?.status || 500,
+        }
+
+        setError(apiError)
+        setStatus('error')
+        throw err
+      }
+    },
+    [api]
+  )
+
+  return {
+    updateInvoice,
+    status,
+    error,
+    isUpdating: status === 'loading',
   }
 }
