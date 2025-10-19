@@ -36,7 +36,7 @@ export interface InvoiceLineItem {
 export interface Invoice {
   id?: string
   invoice_number: string
-  customer_id: string
+  customer_id?: string
   customer?: Customer
   date: string // ISO date string
   deadline?: string // ISO date string

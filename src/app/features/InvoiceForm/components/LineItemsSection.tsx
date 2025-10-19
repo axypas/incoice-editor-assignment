@@ -15,7 +15,7 @@ import {
 import { Controller, Control, FieldArrayWithId } from 'react-hook-form'
 import { ProductAutocomplete } from 'common/components'
 import { formatCurrency } from 'common/utils/calculations'
-import type { Product } from 'common/types'
+import type { Product, Customer } from 'common/types'
 import type { LineItemCalculation as ImportedLineItemCalculation } from 'common/types/invoice.types'
 
 interface LineItemFormValue {
@@ -31,7 +31,7 @@ interface LineItemFormValue {
 }
 
 interface InvoiceFormValues {
-  customer: any
+  customer: Customer | null
   date: Date | null
   deadline: Date | null
   paid: boolean

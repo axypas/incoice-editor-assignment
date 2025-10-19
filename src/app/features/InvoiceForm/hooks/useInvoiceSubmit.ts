@@ -140,7 +140,7 @@ export const useInvoiceSubmit = ({
             invoice_lines_attributes,
           }
 
-          await updateInvoice(invoiceId, updatePayload as any)
+          await updateInvoice(invoiceId, updatePayload)
           onSuccess?.()
           navigate('/')
         } else {
@@ -170,8 +170,26 @@ export const useInvoiceSubmit = ({
           onSuccess?.()
           navigate('/')
         }
-      } catch (error: any) {
-        if (error.response?.status === 422) {
+      } catch (error: unknown) {
+        const isErrorWithResponse = (
+          err: unknown
+        ): err is {
+          response: {
+            status: number
+            data?: { errors?: Record<string, unknown> }
+          }
+        } => {
+          return (
+            typeof err === 'object' &&
+            err !== null &&
+            'response' in err &&
+            typeof (err as { response: unknown }).response === 'object' &&
+            (err as { response: unknown }).response !== null &&
+            'status' in (err as { response: { status: unknown } }).response
+          )
+        }
+
+        if (isErrorWithResponse(error) && error.response.status === 422) {
           const serverErrors: Record<string, unknown> =
             error.response.data?.errors || {}
           Object.entries(serverErrors).forEach(([field, message]) => {
@@ -194,9 +212,20 @@ export const useInvoiceSubmit = ({
             } else if (field.startsWith('lineItems')) {
               const [, indexStr, key] = field.split('.')
               const lineIndex = Number(indexStr)
-              if (!Number.isNaN(lineIndex)) {
+              if (
+                !Number.isNaN(lineIndex) &&
+                lineIndex >= 0 &&
+                lineIndex < values.lineItems.length &&
+                (key === 'product_id' ||
+                  key === 'label' ||
+                  key === 'quantity' ||
+                  key === 'unit' ||
+                  key === 'unit_price' ||
+                  key === 'vat_rate')
+              ) {
+                const fieldPath = `lineItems.${lineIndex}.${key}` as const
                 setError(
-                  `lineItems.${lineIndex}.${key}` as any,
+                  fieldPath,
                   {
                     type: 'server',
                     message: errorMessage,
@@ -208,7 +237,10 @@ export const useInvoiceSubmit = ({
           })
 
           setSubmitError('Please fix the validation errors and try again.')
-        } else if (error.response?.status === 409) {
+        } else if (
+          isErrorWithResponse(error) &&
+          error.response.status === 409
+        ) {
           // Concurrent edit conflict
           setSubmitError(
             'This invoice was updated by someone else. Please refresh and try again.'

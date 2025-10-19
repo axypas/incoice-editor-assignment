@@ -89,22 +89,42 @@ export const useInvoices = (
         const paginationData = response.data?.pagination || null
 
         // Map API types to domain types
-        const mappedInvoices = data.map((inv) => ({
-          ...inv,
+        const mappedInvoices: Invoice[] = data.map((inv) => ({
           id: inv.id?.toString(),
+          invoice_number: inv.id?.toString() || '',
           customer_id: inv.customer_id?.toString(),
-          invoice_number: inv.id?.toString(), // API doesn't provide invoice_number, use id as fallback
-          total: parseFloat(inv.total || '0'),
-          tax: parseFloat(inv.tax || '0'),
-          invoice_lines: (inv.invoice_lines || []).map((line: any) => ({
-            ...line,
+          customer: inv.customer
+            ? {
+                id: inv.customer.id?.toString() || '',
+                label: `${inv.customer.first_name} ${inv.customer.last_name}`,
+                first_name: inv.customer.first_name,
+                last_name: inv.customer.last_name,
+                address: inv.customer.address || '',
+                zip_code: inv.customer.zip_code || '',
+                city: inv.customer.city || '',
+                country: inv.customer.country || '',
+                country_code: inv.customer.country_code || '',
+              }
+            : undefined,
+          date: inv.date || '',
+          deadline: inv.deadline || undefined,
+          finalized: inv.finalized || false,
+          paid: inv.paid || false,
+          invoice_lines: (inv.invoice_lines || []).map((line) => ({
             id: line.id?.toString(),
+            product_id: line.product_id?.toString(),
+            product: line.product || null,
+            label: line.label || '',
+            quantity: parseFloat(line.quantity?.toString() || '0'),
+            unit: line.unit || 'piece',
             unit_price: parseFloat(line.price || '0'),
             vat_rate: parseFloat(line.vat_rate || '0'),
           })),
+          total: parseFloat(inv.total || '0'),
+          tax: parseFloat(inv.tax || '0'),
         }))
 
-        setInvoices(mappedInvoices as Invoice[])
+        setInvoices(mappedInvoices)
         setPagination(paginationData)
         setStatus('success')
       } catch (err: any) {
@@ -219,6 +239,7 @@ interface UpdateInvoicePayload {
   date?: string | null
   deadline?: string | null
   paid?: boolean
+  finalized?: boolean
   invoice_lines_attributes?: Array<{
     id?: number
     _destroy?: boolean

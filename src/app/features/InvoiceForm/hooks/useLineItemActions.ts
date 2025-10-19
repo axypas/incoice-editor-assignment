@@ -10,7 +10,7 @@ import type {
   UseFormGetValues,
   FieldArrayWithId,
 } from 'react-hook-form'
-import type { Product } from 'common/types'
+import type { Product, Customer } from 'common/types'
 
 interface LineItemFormValue {
   id?: string
@@ -25,7 +25,7 @@ interface LineItemFormValue {
 }
 
 interface InvoiceFormValues {
-  customer: any
+  customer: Customer | null
   date: Date | null
   deadline: Date | null
   paid: boolean

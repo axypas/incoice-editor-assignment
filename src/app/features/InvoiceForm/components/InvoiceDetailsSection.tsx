@@ -14,8 +14,20 @@ import {
 } from 'react-hook-form'
 import DatePicker from 'react-datepicker'
 import { CustomerAutocomplete } from 'common/components'
-import type { Customer } from 'common/types'
+import type { Customer, Product } from 'common/types'
 import 'react-datepicker/dist/react-datepicker.css'
+
+interface LineItemFormValue {
+  id?: string
+  product: Product | null
+  product_id?: string
+  label: string
+  quantity: number
+  unit: string
+  unit_price: number
+  vat_rate: string
+  _destroy?: boolean
+}
 
 interface InvoiceFormValues {
   customer: Customer | null
@@ -23,7 +35,7 @@ interface InvoiceFormValues {
   deadline: Date | null
   paid: boolean
   finalized: boolean
-  lineItems: any[]
+  lineItems: LineItemFormValue[]
 }
 
 interface InvoiceDetailsSectionProps {

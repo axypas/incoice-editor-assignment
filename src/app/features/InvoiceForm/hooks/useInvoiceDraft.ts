@@ -96,6 +96,28 @@ export const useInvoiceDraft = ({
     [storageKey, enabled]
   )
 
+  const isDraftBackup = (obj: unknown): obj is DraftBackup => {
+    if (typeof obj !== 'object' || obj === null) return false
+    if (!('customer' in obj)) return false
+    if (!('date' in obj)) return false
+    if (!('deadline' in obj)) return false
+    if (!('paid' in obj)) return false
+    if (!('finalized' in obj)) return false
+    if (!('lineItems' in obj)) return false
+
+    const { customer, date, deadline, paid, finalized, lineItems } = obj
+
+    return (
+      (customer === null ||
+        (typeof customer === 'object' && customer !== null)) &&
+      (date === null || typeof date === 'string') &&
+      (deadline === null || typeof deadline === 'string') &&
+      typeof paid === 'boolean' &&
+      typeof finalized === 'boolean' &&
+      Array.isArray(lineItems)
+    )
+  }
+
   const restoreDraft = useCallback((): InvoiceFormValues | null => {
     if (!enabled) return null
 
@@ -103,7 +125,12 @@ export const useInvoiceDraft = ({
       const saved = localStorage.getItem(storageKey)
       if (!saved) return null
 
-      const parsed = JSON.parse(saved) as DraftBackup
+      const parsed: unknown = JSON.parse(saved)
+      if (!isDraftBackup(parsed)) {
+        console.error('Invalid draft format in localStorage')
+        return null
+      }
+
       return {
         customer: parsed.customer ?? null,
         date: parsed.date ? new Date(parsed.date) : null,

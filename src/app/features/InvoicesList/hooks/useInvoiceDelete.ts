@@ -89,11 +89,19 @@ export const useInvoiceDelete = (
 
       // Refetch invoices to update the list
       refetchInvoices()
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete invoice:', err)
 
       // Handle specific error cases based on HTTP status
-      const status = err?.response?.status
+      const status =
+        typeof err === 'object' &&
+        err !== null &&
+        'response' in err &&
+        typeof (err as { response: unknown }).response === 'object' &&
+        (err as { response: unknown }).response !== null &&
+        'status' in (err as { response: { status: unknown } }).response
+          ? (err as { response: { status: number } }).response.status
+          : undefined
 
       if (status === 404) {
         // Invoice was already deleted

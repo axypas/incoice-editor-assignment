@@ -114,7 +114,7 @@ const InvoiceForm: React.FC = () => {
     name: 'lineItems',
   })
 
-  const watchedValues = useWatch({ control }) as InvoiceFormValues
+  const watchedValues = useWatch<InvoiceFormValues>({ control })
 
   // Draft management hook
   const {
@@ -147,11 +147,17 @@ const InvoiceForm: React.FC = () => {
 
       // Otherwise populate from existing invoice
       // Convert customer from domain type (id: string) to API type (id: number)
-      const customerForForm = existingInvoice.customer
-        ? ({
-            ...existingInvoice.customer,
+      const customerForForm: Customer | null = existingInvoice.customer
+        ? {
             id: parseInt(existingInvoice.customer.id, 10),
-          } as Customer)
+            first_name: existingInvoice.customer.first_name,
+            last_name: existingInvoice.customer.last_name,
+            address: existingInvoice.customer.address || '',
+            zip_code: existingInvoice.customer.zip_code || '',
+            city: existingInvoice.customer.city || '',
+            country: existingInvoice.customer.country || '',
+            country_code: existingInvoice.customer.country_code || '',
+          }
         : null
 
       const formValues: InvoiceFormValues = {
@@ -239,12 +245,16 @@ const InvoiceForm: React.FC = () => {
   useEffect(() => {
     if (!hasUnsavedChanges) return
 
+    // Get complete form values directly from react-hook-form
+    const currentValues = getValues()
+    if (!currentValues.customer || currentValues.lineItems.length === 0) return
+
     const timer = setTimeout(() => {
-      handleAutoSave(watchedValues)
+      handleAutoSave(currentValues)
     }, 30000)
 
     return () => clearTimeout(timer)
-  }, [hasUnsavedChanges, watchedValues, handleAutoSave])
+  }, [hasUnsavedChanges, getValues, handleAutoSave])
 
   // Line item actions hook
   const {
@@ -314,7 +324,7 @@ const InvoiceForm: React.FC = () => {
 
   // Invoice calculations hook
   const { totals, perLine, lineItems } = useInvoiceCalculations({
-    lineItems: watchedValues?.lineItems ?? [],
+    lineItems: getValues('lineItems') || [],
   })
 
   const hasValidationErrors =
