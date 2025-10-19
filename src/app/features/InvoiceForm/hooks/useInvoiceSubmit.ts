@@ -37,6 +37,7 @@ interface UseInvoiceSubmitOptions {
   existingInvoice?: Invoice
   setError: UseFormSetError<InvoiceFormValues>
   onSuccess?: () => void
+  shouldFinalize?: boolean
 }
 
 interface UseInvoiceSubmitReturn {
@@ -51,6 +52,7 @@ export const useInvoiceSubmit = ({
   existingInvoice,
   setError,
   onSuccess,
+  shouldFinalize = false,
 }: UseInvoiceSubmitOptions): UseInvoiceSubmitReturn => {
   const navigate = useNavigate()
   const api = useApi()
@@ -135,6 +137,7 @@ export const useInvoiceSubmit = ({
               ? values.deadline.toISOString().split('T')[0]
               : null,
             paid: values.paid,
+            finalized: shouldFinalize,
             invoice_lines_attributes,
           }
 
@@ -160,7 +163,7 @@ export const useInvoiceSubmit = ({
               ? values.deadline.toISOString().split('T')[0]
               : null,
             invoice_lines_attributes,
-            finalized: false,
+            finalized: shouldFinalize,
             paid: values.paid,
           }
 
@@ -233,6 +236,7 @@ export const useInvoiceSubmit = ({
       updateInvoice,
       existingInvoice,
       onSuccess,
+      shouldFinalize,
     ]
   )
 

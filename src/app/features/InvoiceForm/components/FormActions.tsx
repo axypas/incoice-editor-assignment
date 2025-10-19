@@ -12,6 +12,7 @@ interface FormActionsProps {
   isUpdating: boolean
   hasValidationErrors: boolean
   onCancel: () => void
+  onFinalizeClick: () => void
 }
 
 const FormActions: React.FC<FormActionsProps> = ({
@@ -20,6 +21,7 @@ const FormActions: React.FC<FormActionsProps> = ({
   isUpdating,
   hasValidationErrors,
   onCancel,
+  onFinalizeClick,
 }) => {
   return (
     <div className="d-flex justify-content-end gap-2">
@@ -45,6 +47,15 @@ const FormActions: React.FC<FormActionsProps> = ({
         ) : (
           'Create Invoice'
         )}
+      </Button>
+      <Button
+        variant="success"
+        onClick={onFinalizeClick}
+        disabled={isSubmitting || isUpdating || hasValidationErrors}
+      >
+        {isEditMode
+          ? 'Save and Finalize Invoice'
+          : 'Create and Finalize Invoice'}
       </Button>
     </div>
   )

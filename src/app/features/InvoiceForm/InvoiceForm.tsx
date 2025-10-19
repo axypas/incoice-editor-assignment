@@ -18,6 +18,7 @@ import {
   LineItemsSection,
   TotalsSection,
   FormActions,
+  FinalizeConfirmationModal,
 } from './components'
 import {
   useInvoiceDraft,
@@ -83,6 +84,8 @@ const InvoiceForm: React.FC = () => {
   } = useInvoice(invoiceId || '')
 
   const [isFormInitialized, setIsFormInitialized] = useState(false)
+  const [showFinalizeModal, setShowFinalizeModal] = useState(false)
+  const [shouldFinalize, setShouldFinalize] = useState(false)
 
   const defaultValuesRef = useRef<InvoiceFormValues>(createDefaultValues())
   const skipUnsavedTrackingRef = useRef(true)
@@ -265,6 +268,7 @@ const InvoiceForm: React.FC = () => {
     existingInvoice: existingInvoice || undefined,
     setError,
     onSuccess: clearDraft,
+    shouldFinalize,
   })
 
   const handleCancel = useCallback(() => {
@@ -286,6 +290,26 @@ const InvoiceForm: React.FC = () => {
 
     navigate('/')
   }, [getValues, hasUnsavedChanges, navigate, clearDraft])
+
+  const handleFinalizeClick = useCallback(async () => {
+    // Validate the form first
+    const isValid = await trigger()
+    if (!isValid) {
+      return
+    }
+    setShowFinalizeModal(true)
+  }, [trigger])
+
+  const handleFinalizeCancel = useCallback(() => {
+    setShowFinalizeModal(false)
+  }, [])
+
+  const handleFinalizeConfirm = useCallback(() => {
+    setShowFinalizeModal(false)
+    setShouldFinalize(true)
+    // Trigger form submission
+    rhfHandleSubmit(handleSubmit)()
+  }, [rhfHandleSubmit, handleSubmit])
 
   // Invoice calculations hook
   const { totals, perLine, lineItems } = useInvoiceCalculations({
@@ -373,8 +397,16 @@ const InvoiceForm: React.FC = () => {
           isUpdating={false}
           hasValidationErrors={hasValidationErrors}
           onCancel={handleCancel}
+          onFinalizeClick={handleFinalizeClick}
         />
       </Form>
+
+      <FinalizeConfirmationModal
+        show={showFinalizeModal}
+        isEditMode={isEditMode}
+        onConfirm={handleFinalizeConfirm}
+        onCancel={handleFinalizeCancel}
+      />
     </div>
   )
 }
