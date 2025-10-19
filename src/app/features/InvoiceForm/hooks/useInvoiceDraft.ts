@@ -39,14 +39,13 @@ interface DraftBackup {
 interface UseInvoiceDraftOptions {
   storageKey: string
   enabled: boolean
+  isDirty?: boolean
 }
 
 interface UseInvoiceDraftReturn {
   isAutoSaving: boolean
   lastSaved: Date | null
   saveError: string | null
-  hasUnsavedChanges: boolean
-  setHasUnsavedChanges: (value: boolean) => void
   handleAutoSave: (values: InvoiceFormValues) => Promise<void>
   restoreDraft: () => InvoiceFormValues | null
   clearDraft: () => void
@@ -55,11 +54,11 @@ interface UseInvoiceDraftReturn {
 export const useInvoiceDraft = ({
   storageKey,
   enabled,
+  isDirty = false,
 }: UseInvoiceDraftOptions): UseInvoiceDraftReturn => {
   const [isAutoSaving, setIsAutoSaving] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   const handleAutoSave = useCallback(
     async (values: InvoiceFormValues) => {
@@ -85,7 +84,6 @@ export const useInvoiceDraft = ({
 
         localStorage.setItem(storageKey, JSON.stringify(snapshot))
         setLastSaved(new Date())
-        setHasUnsavedChanges(false)
       } catch (error) {
         setSaveError('Unable to save. Your changes are preserved locally.')
         console.error('Invoice autosave failed:', error)
@@ -155,7 +153,6 @@ export const useInvoiceDraft = ({
     localStorage.removeItem(storageKey)
     setLastSaved(null)
     setSaveError(null)
-    setHasUnsavedChanges(false)
   }, [storageKey])
 
   // Warn on navigation if there are unsaved changes
@@ -163,7 +160,7 @@ export const useInvoiceDraft = ({
     if (!enabled) return
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (hasUnsavedChanges) {
+      if (isDirty) {
         event.preventDefault()
         event.returnValue =
           'You have unsaved changes. Are you sure you want to leave?'
@@ -171,14 +168,12 @@ export const useInvoiceDraft = ({
     }
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [hasUnsavedChanges, enabled])
+  }, [isDirty, enabled])
 
   return {
     isAutoSaving,
     lastSaved,
     saveError,
-    hasUnsavedChanges,
-    setHasUnsavedChanges,
     handleAutoSave,
     restoreDraft,
     clearDraft,
