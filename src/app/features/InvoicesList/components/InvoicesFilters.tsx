@@ -3,14 +3,7 @@
  * Displays filter controls for invoices (status, payment, customer, product, dates)
  */
 import React from 'react'
-import {
-  Form,
-  Card,
-  ButtonGroup,
-  Button,
-  OverlayTrigger,
-  Tooltip,
-} from 'react-bootstrap'
+import { Form, Card, ButtonGroup, Button } from 'react-bootstrap'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { Control, Controller } from 'react-hook-form'
@@ -202,26 +195,13 @@ const InvoicesFilters = ({
         {/* Buttons */}
         <div className="mt-3">
           <div className="d-flex gap-2">
-            <OverlayTrigger
-              placement="top"
-              trigger={['hover', 'focus']}
-              show={hasChangedFilters ? false : undefined}
-              overlay={
-                <Tooltip id="apply-filters-tooltip">
-                  Please select at least one filter to apply
-                </Tooltip>
-              }
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={!hasChangedFilters}
             >
-              <span className="d-inline-block">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  disabled={!hasChangedFilters}
-                >
-                  Apply Filters
-                </Button>
-              </span>
-            </OverlayTrigger>
+              Apply Filters
+            </Button>
             <Button
               type="button"
               variant="outline-secondary"

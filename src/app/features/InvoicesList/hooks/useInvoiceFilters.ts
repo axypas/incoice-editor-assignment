@@ -173,7 +173,7 @@ export const useInvoiceFilters = (): UseInvoiceFiltersReturn => {
     []
   )
 
-  // Check if filter form values differ from currently active filters
+  // Check if current form differs from already applied filters
   const hasChangedFilters = useMemo(() => {
     const formFilters = buildFilters(currentFilters)
     return !areFiltersEqual(formFilters, activeFilters)
