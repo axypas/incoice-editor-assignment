@@ -13,9 +13,11 @@ import {
 } from 'react-table'
 import { Spinner, Button, Badge, Table, Card } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
+import numeral from 'numeral'
 import { Invoice } from 'common/types/invoice.types'
-import { formatDate, getPaymentStatusLabel } from 'common/utils/currency'
+import { formatDate } from 'common/utils/currency'
 import { calculateLineItem, formatCurrency } from 'common/utils/calculations'
+import { Variant } from 'react-bootstrap/esm/types'
 
 interface InvoicesTableProps {
   invoices: Invoice[]
@@ -219,6 +221,53 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
         Header: 'Status',
         accessor: 'finalized',
         Cell: ({ value, row }: CellProps<Invoice, boolean>) => {
+          /**
+           * Gets display-friendly payment status
+           */
+          const getPaymentStatusLabel = (
+            paid: boolean,
+            deadline: string | undefined
+          ): { label: string; color: Variant } => {
+            if (paid) {
+              return { label: 'Paid', color: 'success' }
+            }
+
+            // Milliseconds in one day
+            const MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
+            if (deadline) {
+              const now = new Date()
+              const due = new Date(deadline)
+
+              if (now > due) {
+                // Use numeral.js for date math operations
+                const timeDiff =
+                  numeral(now.getTime()).subtract(due.getTime()).value() || 0
+                const daysOverdue = Math.ceil(
+                  numeral(timeDiff).divide(MILLISECONDS_PER_DAY).value() || 0
+                )
+                return {
+                  label: `${daysOverdue} days overdue`,
+                  color: 'danger',
+                }
+              }
+
+              // Use numeral.js for date math operations
+              const timeDiff =
+                numeral(due.getTime()).subtract(now.getTime()).value() || 0
+              const daysUntilDue = Math.ceil(
+                numeral(timeDiff).divide(MILLISECONDS_PER_DAY).value() || 0
+              )
+              if (daysUntilDue <= 7) {
+                return {
+                  label: `Due in ${daysUntilDue} days`,
+                  color: 'warning',
+                }
+              }
+            }
+
+            return { label: 'Unpaid', color: 'secondary' }
+          }
+
           const paymentStatus = getPaymentStatusLabel(
             row.original.paid,
             row.original.deadline

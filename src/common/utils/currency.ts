@@ -3,8 +3,6 @@
  * Ensures consistent financial display across the application
  */
 
-import numeral from 'numeral'
-
 /**
  * Formats a date according to locale
  */
@@ -24,52 +22,4 @@ export const formatDate = (
   }
 
   return new Intl.DateTimeFormat(locale, defaultOptions).format(dateObj)
-}
-
-/**
- * Gets display-friendly payment status
- */
-export const getPaymentStatusLabel = (
-  paid: boolean,
-  deadline?: string
-): { label: string; color: string } => {
-  if (paid) {
-    return { label: 'Paid', color: 'success' }
-  }
-
-  if (deadline) {
-    const now = new Date()
-    const due = new Date(deadline)
-
-    if (now > due) {
-      // Use numeral.js for date math operations
-      const timeDiff =
-        numeral(now.getTime()).subtract(due.getTime()).value() || 0
-      const daysOverdue = Math.ceil(
-        numeral(timeDiff)
-          .divide(1000 * 60 * 60 * 24)
-          .value() || 0
-      )
-      return {
-        label: `${daysOverdue} days overdue`,
-        color: 'danger',
-      }
-    }
-
-    // Use numeral.js for date math operations
-    const timeDiff = numeral(due.getTime()).subtract(now.getTime()).value() || 0
-    const daysUntilDue = Math.ceil(
-      numeral(timeDiff)
-        .divide(1000 * 60 * 60 * 24)
-        .value() || 0
-    )
-    if (daysUntilDue <= 7) {
-      return {
-        label: `Due in ${daysUntilDue} days`,
-        color: 'warning',
-      }
-    }
-  }
-
-  return { label: 'Unpaid', color: 'secondary' }
 }
