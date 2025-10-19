@@ -6,16 +6,20 @@
 
 import React from 'react'
 import { Toast, ToastContainer } from 'react-bootstrap'
+import { Link } from 'react-router-dom'
 
 interface ToastState {
   show: boolean
   message: string
   variant: 'success' | 'danger' | 'warning'
+  invoiceId?: string
 }
 
 interface SaveToastState {
   show: boolean
   message: string
+  invoiceId?: string
+  isFinalized?: boolean
 }
 
 interface ToastNotificationsProps {
@@ -46,8 +50,8 @@ const ToastNotifications: React.FC<ToastNotificationsProps> = ({
   saveToast,
   onSaveToastClose,
 }) => {
-  // Consolidate all toasts into a single array
-  const toasts = [
+  // Regular toasts without special content
+  const regularToasts = [
     {
       ...deleteToast,
       onClose: onDeleteToastClose,
@@ -58,17 +62,11 @@ const ToastNotifications: React.FC<ToastNotificationsProps> = ({
       onClose: onFinalizeToastClose,
       key: 'finalize',
     },
-    {
-      ...saveToast,
-      variant: 'success' as const,
-      onClose: onSaveToastClose,
-      key: 'save',
-    },
   ]
 
   return (
     <ToastContainer position="top-end" className="p-3 z-50">
-      {toasts.map((toast) => (
+      {regularToasts.map((toast) => (
         <Toast
           key={toast.key}
           show={toast.show}
@@ -83,10 +81,46 @@ const ToastNotifications: React.FC<ToastNotificationsProps> = ({
           <Toast.Body
             className={toast.variant === 'success' ? 'text-white' : ''}
           >
-            {toast.message}
+            <div>{toast.message}</div>
+            {toast.invoiceId && toast.variant === 'success' && (
+              <Link
+                to={`/invoice/${toast.invoiceId}`}
+                className="text-white text-decoration-underline d-block mt-2"
+              >
+                View invoice
+              </Link>
+            )}
           </Toast.Body>
         </Toast>
       ))}
+
+      {/* Save toast with optional link to invoice */}
+      <Toast
+        show={saveToast.show}
+        onClose={onSaveToastClose}
+        delay={5000}
+        autohide
+        bg="success"
+      >
+        <Toast.Header>
+          <strong className="me-auto">Success</strong>
+        </Toast.Header>
+        <Toast.Body className="text-white">
+          <div>{saveToast.message}</div>
+          {saveToast.invoiceId && (
+            <Link
+              to={
+                saveToast.isFinalized
+                  ? `/invoice/${saveToast.invoiceId}`
+                  : `/invoices/${saveToast.invoiceId}/edit`
+              }
+              className="text-white text-decoration-underline d-block mt-2"
+            >
+              View invoice
+            </Link>
+          )}
+        </Toast.Body>
+      </Toast>
     </ToastContainer>
   )
 }

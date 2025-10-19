@@ -141,15 +141,21 @@ export const useInvoiceSubmit = ({
             invoice_lines_attributes,
           }
 
-          await updateInvoice(invoiceId, updatePayload)
+          const updatedInvoice = await updateInvoice(invoiceId, updatePayload)
 
           onSuccess?.()
 
-          // Navigate with success message
+          // Navigate with success message and invoice ID
           const successMessage = values.finalized
             ? 'Invoice updated and finalized successfully'
             : 'Invoice updated successfully'
-          navigate('/', { state: { successMessage } })
+          navigate('/', {
+            state: {
+              successMessage,
+              invoiceId: updatedInvoice.id?.toString(),
+              isFinalized: values.finalized,
+            },
+          })
         } else {
           // Create mode
           const invoice_lines_attributes = values.lineItems.map((item, idx) => {
@@ -173,15 +179,24 @@ export const useInvoiceSubmit = ({
             paid: values.paid,
           }
 
-          await api.postInvoices(null, { invoice: invoiceData })
+          const response = await api.postInvoices(null, {
+            invoice: invoiceData,
+          })
+          const createdInvoice = response.data
 
           onSuccess?.()
 
-          // Navigate with success message
+          // Navigate with success message and invoice ID
           const successMessage = values.finalized
             ? 'Invoice created and finalized successfully'
             : 'Invoice created successfully'
-          navigate('/', { state: { successMessage } })
+          navigate('/', {
+            state: {
+              successMessage,
+              invoiceId: createdInvoice.id?.toString(),
+              isFinalized: values.finalized,
+            },
+          })
         }
       } catch (error: unknown) {
         const isErrorWithResponse = (

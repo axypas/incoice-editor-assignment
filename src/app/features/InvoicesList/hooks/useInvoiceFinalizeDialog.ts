@@ -11,6 +11,7 @@ interface ToastState {
   show: boolean
   message: string
   variant: 'success' | 'danger'
+  invoiceId?: string
 }
 
 interface UseInvoiceFinalizeDialogReturn {
@@ -49,14 +50,16 @@ export const useInvoiceFinalizeDialog = (
     try {
       await finalizeInvoice(invoiceToFinalize.id || '')
       setShowFinalizeDialog(false)
-      setInvoiceToFinalize(null)
 
-      // Show success toast
+      // Show success toast with invoice ID for link
       setFinalizeToast({
         show: true,
         message: 'Invoice finalized successfully',
         variant: 'success',
+        invoiceId: invoiceToFinalize.id,
       })
+
+      setInvoiceToFinalize(null)
 
       // Refresh invoices list
       refetchInvoices()

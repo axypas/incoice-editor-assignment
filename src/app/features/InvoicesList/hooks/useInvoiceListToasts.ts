@@ -9,6 +9,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 interface SaveToastState {
   show: boolean
   message: string
+  invoiceId?: string
+  isFinalized?: boolean
 }
 
 interface UseInvoiceListToastsReturn {
@@ -24,15 +26,23 @@ export const useInvoiceListToasts = (): UseInvoiceListToastsReturn => {
   const [saveToast, setSaveToast] = useState<SaveToastState>({
     show: false,
     message: '',
+    invoiceId: undefined,
+    isFinalized: false,
   })
 
   // Check for success message from navigation state
   useEffect(() => {
-    const state = location.state as { successMessage?: string } | null
+    const state = location.state as {
+      successMessage?: string
+      invoiceId?: string
+      isFinalized?: boolean
+    } | null
     if (state?.successMessage) {
       setSaveToast({
         show: true,
         message: state.successMessage,
+        invoiceId: state.invoiceId,
+        isFinalized: state.isFinalized,
       })
       // Clear the state to prevent showing toast again on page refresh
       navigate(location.pathname, { replace: true, state: {} })

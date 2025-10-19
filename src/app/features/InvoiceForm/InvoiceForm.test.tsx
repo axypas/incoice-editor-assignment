@@ -529,12 +529,7 @@ describe('InvoiceForm - US3', () => {
     it('navigates back to invoices list after successful submission', async () => {
       server.use(
         rest.post(`${API_BASE}/invoices`, (_req, res, ctx) =>
-          res(
-            ctx.status(201),
-            ctx.json({
-              invoice: { id: 1 },
-            })
-          )
+          res(ctx.status(201), ctx.json({ id: 1 }))
         )
       )
 
@@ -559,7 +554,11 @@ describe('InvoiceForm - US3', () => {
 
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/', {
-          state: { successMessage: 'Invoice created successfully' },
+          state: {
+            successMessage: 'Invoice created successfully',
+            invoiceId: '1',
+            isFinalized: false,
+          },
         })
       })
     })
@@ -1073,7 +1072,11 @@ describe('InvoiceForm - US3', () => {
 
       await waitFor(() => {
         expect(mockNavigate).toHaveBeenCalledWith('/', {
-          state: { successMessage: 'Invoice updated successfully' },
+          state: {
+            successMessage: 'Invoice updated successfully',
+            invoiceId: '123',
+            isFinalized: false,
+          },
         })
       })
     })
