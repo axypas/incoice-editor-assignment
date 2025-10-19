@@ -7,6 +7,7 @@
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useInvoice } from 'app/features/InvoicesList/hooks/useInvoices'
+import { ensureNumber } from 'common/utils/calculations'
 import LoadingState from './components/LoadingState'
 import ErrorState from './components/ErrorState'
 import InvoiceHeader from './components/InvoiceHeader'
@@ -52,9 +53,9 @@ const InvoiceShow: React.FC = () => {
     )
   }
 
-  // Calculate totals
-  const total = invoice.total ?? 0
-  const tax = invoice.tax ?? 0
+  // Calculate totals (convert strings to numbers if needed)
+  const total = ensureNumber(invoice.total)
+  const tax = ensureNumber(invoice.tax)
   const subtotal = total - tax
 
   return (

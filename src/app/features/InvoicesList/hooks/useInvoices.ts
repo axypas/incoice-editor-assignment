@@ -180,7 +180,20 @@ export const useInvoice = (invoiceId: string) => {
       setError(null)
 
       const response = await api.getInvoice(invoiceId)
-      const inv = response.data
+
+      // Extract invoice from response (API returns { invoices: [...] } even for single invoice)
+      const inv = (response.data as any).invoices?.[0] || response.data
+
+      // Calculate totals from invoice_lines if not provided by API
+      let calculatedTotal = 0
+      let calculatedTax = 0
+
+      if (inv.invoice_lines && inv.invoice_lines.length > 0) {
+        inv.invoice_lines.forEach((line: any) => {
+          calculatedTotal += parseFloat(line.price || '0')
+          calculatedTax += parseFloat(line.tax || '0')
+        })
+      }
 
       // Map API type to domain type
       const mappedInvoice = {
@@ -188,8 +201,8 @@ export const useInvoice = (invoiceId: string) => {
         id: inv.id?.toString(),
         customer_id: inv.customer_id?.toString(),
         invoice_number: inv.id?.toString(), // API doesn't provide invoice_number, use id as fallback
-        total: parseFloat((inv as any).total || '0'),
-        tax: parseFloat((inv as any).tax || '0'),
+        total: inv.total != null ? parseFloat(inv.total) : calculatedTotal,
+        tax: inv.tax != null ? parseFloat(inv.tax) : calculatedTax,
         invoice_lines: ((inv as any).invoice_lines || []).map((line: any) => ({
           ...line,
           id: line.id?.toString(),
