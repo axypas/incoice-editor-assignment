@@ -141,7 +141,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
             return <span className="text-muted">—</span>
           }
           return (
-            <div>
+            <div className="whitespace-nowrap">
               <div className="fw-semibold text-dark">
                 {customer.first_name} {customer.last_name}
               </div>
@@ -180,7 +180,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
         Header: 'Date',
         accessor: 'date',
         Cell: ({ value }: CellProps<Invoice, string>) => (
-          <span className="text-secondary">
+          <span className="text-secondary whitespace-nowrap">
             {value ? formatDate(value) : '—'}
           </span>
         ),
@@ -194,7 +194,9 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
 
           return (
             <span
-              className={isOverdue ? 'text-danger fw-bold' : 'text-secondary'}
+              className={`whitespace-nowrap ${
+                isOverdue ? 'text-danger fw-bold' : 'text-secondary'
+              }`}
             >
               {value ? formatDate(value) : '—'}
               {isOverdue && ' ⚠️'}
