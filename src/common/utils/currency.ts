@@ -16,9 +16,9 @@ export const CURRENCIES = {
 export type CurrencyCode = keyof typeof CURRENCIES
 
 /**
- * Gets the currency configuration
+ * Gets the currency configuration (internal use only)
  */
-export const getCurrencyConfig = (code: CurrencyCode = 'EUR') => {
+const getCurrencyConfig = (code: CurrencyCode = 'EUR') => {
   return CURRENCIES[code] || CURRENCIES.EUR
 }
 
@@ -31,13 +31,6 @@ export const formatCurrency = (
 ): string => {
   const config = getCurrencyConfig(currencyCode)
   return formatAmount(amount, currencyCode, config.locale)
-}
-
-/**
- * Gets the currency symbol for display
- */
-export const getCurrencySymbol = (code: CurrencyCode = 'EUR'): string => {
-  return getCurrencyConfig(code).symbol
 }
 
 /**

@@ -12,20 +12,20 @@ import {
 } from 'common/types/invoice.types'
 
 /**
- * Converts amount to cents for precise calculation
+ * Converts amount to cents for precise calculation (internal use only)
  * @param amount - Amount in decimal format
  * @returns Amount in cents (integer)
  */
-export const toCents = (amount: number): number => {
+const toCents = (amount: number): number => {
   return Math.round(amount * 100)
 }
 
 /**
- * Converts cents back to decimal with 2 decimal places
+ * Converts cents back to decimal with 2 decimal places (internal use only)
  * @param cents - Amount in cents
  * @returns Amount in decimal format
  */
-export const fromCents = (cents: number): number => {
+const fromCents = (cents: number): number => {
   return Math.round(cents) / 100
 }
 
@@ -123,63 +123,6 @@ export const formatCurrency = (
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
-}
-
-/**
- * Formats a number with thousand separators
- */
-export const formatNumber = (
-  amount: number,
-  decimals: number = 2,
-  locale: string = 'en-US'
-): string => {
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(amount)
-}
-
-/**
- * Parses a formatted number string to float
- * Handles different locale formats (comma vs period)
- */
-export const parseFormattedNumber = (value: string): number => {
-  // Remove all non-numeric characters except decimal separators
-  const cleaned = value.replace(/[^\d.,-]/g, '')
-
-  // Handle European format (comma as decimal separator)
-  if (cleaned.includes(',') && !cleaned.includes('.')) {
-    return parseFloat(cleaned.replace(',', '.'))
-  }
-
-  // Handle format with thousand separators
-  if (cleaned.includes(',') && cleaned.includes('.')) {
-    // Assume comma is thousand separator if dot comes after
-    if (cleaned.lastIndexOf('.') > cleaned.lastIndexOf(',')) {
-      return parseFloat(cleaned.replace(/,/g, ''))
-    }
-    // Otherwise assume European format
-    return parseFloat(cleaned.replace(/\./g, '').replace(',', '.'))
-  }
-
-  return parseFloat(cleaned) || 0
-}
-
-/**
- * Validates if a number is within acceptable range for currency
- */
-export const isValidCurrencyAmount = (amount: number): boolean => {
-  // Check for NaN, Infinity
-  if (!Number.isFinite(amount)) return false
-
-  // Check for reasonable range (up to 1 billion)
-  if (Math.abs(amount) > 1_000_000_000) return false
-
-  // Check decimal places (max 2 for currency)
-  const decimalPart = (amount.toString().split('.')[1] || '').length
-  if (decimalPart > 2) return false
-
-  return true
 }
 
 /**

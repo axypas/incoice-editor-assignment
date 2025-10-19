@@ -4,44 +4,14 @@
  */
 
 import {
-  toCents,
-  fromCents,
   calculateLineItem,
   calculateInvoiceTotals,
   formatCurrency,
-  parseFormattedNumber,
-  isValidCurrencyAmount,
   ensureNumber,
 } from './calculations'
 import { InvoiceLineItem } from 'common/types/invoice.types'
 
 describe('Financial Calculations', () => {
-  describe('toCents and fromCents', () => {
-    it('should correctly convert between cents and decimal', () => {
-      expect(toCents(10.5)).toBe(1050)
-      expect(toCents(0.01)).toBe(1)
-      expect(toCents(99.99)).toBe(9999)
-
-      expect(fromCents(1050)).toBe(10.5)
-      expect(fromCents(1)).toBe(0.01)
-      expect(fromCents(9999)).toBe(99.99)
-    })
-
-    it('should handle floating point precision issues', () => {
-      // Classic floating point problem: 0.1 + 0.2 = 0.30000000000000004
-      const amount = 0.1 + 0.2
-      const cents = toCents(amount)
-      expect(cents).toBe(30)
-      expect(fromCents(cents)).toBe(0.3)
-    })
-
-    it('should round correctly for edge cases', () => {
-      expect(toCents(10.495)).toBe(1050) // Rounds to nearest cent
-      expect(toCents(10.504)).toBe(1050)
-      expect(toCents(10.505)).toBe(1051)
-    })
-  })
-
   describe('calculateLineItem', () => {
     const baseItem: InvoiceLineItem = {
       label: 'Test Item',
@@ -173,46 +143,6 @@ describe('Financial Calculations', () => {
       expect(formatCurrency(100, 'USD')).toMatch(/\.00/)
       expect(formatCurrency(100.5, 'USD')).toMatch(/\.50/)
       expect(formatCurrency(100.999, 'USD')).toMatch(/101\.00/) // Rounds up
-    })
-  })
-
-  describe('parseFormattedNumber', () => {
-    it('should parse various number formats', () => {
-      // US format
-      expect(parseFormattedNumber('1,234.56')).toBe(1234.56)
-      expect(parseFormattedNumber('$1,234.56')).toBe(1234.56)
-
-      // European format
-      expect(parseFormattedNumber('1.234,56')).toBe(1234.56)
-      expect(parseFormattedNumber('€ 1.234,56')).toBe(1234.56)
-
-      // No separators
-      expect(parseFormattedNumber('1234.56')).toBe(1234.56)
-      expect(parseFormattedNumber('1234')).toBe(1234)
-
-      // Edge cases
-      expect(parseFormattedNumber('')).toBe(0)
-      expect(parseFormattedNumber('abc')).toBe(0)
-      expect(parseFormattedNumber('0')).toBe(0)
-    })
-
-    it('should handle negative numbers', () => {
-      expect(parseFormattedNumber('-1,234.56')).toBe(-1234.56)
-      expect(parseFormattedNumber('(1,234.56)')).toBe(1234.56) // Accounting format
-    })
-  })
-
-  describe('isValidCurrencyAmount', () => {
-    it('should validate currency amounts', () => {
-      expect(isValidCurrencyAmount(100)).toBe(true)
-      expect(isValidCurrencyAmount(100.5)).toBe(true)
-      expect(isValidCurrencyAmount(0)).toBe(true)
-      expect(isValidCurrencyAmount(-100)).toBe(true)
-
-      expect(isValidCurrencyAmount(100.999)).toBe(false) // Too many decimals
-      expect(isValidCurrencyAmount(NaN)).toBe(false)
-      expect(isValidCurrencyAmount(Infinity)).toBe(false)
-      expect(isValidCurrencyAmount(1_000_000_001)).toBe(false) // Exceeds max
     })
   })
 

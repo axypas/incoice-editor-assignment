@@ -14,9 +14,7 @@ export * from './logger'
 export {
   CURRENCIES,
   type CurrencyCode,
-  getCurrencyConfig,
   formatCurrency,
-  getCurrencySymbol,
   formatDate,
   getPaymentStatusLabel,
 } from './currency'
