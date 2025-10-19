@@ -558,7 +558,9 @@ describe('InvoiceForm - US3', () => {
       await userEvent.click(submitButton)
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/')
+        expect(mockNavigate).toHaveBeenCalledWith('/', {
+          state: { successMessage: 'Invoice created successfully' },
+        })
       })
     })
   })
@@ -1070,7 +1072,9 @@ describe('InvoiceForm - US3', () => {
       await userEvent.click(saveButton)
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/')
+        expect(mockNavigate).toHaveBeenCalledWith('/', {
+          state: { successMessage: 'Invoice updated successfully' },
+        })
       })
     })
   })

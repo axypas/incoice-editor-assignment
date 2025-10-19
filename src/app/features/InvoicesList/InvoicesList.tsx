@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react'
-import { Spinner, Alert, Button, Toast, ToastContainer } from 'react-bootstrap'
+import { Spinner, Alert, Button } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { useInvoices } from 'app/features/InvoicesList/hooks/useInvoices'
 import {
@@ -15,14 +15,15 @@ import {
 } from 'app/features/InvoicesList/hooks/useInvoiceFilters'
 import { useInvoiceSort } from 'app/features/InvoicesList/hooks/useInvoiceSort'
 import { useInvoiceDelete } from 'app/features/InvoicesList/hooks/useInvoiceDelete'
-import { useInvoiceFinalize } from 'app/features/InvoicesList/hooks/useInvoiceFinalize'
+import { useInvoiceFinalizeDialog } from 'app/features/InvoicesList/hooks/useInvoiceFinalizeDialog'
+import { useInvoiceListToasts } from 'app/features/InvoicesList/hooks/useInvoiceListToasts'
 import InvoicesPagination from 'app/features/InvoicesList/components/InvoicesPagination'
 import DeleteInvoiceDialog from 'app/features/InvoicesList/components/DeleteInvoiceDialog'
 import FinalizeInvoiceDialog from 'app/features/InvoicesList/components/FinalizeInvoiceDialog'
 import InvoicesTable from 'app/features/InvoicesList/components/InvoicesTable'
 import InvoicesFilters from 'app/features/InvoicesList/components/InvoicesFilters'
 import InvoicesEmptyState from 'app/features/InvoicesList/components/InvoicesEmptyState'
-import { Invoice } from 'common/types/invoice.types'
+import ToastNotifications from 'app/features/InvoicesList/components/ToastNotifications'
 
 const InvoicesList = (): React.ReactElement => {
   const navigate = useNavigate()
@@ -70,55 +71,20 @@ const InvoicesList = (): React.ReactElement => {
     setToastShow,
   } = useInvoiceDelete(refetch)
 
-  // Finalize state
-  const [invoiceToFinalize, setInvoiceToFinalize] = useState<Invoice | null>(
-    null
-  )
-  const [showFinalizeDialog, setShowFinalizeDialog] = useState(false)
-  const [finalizeToast, setFinalizeToast] = useState({
-    show: false,
-    message: '',
-    variant: 'success' as 'success' | 'danger',
-  })
-  const { finalizeInvoice, isFinalizing } = useInvoiceFinalize()
+  // Finalize state managed via custom hook
+  const {
+    invoiceToFinalize,
+    showFinalizeDialog,
+    isFinalizing,
+    finalizeToast,
+    handleFinalizeClick,
+    handleFinalizeConfirm,
+    handleFinalizeCancel,
+    setFinalizeToast,
+  } = useInvoiceFinalizeDialog(refetch)
 
-  // Finalize handlers
-  const handleFinalizeClick = useCallback((invoice: Invoice) => {
-    setInvoiceToFinalize(invoice)
-    setShowFinalizeDialog(true)
-  }, [])
-
-  const handleFinalizeConfirm = useCallback(async () => {
-    if (!invoiceToFinalize) return
-
-    try {
-      await finalizeInvoice(invoiceToFinalize.id || '')
-      setShowFinalizeDialog(false)
-      setInvoiceToFinalize(null)
-
-      // Show success toast
-      setFinalizeToast({
-        show: true,
-        message: 'Invoice finalized successfully',
-        variant: 'success',
-      })
-
-      // Refetch to update the list
-      refetch()
-    } catch (err) {
-      // Error toast
-      setFinalizeToast({
-        show: true,
-        message: 'Failed to finalize invoice. Please try again.',
-        variant: 'danger',
-      })
-    }
-  }, [invoiceToFinalize, finalizeInvoice, refetch])
-
-  const handleFinalizeCancel = useCallback(() => {
-    setShowFinalizeDialog(false)
-    setInvoiceToFinalize(null)
-  }, [])
+  // Toast notifications managed via custom hook
+  const { saveToast, setSaveToast } = useInvoiceListToasts()
 
   // Handle status filter change
   const handleStatusChange = useCallback(
@@ -247,48 +213,16 @@ const InvoicesList = (): React.ReactElement => {
         isFinalizing={isFinalizing}
       />
 
-      <ToastContainer position="top-end" className="p-3 z-50">
-        <Toast
-          show={toastState.show}
-          onClose={() => setToastShow(false)}
-          delay={5000}
-          autohide
-          bg={toastState.variant}
-        >
-          <Toast.Header>
-            <strong className="me-auto">
-              {toastState.variant === 'success'
-                ? 'Success'
-                : toastState.variant === 'warning'
-                ? 'Notice'
-                : 'Error'}
-            </strong>
-          </Toast.Header>
-          <Toast.Body
-            className={toastState.variant === 'success' ? 'text-white' : ''}
-          >
-            {toastState.message}
-          </Toast.Body>
-        </Toast>
-        <Toast
-          show={finalizeToast.show}
-          onClose={() => setFinalizeToast({ ...finalizeToast, show: false })}
-          delay={5000}
-          autohide
-          bg={finalizeToast.variant}
-        >
-          <Toast.Header>
-            <strong className="me-auto">
-              {finalizeToast.variant === 'success' ? 'Success' : 'Error'}
-            </strong>
-          </Toast.Header>
-          <Toast.Body
-            className={finalizeToast.variant === 'success' ? 'text-white' : ''}
-          >
-            {finalizeToast.message}
-          </Toast.Body>
-        </Toast>
-      </ToastContainer>
+      <ToastNotifications
+        deleteToast={toastState}
+        onDeleteToastClose={() => setToastShow(false)}
+        finalizeToast={finalizeToast}
+        onFinalizeToastClose={() =>
+          setFinalizeToast({ ...finalizeToast, show: false })
+        }
+        saveToast={saveToast}
+        onSaveToastClose={() => setSaveToast({ ...saveToast, show: false })}
+      />
 
       {/* Live region for accessibility announcements */}
       <div

@@ -142,8 +142,14 @@ export const useInvoiceSubmit = ({
           }
 
           await updateInvoice(invoiceId, updatePayload)
+
           onSuccess?.()
-          navigate('/')
+
+          // Navigate with success message
+          const successMessage = values.finalized
+            ? 'Invoice updated and finalized successfully'
+            : 'Invoice updated successfully'
+          navigate('/', { state: { successMessage } })
         } else {
           // Create mode
           const invoice_lines_attributes = values.lineItems.map((item, idx) => {
@@ -168,8 +174,14 @@ export const useInvoiceSubmit = ({
           }
 
           await api.postInvoices(null, { invoice: invoiceData })
+
           onSuccess?.()
-          navigate('/')
+
+          // Navigate with success message
+          const successMessage = values.finalized
+            ? 'Invoice created and finalized successfully'
+            : 'Invoice created successfully'
+          navigate('/', { state: { successMessage } })
         }
       } catch (error: unknown) {
         const isErrorWithResponse = (
