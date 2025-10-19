@@ -61,7 +61,7 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
     <Form onSubmit={onSubmit}>
       <Card className="p-4 shadow-sm rounded-xl">
         {/* Filter Fields Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
           <Form.Group controlId="status">
             <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
               Status
