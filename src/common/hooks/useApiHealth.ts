@@ -40,10 +40,13 @@ export const useApiHealth = (): ApiHealthState => {
           isAuthError: false,
           error: null,
         })
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error('API health check failed:', err)
 
-        const statusCode = err.response?.status
+        const statusCode =
+          err && typeof err === 'object' && 'response' in err
+            ? (err as { response?: { status?: number } }).response?.status
+            : undefined
         const isAuthError = statusCode === 401 || statusCode === 403
 
         setState({

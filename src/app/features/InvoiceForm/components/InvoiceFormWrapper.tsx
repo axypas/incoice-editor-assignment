@@ -8,13 +8,14 @@ import React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useInvoice } from 'app/features/InvoicesList/hooks/useInvoices'
 import ErrorState from 'app/features/InvoiceShow/components/ErrorState'
+import { Invoice } from 'common/types/invoice.types'
 import { FinalizedInvoiceAlert } from './index'
 
 interface InvoiceFormWrapperProps {
   children: (props: {
     isEditMode: boolean
     invoiceId?: string
-    existingInvoice: any
+    existingInvoice: Invoice | null
   }) => React.ReactElement
 }
 

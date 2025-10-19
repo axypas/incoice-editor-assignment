@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import type { Customer, Product } from 'common/types'
+import { logger } from 'common/utils/logger'
 
 interface LineItemFormValue {
   id?: string
@@ -86,7 +87,7 @@ export const useInvoiceDraft = ({
         setLastSaved(new Date())
       } catch (error) {
         setSaveError('Unable to save. Your changes are preserved locally.')
-        console.error('Invoice autosave failed:', error)
+        logger.error('Invoice autosave failed:', error)
       } finally {
         setIsAutoSaving(false)
       }
@@ -125,7 +126,7 @@ export const useInvoiceDraft = ({
 
       const parsed: unknown = JSON.parse(saved)
       if (!isDraftBackup(parsed)) {
-        console.error('Invalid draft format in localStorage')
+        logger.error('Invalid draft format in localStorage')
         return null
       }
 
@@ -144,7 +145,7 @@ export const useInvoiceDraft = ({
             : [],
       }
     } catch (error) {
-      console.error('Failed to restore draft:', error)
+      logger.error('Failed to restore draft:', error)
       return null
     }
   }, [storageKey, enabled])

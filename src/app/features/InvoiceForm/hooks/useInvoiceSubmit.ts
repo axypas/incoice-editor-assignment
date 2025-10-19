@@ -10,6 +10,7 @@ import { useApi } from 'api'
 import { useUpdateInvoice } from 'app/features/InvoicesList/hooks/useInvoices'
 import type { Customer, Product } from 'common/types'
 import type { Invoice } from 'common/types/invoice.types'
+import { logger } from 'common/utils/logger'
 
 interface LineItemFormValue {
   id?: string
@@ -35,7 +36,7 @@ interface InvoiceFormValues {
 interface UseInvoiceSubmitOptions {
   isEditMode: boolean
   invoiceId?: string
-  existingInvoice?: Invoice
+  existingInvoice: Invoice | null
   setError: UseFormSetError<InvoiceFormValues>
   onSuccess?: () => void
 }
@@ -252,7 +253,7 @@ export const useInvoiceSubmit = ({
             } invoice. Please check your connection and try again.`
           )
         }
-        console.error(
+        logger.error(
           `Invoice ${isEditMode ? 'update' : 'creation'} error:`,
           error
         )

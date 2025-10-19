@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react'
 import { Invoice } from 'common/types/invoice.types'
 import { useApi } from 'api'
+import { logger } from 'common/utils/logger'
 
 interface ToastState {
   show: boolean
@@ -90,7 +91,7 @@ export const useInvoiceDelete = (
       // Refetch invoices to update the list
       refetchInvoices()
     } catch (err: unknown) {
-      console.error('Failed to delete invoice:', err)
+      logger.error('Failed to delete invoice:', err)
 
       // Handle specific error cases based on HTTP status
       const status =

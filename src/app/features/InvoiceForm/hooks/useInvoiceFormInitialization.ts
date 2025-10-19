@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { UseFormReset } from 'react-hook-form'
 import { Customer } from 'common/types'
 import { Invoice } from 'common/types/invoice.types'
+import { logger } from 'common/utils/logger'
 import type { InvoiceFormValues, LineItemFormValue } from '../InvoiceForm'
 
 /**
@@ -103,7 +104,7 @@ export const useInvoiceFormInitialization = ({
       reset(formValues)
       setIsFormInitialized(true)
     } catch (error) {
-      console.error('Failed to load invoice data:', error)
+      logger.error('Failed to load invoice data:', error)
     }
   }, [isEditMode, existingInvoice, reset, isFormInitialized, restoreDraft])
 
@@ -141,7 +142,7 @@ export const useInvoiceFormInitialization = ({
       setIsFormInitialized(true)
     } catch (error) {
       setIsFormInitialized(true)
-      console.error('Failed to restore draft:', error)
+      logger.error('Failed to restore draft:', error)
     }
   }, [isEditMode, reset, isFormInitialized, restoreDraft])
 

@@ -25,6 +25,7 @@ import {
   useInvoiceFormInitialization,
 } from './hooks'
 import { Customer, Product } from 'common/types'
+import { Invoice } from 'common/types/invoice.types'
 import 'react-datepicker/dist/react-datepicker.css'
 
 /**
@@ -83,7 +84,7 @@ const InvoiceFormInner = ({
 }: {
   isEditMode: boolean
   invoiceId?: string
-  existingInvoice: any
+  existingInvoice: Invoice | null
 }): JSX.Element => {
   const navigate = useNavigate()
   const [showFinalizeModal, setShowFinalizeModal] = useState(false)
