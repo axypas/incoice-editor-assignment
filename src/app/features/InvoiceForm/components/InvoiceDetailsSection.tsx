@@ -10,6 +10,7 @@ import {
   Control,
   UseFormGetValues,
   UseFormSetValue,
+  UseFormTrigger,
 } from 'react-hook-form'
 import DatePicker from 'react-datepicker'
 import { CustomerAutocomplete } from 'common/components'
@@ -28,12 +29,14 @@ interface InvoiceDetailsSectionProps {
   control: Control<InvoiceFormValues>
   getValues: UseFormGetValues<InvoiceFormValues>
   setValue: UseFormSetValue<InvoiceFormValues>
+  trigger?: UseFormTrigger<InvoiceFormValues>
 }
 
 const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
   control,
   getValues,
   setValue,
+  trigger,
 }) => {
   return (
     <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
@@ -102,7 +105,7 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
                     <DatePicker
                       selected={field.value}
                       isClearable
-                      onChange={(selected: Date | null) => {
+                      onChange={async (selected: Date | null) => {
                         field.onChange(selected)
                         const currentDeadline = getValues('deadline')
                         if (selected && !currentDeadline) {
@@ -111,6 +114,14 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
                           setValue('deadline', autoDeadline, {
                             shouldDirty: true,
                           })
+                        }
+                        // Trigger validation immediately
+                        if (trigger) {
+                          await trigger('date')
+                          // Re-validate deadline when invoice date changes
+                          if (currentDeadline) {
+                            await trigger('deadline')
+                          }
                         }
                       }}
                       maxDate={new Date()}
@@ -140,10 +151,21 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
                 rules={{
                   validate: (value) => {
                     if (!value) return true
+
                     const invoiceDate = getValues('date')
-                    if (invoiceDate && value < invoiceDate) {
-                      return 'Payment deadline must be after invoice date'
+                    if (!invoiceDate) return true
+
+                    // Normalize both dates to midnight for fair comparison
+                    const normalizedDeadline = new Date(value)
+                    normalizedDeadline.setHours(0, 0, 0, 0)
+                    const normalizedInvoiceDate = new Date(invoiceDate)
+                    normalizedInvoiceDate.setHours(0, 0, 0, 0)
+
+                    // Payment deadline cannot be before invoice date
+                    if (normalizedDeadline < normalizedInvoiceDate) {
+                      return 'Payment deadline cannot be before invoice date'
                     }
+
                     return true
                   },
                 }}
@@ -151,8 +173,12 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
                   <>
                     <DatePicker
                       selected={field.value}
-                      onChange={(selected: Date | null) => {
+                      onChange={async (selected: Date | null) => {
                         field.onChange(selected)
+                        // Trigger validation immediately after value update
+                        if (trigger) {
+                          await trigger('deadline')
+                        }
                       }}
                       dateFormat="yyyy-MM-dd"
                       className="form-control"

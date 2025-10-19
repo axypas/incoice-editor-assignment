@@ -260,9 +260,146 @@ describe('InvoiceForm - US3', () => {
       })
     })
 
-    it('validates that payment deadline is after invoice date', async () => {
-      // Skip this test - it's difficult to test with mocked DatePicker
-      // The validation logic is covered in the component
+    it('validates that payment deadline cannot be before invoice date', async () => {
+      renderInvoiceForm()
+
+      // Set invoice date to 2024-01-15
+      const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
+      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+
+      await waitFor(() => {
+        expect(invoiceDateInput).toHaveValue('2024-01-15')
+      })
+
+      // Set deadline to 2024-01-10 (before invoice date)
+      const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
+      fireEvent.change(deadlineInput, { target: { value: '2024-01-10' } })
+
+      // Validation should trigger immediately
+      await waitFor(() => {
+        expect(
+          screen.getByText('Payment deadline cannot be before invoice date')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('allows payment deadline to equal invoice date', async () => {
+      renderInvoiceForm()
+
+      // Set invoice date to 2024-01-15
+      const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
+      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+
+      await waitFor(() => {
+        expect(invoiceDateInput).toHaveValue('2024-01-15')
+      })
+
+      // Set deadline to same date (2024-01-15)
+      const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
+      fireEvent.change(deadlineInput, { target: { value: '2024-01-15' } })
+
+      // Should NOT show validation error
+      await waitFor(() => {
+        expect(deadlineInput).toHaveValue('2024-01-15')
+      })
+
+      expect(
+        screen.queryByText('Payment deadline cannot be before invoice date')
+      ).not.toBeInTheDocument()
+    })
+
+    it('re-validates deadline when invoice date changes', async () => {
+      renderInvoiceForm()
+
+      // Set invoice date to 2024-01-15
+      const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
+      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+
+      await waitFor(() => {
+        expect(invoiceDateInput).toHaveValue('2024-01-15')
+      })
+
+      // Set deadline to 2024-01-20 (valid)
+      const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
+      fireEvent.change(deadlineInput, { target: { value: '2024-01-20' } })
+
+      await waitFor(() => {
+        expect(deadlineInput).toHaveValue('2024-01-20')
+      })
+
+      // No error should be shown
+      expect(
+        screen.queryByText('Payment deadline cannot be before invoice date')
+      ).not.toBeInTheDocument()
+
+      // Change invoice date to 2024-01-25 (now after deadline)
+      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-25' } })
+
+      // Deadline should be re-validated and show error
+      await waitFor(() => {
+        expect(
+          screen.getByText('Payment deadline cannot be before invoice date')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('validates invoice date cannot be in the future', async () => {
+      renderInvoiceForm()
+
+      // Get today's date plus 1 day
+      const tomorrow = new Date()
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const tomorrowStr = tomorrow.toISOString().split('T')[0]
+
+      const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
+      fireEvent.change(invoiceDateInput, { target: { value: tomorrowStr } })
+
+      // Validation should trigger immediately
+      await waitFor(() => {
+        expect(
+          screen.getByText('Invoice date cannot be in the future')
+        ).toBeInTheDocument()
+      })
+    })
+
+    it('allows past invoice dates', async () => {
+      renderInvoiceForm()
+
+      const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
+      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+
+      await waitFor(() => {
+        expect(invoiceDateInput).toHaveValue('2024-01-15')
+      })
+
+      expect(
+        screen.queryByText('Invoice date cannot be in the future')
+      ).not.toBeInTheDocument()
+    })
+
+    it('allows past payment deadlines', async () => {
+      renderInvoiceForm()
+
+      // Set invoice date to 2024-01-15 (past date)
+      const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
+      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+
+      await waitFor(() => {
+        expect(invoiceDateInput).toHaveValue('2024-01-15')
+      })
+
+      // Set deadline to 2024-02-15 (also in the past)
+      const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
+      fireEvent.change(deadlineInput, { target: { value: '2024-02-15' } })
+
+      await waitFor(() => {
+        expect(deadlineInput).toHaveValue('2024-02-15')
+      })
+
+      // Should not show any error (past deadlines are allowed for historical invoices)
+      expect(
+        screen.queryByText('Payment deadline cannot be before invoice date')
+      ).not.toBeInTheDocument()
     })
   })
 
