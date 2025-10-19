@@ -29,29 +29,25 @@ const paymentOptions: Array<{ value: PaymentFilter; label: string }> = [
 
 interface InvoicesFiltersProps {
   filterControl: Control<FilterFormData>
-  onSubmit: (e?: React.BaseSyntheticEvent) => void
   onClearFilters: () => void
   currentFilters: FilterFormData
   onStatusChange: (value: StatusFilter) => void
   onPaymentChange: (value: PaymentFilter) => void
   hasActiveFilters: boolean
-  hasChangedFilters: boolean
   filterSummary: string
 }
 
 const InvoicesFilters = ({
   filterControl,
-  onSubmit,
   onClearFilters,
   currentFilters,
   onStatusChange,
   onPaymentChange,
   hasActiveFilters,
-  hasChangedFilters,
   filterSummary,
 }: InvoicesFiltersProps): JSX.Element => {
   return (
-    <Form onSubmit={onSubmit}>
+    <div>
       <Card className="p-4 shadow-sm rounded-xl">
         {/* Filter Fields Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3">
@@ -194,24 +190,15 @@ const InvoicesFilters = ({
           </Form.Group>
         </div>
 
-        {/* Buttons */}
+        {/* Clear Filters Button */}
         <div className="mt-3">
-          <div className="d-flex gap-2">
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={!hasChangedFilters}
-            >
-              Apply Filters
-            </Button>
-            <Button
-              type="button"
-              variant="outline-secondary"
-              onClick={onClearFilters}
-            >
-              Clear Filters
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline-secondary"
+            onClick={onClearFilters}
+          >
+            Clear Filters
+          </Button>
         </div>
 
         {hasActiveFilters && (
@@ -222,7 +209,7 @@ const InvoicesFilters = ({
           </div>
         )}
       </Card>
-    </Form>
+    </div>
   )
 }
 

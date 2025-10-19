@@ -685,8 +685,9 @@ describe('InvoicesList - US1', () => {
       expect(
         screen.getAllByRole('button', { name: /finalized/i })[0]
       ).toBeInTheDocument()
+      // Clear Filters button should be present (no Apply Filters button anymore due to auto-apply)
       expect(
-        screen.getByRole('button', { name: /apply filters/i })
+        screen.getByRole('button', { name: /clear filters/i })
       ).toBeInTheDocument()
     })
 
@@ -795,17 +796,13 @@ describe('InvoicesList - US1', () => {
         expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      // Click on Finalized status button
+      // Click on Finalized status button - filters apply automatically now
       const finalizedButton = screen.getAllByRole('button', {
         name: /finalized/i,
       })[0] // Get first one (from filter controls, not table)
       await userEvent.click(finalizedButton)
 
-      // Submit filter
-      await userEvent.click(
-        screen.getByRole('button', { name: /apply filters/i })
-      )
-
+      // Wait for filter to be applied automatically (no need for Apply button anymore)
       // Verify API was called with filter param
       await waitFor(() => {
         expect(capturedParams).toBeTruthy()
@@ -932,13 +929,11 @@ describe('InvoicesList - US1', () => {
         expect(screen.getByText('John Doe')).toBeInTheDocument()
       })
 
-      // Apply a status filter
+      // Apply a status filter - now applies automatically
       const draftButton = screen.getByRole('button', { name: /^draft$/i })
       await userEvent.click(draftButton)
 
-      // Click Apply Filters to submit the form
-      const applyButton = screen.getByRole('button', { name: /apply filters/i })
-      await userEvent.click(applyButton)
+      // Wait for filter to be applied automatically (no need for Apply button anymore)
 
       // Verify filtered empty state is shown
       await waitFor(() => {

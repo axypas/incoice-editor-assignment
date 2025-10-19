@@ -4,9 +4,10 @@
  * Supports filtering by date range, due date range, status, payment, customer, and product
  */
 
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { Spinner, Alert, Button } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
+import isEqual from 'lodash/isEqual'
 import { useInvoices } from 'app/features/InvoicesList/hooks/useInvoices'
 import {
   useInvoiceFilters,
@@ -31,11 +32,9 @@ const InvoicesList = (): React.ReactElement => {
   // Filter state managed via custom hook
   const {
     filterControl,
-    handleFilterSubmit: handleFilterFormSubmit,
     handleClearFilters,
     activeFilters,
     hasActiveFilters,
-    hasChangedFilters,
     filterSummary,
     currentFilters,
     setFilterValue,
@@ -86,36 +85,37 @@ const InvoicesList = (): React.ReactElement => {
   // Toast notifications managed via custom hook
   const { saveToast, setSaveToast } = useInvoiceListToasts()
 
-  // Handle status filter change
+  // Track previous active filters to detect changes
+  const prevActiveFiltersRef = useRef(activeFilters)
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    // Deep compare filter arrays using lodash isEqual
+    const filtersChanged = !isEqual(prevActiveFiltersRef.current, activeFilters)
+
+    if (filtersChanged) {
+      setCurrentPage(1)
+      prevActiveFiltersRef.current = activeFilters
+    }
+  }, [activeFilters])
+
+  // Handle status filter change - apply immediately
   const handleStatusChange = useCallback(
     (value: StatusFilter) => {
-      setFilterValue('status', value, { shouldDirty: true })
+      setFilterValue('status', value, { shouldDirty: true, shouldTouch: true })
+      // Page reset handled by useEffect watching activeFilters
     },
     [setFilterValue]
   )
 
-  // Handle payment filter change
+  // Handle payment filter change - apply immediately
   const handlePaymentChange = useCallback(
     (value: PaymentFilter) => {
-      setFilterValue('payment', value, { shouldDirty: true })
+      setFilterValue('payment', value, { shouldDirty: true, shouldTouch: true })
+      // Page reset handled by useEffect watching activeFilters
     },
     [setFilterValue]
   )
-
-  // Wrap filter submit to also reset page
-  const handleFilterSubmit = useCallback(
-    async (e?: React.BaseSyntheticEvent) => {
-      await handleFilterFormSubmit(e)
-      setCurrentPage(1) // Reset to first page when filters change
-    },
-    [handleFilterFormSubmit]
-  )
-
-  // Wrap clear filters to also reset page
-  const handleClearFiltersWithPageReset = useCallback(() => {
-    handleClearFilters()
-    setCurrentPage(1) // Reset to first page when filters are cleared
-  }, [handleClearFilters])
 
   // Error state
   if (isError) {
@@ -163,13 +163,11 @@ const InvoicesList = (): React.ReactElement => {
       {/* Filter controls */}
       <InvoicesFilters
         filterControl={filterControl}
-        onSubmit={handleFilterSubmit}
-        onClearFilters={handleClearFiltersWithPageReset}
+        onClearFilters={handleClearFilters}
         currentFilters={currentFilters}
         onStatusChange={handleStatusChange}
         onPaymentChange={handlePaymentChange}
         hasActiveFilters={hasActiveFilters}
-        hasChangedFilters={hasChangedFilters}
         filterSummary={filterSummary}
       />
 

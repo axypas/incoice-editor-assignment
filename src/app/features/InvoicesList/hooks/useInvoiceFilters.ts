@@ -3,7 +3,7 @@
  * Handles filter form, building filter params, and filter comparison
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { useForm, UseFormReturn } from 'react-hook-form'
 import { InvoiceFilter } from 'common/types/invoice.types'
 import { Customer, Product } from 'common/types'
@@ -239,6 +239,15 @@ export const useInvoiceFilters = (): UseInvoiceFiltersReturn => {
     resetFilterForm(defaultFilterValuesRef.current)
     setActiveFilters([])
   }, [resetFilterForm])
+
+  // Auto-apply filters when form values change (for immediate filter application)
+  useEffect(() => {
+    // Only apply filters if they have changed to avoid infinite loop
+    const formFilters = buildFilters(currentFilters)
+    if (!areFiltersEqual(formFilters, activeFilters)) {
+      setActiveFilters(formFilters)
+    }
+  }, [currentFilters, buildFilters, areFiltersEqual, activeFilters])
 
   return {
     filterControl,
