@@ -9,5 +9,5 @@ export * from './calculations'
 // Re-export all from logger
 export * from './logger'
 
-// For currency, we only export formatDate
-export { formatDate } from './currency'
+// For date utilities, we only export formatDate
+export { formatDate } from './date'

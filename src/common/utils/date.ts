@@ -1,6 +1,6 @@
 /**
- * Currency formatting utilities
- * Ensures consistent financial display across the application
+ * Date formatting utilities
+ * Ensures consistent date display across the application
  */
 
 /**

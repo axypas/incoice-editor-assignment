@@ -15,7 +15,7 @@ import { Spinner, Button, Badge, Table, Card } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import numeral from 'numeral'
 import { Invoice } from 'common/types/invoice.types'
-import { formatDate } from 'common/utils/currency'
+import { formatDate } from 'common/utils/date'
 import { calculateLineItem, formatCurrency } from 'common/utils/calculations'
 import { Variant } from 'react-bootstrap/esm/types'
 
