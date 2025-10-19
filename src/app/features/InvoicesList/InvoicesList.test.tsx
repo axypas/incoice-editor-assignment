@@ -115,7 +115,23 @@ describe('InvoicesList - US1', () => {
   })
 
   describe('Empty State', () => {
-    it.skip('shows empty state when no invoices exist', async () => {
+    it('shows empty state when no invoices exist', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 0,
+                total_entries: 0,
+              },
+              invoices: [],
+            })
+          )
+        })
+      )
+
       renderInvoicesList()
 
       await waitFor(() => {
@@ -125,9 +141,13 @@ describe('InvoicesList - US1', () => {
       expect(
         screen.getByText('Create your first invoice to get started')
       ).toBeInTheDocument()
-      expect(
-        screen.getByRole('button', { name: /create invoice/i })
-      ).toBeInTheDocument()
+
+      // Get all buttons with "create invoice" text
+      const createButtons = screen.getAllByRole('button', {
+        name: /create invoice/i,
+      })
+      // Verify at least one exists (the empty state button)
+      expect(createButtons.length).toBeGreaterThan(0)
     })
   })
 
@@ -871,7 +891,7 @@ describe('InvoicesList - US1', () => {
       )
     })
 
-    it.skip('shows filtered empty state when no results match filters', async () => {
+    it('shows filtered empty state when no results match filters', async () => {
       server.use(
         rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
           const filterParam = req.url.searchParams.get('filter')
@@ -882,7 +902,7 @@ describe('InvoicesList - US1', () => {
                 pagination: {
                   page: 1,
                   page_size: 10,
-                  total_pages: 1,
+                  total_pages: 0,
                   total_entries: 0,
                 },
                 invoices: [],
@@ -907,33 +927,31 @@ describe('InvoicesList - US1', () => {
       renderInvoicesList()
 
       await waitFor(() => {
-        expect(screen.getByRole('table')).toBeInTheDocument()
+        expect(screen.getByText('John Doe')).toBeInTheDocument()
       })
 
-      // Apply a filter
-      const dateInput = screen.getByPlaceholderText(
-        /select date range/i
-      ) as HTMLInputElement
-      fireEvent.change(dateInput, { target: { value: '2030-01-01' } })
-      await userEvent.click(
-        screen.getByRole('button', { name: /apply filters/i })
-      )
+      // Apply a status filter
+      const draftButton = screen.getByRole('button', { name: /^draft$/i })
+      await userEvent.click(draftButton)
+
+      // Click Apply Filters to submit the form
+      const applyButton = screen.getByRole('button', { name: /apply filters/i })
+      await userEvent.click(applyButton)
 
       // Verify filtered empty state is shown
       await waitFor(() => {
-        expect(
-          screen.getByText(/no results match your filters/i)
-        ).toBeInTheDocument()
+        expect(screen.getByText('No invoices found')).toBeInTheDocument()
       })
 
       expect(
-        screen.getByText(/try adjusting your filter criteria/i)
+        screen.getByText(/No invoices match your current filters/i)
       ).toBeInTheDocument()
 
-      // Verify Clear Filters button is available
-      expect(
-        screen.getAllByRole('button', { name: /clear filters/i }).length
-      ).toBeGreaterThan(0)
+      // Verify Clear Filters button is available (there are 2: one in filter form, one in empty state)
+      const clearButtons = screen.getAllByRole('button', {
+        name: /^clear filters$/i,
+      })
+      expect(clearButtons.length).toBeGreaterThan(0)
     })
 
     it.skip('clears filters and reloads all invoices', async () => {

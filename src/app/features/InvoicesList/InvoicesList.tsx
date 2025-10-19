@@ -174,7 +174,11 @@ const InvoicesList = (): React.ReactElement => {
       />
 
       {invoices.length === 0 ? (
-        <InvoicesEmptyState onCreateInvoice={() => navigate('/invoices/new')} />
+        <InvoicesEmptyState
+          onCreateInvoice={() => navigate('/invoices/new')}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={handleClearFilters}
+        />
       ) : (
         <>
           <InvoicesTable
