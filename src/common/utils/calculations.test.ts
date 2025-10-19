@@ -11,7 +11,6 @@ import {
   formatCurrency,
   parseFormattedNumber,
   isValidCurrencyAmount,
-  roundToDecimals,
   ensureNumber,
 } from './calculations'
 import { InvoiceLineItem } from 'common/types/invoice.types'
@@ -214,16 +213,6 @@ describe('Financial Calculations', () => {
       expect(isValidCurrencyAmount(NaN)).toBe(false)
       expect(isValidCurrencyAmount(Infinity)).toBe(false)
       expect(isValidCurrencyAmount(1_000_000_001)).toBe(false) // Exceeds max
-    })
-  })
-
-  describe('roundToDecimals', () => {
-    it('should round to specified decimal places', () => {
-      expect(roundToDecimals(10.456, 2)).toBe(10.46)
-      expect(roundToDecimals(10.454, 2)).toBe(10.45)
-      expect(roundToDecimals(10.455, 2)).toBe(10.46) // Rounds up
-      expect(roundToDecimals(10.5, 0)).toBe(11)
-      expect(roundToDecimals(10.4, 0)).toBe(10)
     })
   })
 

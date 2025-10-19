@@ -183,20 +183,6 @@ export const isValidCurrencyAmount = (amount: number): boolean => {
 }
 
 /**
- * Calculates payment due date based on payment terms
- * @param invoiceDate - Invoice date as ISO string
- * @param paymentTerms - Payment terms in days (default 30)
- */
-export const calculateDueDate = (
-  invoiceDate: string,
-  paymentTerms: number = 30
-): string => {
-  const date = new Date(invoiceDate)
-  date.setDate(date.getDate() + paymentTerms)
-  return date.toISOString().split('T')[0]
-}
-
-/**
  * Checks if an invoice is overdue
  */
 export const isOverdue = (invoice: Invoice): boolean => {
@@ -205,28 +191,6 @@ export const isOverdue = (invoice: Invoice): boolean => {
   const now = new Date()
   const deadline = new Date(invoice.deadline)
   return now > deadline
-}
-
-/**
- * Calculates days until due/overdue
- */
-export const getDaysUntilDue = (deadline: string): number => {
-  const now = new Date()
-  const due = new Date(deadline)
-  const diffMs = due.getTime() - now.getTime()
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-}
-
-/**
- * Rounds a number to specified decimal places
- * More reliable than toFixed for financial calculations
- */
-export const roundToDecimals = (
-  value: number,
-  decimals: number = 2
-): number => {
-  const factor = Math.pow(10, decimals)
-  return Math.round(value * factor) / factor
 }
 
 /**

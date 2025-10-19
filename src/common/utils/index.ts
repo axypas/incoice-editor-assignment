@@ -6,9 +6,6 @@
 // Re-export all from calculations
 export * from './calculations'
 
-// Re-export all from validation
-export * from './validation'
-
 // Re-export all from logger
 export * from './logger'
 
@@ -19,11 +16,7 @@ export {
   type CurrencyCode,
   getCurrencyConfig,
   formatCurrency,
-  formatPercentage,
   getCurrencySymbol,
   formatDate,
-  formatDateRange,
   getPaymentStatusLabel,
-  formatQuantity,
-  abbreviateNumber,
 } from './currency'

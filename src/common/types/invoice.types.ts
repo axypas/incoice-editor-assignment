@@ -119,14 +119,6 @@ export interface AsyncState<T> {
   error: ApiError | null
 }
 
-// Auto-save specific types
-export interface AutoSaveState {
-  lastSaved: Date | null
-  isDirty: boolean
-  isSaving: boolean
-  error: Error | null
-}
-
 // Validation types
 export interface ValidationError {
   field: string
@@ -137,53 +129,4 @@ export interface ValidationError {
 export interface ValidationResult {
   valid: boolean
   errors: ValidationError[]
-}
-
-// Action types for invoice operations
-export type InvoiceAction =
-  | 'create'
-  | 'edit'
-  | 'finalize'
-  | 'delete'
-  | 'duplicate'
-  | 'view'
-
-// Permission check for actions based on invoice state
-export const canPerformAction = (
-  invoice: Invoice,
-  action: InvoiceAction
-): boolean => {
-  switch (action) {
-    case 'edit':
-      return !invoice.finalized
-    case 'finalize':
-      return !invoice.finalized
-    case 'delete':
-      return !invoice.finalized // Based on Pennylane v2 API constraints
-    case 'duplicate':
-      return true
-    case 'view':
-      return true
-    default:
-      return false
-  }
-}
-
-// Type guards
-export const isInvoice = (obj: any): obj is Invoice => {
-  return (
-    obj &&
-    typeof obj.invoice_number === 'string' &&
-    typeof obj.customer_id === 'string' &&
-    Array.isArray(obj.invoice_lines)
-  )
-}
-
-export const isValidLineItem = (item: any): item is InvoiceLineItem => {
-  return (
-    item &&
-    typeof item.label === 'string' &&
-    typeof item.quantity === 'number' &&
-    typeof item.unit_price === 'number'
-  )
 }
