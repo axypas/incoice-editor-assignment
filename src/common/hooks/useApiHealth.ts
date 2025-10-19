@@ -4,8 +4,8 @@
  */
 
 import { useState, useEffect } from 'react'
-import { useApi } from '../api'
-import { logger } from '../utils/logger'
+import { useApi } from 'api'
+import { logger } from 'common/utils/logger'
 
 interface ApiHealthState {
   isChecking: boolean

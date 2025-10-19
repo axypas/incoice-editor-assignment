@@ -1,7 +1,7 @@
 // Polyfill TextEncoder/TextDecoder for MSW in jsdom environment
 // This must be done BEFORE importing MSW
 
-import { server } from './test/server'
+import { server } from 'common/test/server'
 import type { SetupServer } from 'msw/node'
 import '@testing-library/jest-dom'
 

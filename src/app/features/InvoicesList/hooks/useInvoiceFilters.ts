@@ -5,8 +5,8 @@
 
 import { useState, useCallback, useMemo, useRef } from 'react'
 import { useForm, UseFormReturn } from 'react-hook-form'
-import { InvoiceFilter } from 'types/invoice.types'
-import { Customer, Product } from 'types'
+import { InvoiceFilter } from 'common/types/invoice.types'
+import { Customer, Product } from 'common/types'
 
 export type StatusFilter = 'all' | 'draft' | 'finalized'
 export type PaymentFilter = 'all' | 'paid' | 'unpaid'

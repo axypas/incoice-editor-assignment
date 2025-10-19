@@ -4,7 +4,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import { Invoice } from 'types/invoice.types'
+import { Invoice } from 'common/types/invoice.types'
 import { useApi } from 'api'
 
 interface ToastState {

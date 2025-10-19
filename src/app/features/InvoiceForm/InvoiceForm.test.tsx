@@ -7,9 +7,9 @@
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { API_BASE } from 'test/constants'
+import { API_BASE } from 'common/test/constants'
 import { rest } from 'msw'
-import { server } from 'test/server'
+import { server } from 'common/test/server'
 import { ApiProvider } from '../../../api'
 import InvoiceForm from './InvoiceForm'
 
@@ -76,7 +76,7 @@ jest.mock('react-datepicker', () => {
 })
 
 // Mock CustomerAutocomplete
-jest.mock('../CustomerAutocomplete', () => {
+jest.mock('common/components/CustomerAutocomplete', () => {
   return function MockCustomerAutocomplete({ value, onChange, onBlur }: any) {
     return (
       <input
@@ -100,7 +100,7 @@ jest.mock('../CustomerAutocomplete', () => {
 })
 
 // Mock ProductAutocomplete
-jest.mock('../ProductAutocomplete', () => {
+jest.mock('common/components/ProductAutocomplete', () => {
   return function MockProductAutocomplete({ value, onChange, onBlur }: any) {
     return (
       <input

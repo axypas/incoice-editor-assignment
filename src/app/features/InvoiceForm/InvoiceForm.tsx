@@ -21,20 +21,20 @@ import {
 } from 'react-bootstrap'
 import DatePicker from 'react-datepicker'
 import { useNavigate, useParams } from 'react-router-dom'
-import { InvoiceLineItem } from 'types/invoice.types'
-import { Customer, Product } from 'types'
+import { InvoiceLineItem } from 'common/types/invoice.types'
+import { Customer, Product } from 'common/types'
 import { useApi } from 'api'
-import CustomerAutocomplete from 'app/components/CustomerAutocomplete'
-import ProductAutocomplete from 'app/components/ProductAutocomplete'
+import CustomerAutocomplete from 'common/components/CustomerAutocomplete'
+import ProductAutocomplete from 'common/components/ProductAutocomplete'
 import {
   calculateLineItem,
   calculateInvoiceTotals,
   formatCurrency,
-} from 'utils/calculations'
+} from 'common/utils/calculations'
 import {
   useInvoice,
   useUpdateInvoice,
-} from 'app/components/InvoicesList/hooks/useInvoices'
+} from 'app/features/InvoicesList/hooks/useInvoices'
 import 'react-datepicker/dist/react-datepicker.css'
 
 const STORAGE_KEY = 'invoice_draft'

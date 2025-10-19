@@ -1,40 +1,40 @@
 import { useCallback } from 'react'
 import { AsyncPaginate, LoadOptions } from 'react-select-async-paginate'
 
-import { Customer } from 'types'
+import { Product } from 'common/types'
 import { useApi } from 'api'
 import { GroupBase } from 'react-select'
 
 interface Props {
-  value: Customer | null
-  onChange: (Customer: Customer | null) => void
+  value: Product | null
+  onChange: (product: Product | null) => void
   onBlur?: () => void
 }
 
 const defaultAdditional = { page: 1 }
 
-const getCustomerLabel = (customer: Customer) => {
-  return `${customer.first_name} ${customer.last_name}`
+const getProductLabel = (product: Product) => {
+  return product.label
 }
 
-const CustomerAutocomplete = ({ value, onChange, onBlur }: Props) => {
+const ProductAutocomplete = ({ value, onChange, onBlur }: Props) => {
   const api = useApi()
 
   const loadOptions: LoadOptions<
-    Customer,
-    GroupBase<Customer>,
+    Product,
+    GroupBase<Product>,
     { page: number }
   > = useCallback(
     async (search, loadedOptions, additional) => {
       const page = additional?.page ?? 1
-      const { data } = await api.getSearchCustomers({
+      const { data } = await api.getSearchProducts({
         query: search,
         per_page: 10,
         page,
       })
 
       return {
-        options: data.customers,
+        options: data.products,
         hasMore: data.pagination.page < data.pagination.total_pages,
         additional: {
           page: page + 1,
@@ -46,16 +46,17 @@ const CustomerAutocomplete = ({ value, onChange, onBlur }: Props) => {
 
   return (
     <AsyncPaginate
-      placeholder="Search a customer"
-      getOptionLabel={getCustomerLabel}
+      placeholder="Search a product"
+      getOptionLabel={getProductLabel}
       additional={defaultAdditional}
+      menuPortalTarget={document.body}
       value={value}
       onChange={onChange}
       onBlur={onBlur}
       loadOptions={loadOptions}
-      loadingMessage={() => 'Loading customers...'}
+      loadingMessage={() => 'Loading products...'}
       noOptionsMessage={({ inputValue }) =>
-        inputValue ? 'No customers found' : 'Start typing to search'
+        inputValue ? 'No products found' : 'Start typing to search'
       }
       isClearable
       styles={{
@@ -68,4 +69,4 @@ const CustomerAutocomplete = ({ value, onChange, onBlur }: Props) => {
   )
 }
 
-export default CustomerAutocomplete
+export default ProductAutocomplete

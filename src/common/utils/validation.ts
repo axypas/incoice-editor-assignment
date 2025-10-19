@@ -9,7 +9,7 @@ import {
   InvoiceLineFormData,
   ValidationError,
   ValidationResult,
-} from '../types/invoice.types'
+} from 'common/types/invoice.types'
 import { parseFormattedNumber, isValidCurrencyAmount } from './calculations'
 
 /**

@@ -9,7 +9,7 @@ import {
   LineItemCalculation,
   InvoiceCalculation,
   Invoice,
-} from '../types/invoice.types'
+} from 'common/types/invoice.types'
 
 /**
  * Converts amount to cents for precise calculation

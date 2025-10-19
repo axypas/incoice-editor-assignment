@@ -14,12 +14,12 @@ import {
   groupErrorsByField,
   canFinalizeInvoice,
   canDeleteInvoice,
-} from '../utils/validation'
+} from './validation'
 import {
   InvoiceFormData,
   InvoiceLineFormData,
   Invoice,
-} from '../types/invoice.types'
+} from 'common/types/invoice.types'
 
 describe('Validation Utilities', () => {
   describe('validateLineItem', () => {

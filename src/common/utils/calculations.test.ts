@@ -13,8 +13,8 @@ import {
   isValidCurrencyAmount,
   roundToDecimals,
   ensureNumber,
-} from '../utils/calculations'
-import { InvoiceLineItem } from '../types/invoice.types'
+} from './calculations'
+import { InvoiceLineItem } from 'common/types/invoice.types'
 
 describe('Financial Calculations', () => {
   describe('toCents and fromCents', () => {

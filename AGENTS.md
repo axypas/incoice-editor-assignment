@@ -34,8 +34,8 @@ Build a minimal, production-minded **invoice editor**: list, filter, create, **f
 - **Naming**: domain-first (Invoice, InvoiceLine, FinalizeInvoiceDialog).
 - **Components**: small, focused, accessible by default (labels, roles).
 - **File structure**:
-  - Single-file components: `src/app/components/ComponentName.tsx` (no folder)
-  - Multi-file components: `src/app/components/ComponentName/ComponentName.tsx` with `index.tsx` for barrel export only
+  - Single-file components: `src/app/features/ComponentName.tsx` (no folder)
+  - Multi-file components: `src/app/features/ComponentName/ComponentName.tsx` with `index.tsx` for barrel export only
   - Use `index.tsx` only for exports, never for component implementation
 - **Side effects**: isolate in hooks (`useInvoices`, `useFinalizeInvoice`), return `{ run, status, error }`.
 - **Error handling**: user-facing messages + logs in dev console; never swallow errors.

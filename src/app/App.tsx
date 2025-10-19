@@ -4,11 +4,11 @@
  */
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import { useApiHealth } from '../hooks/useApiHealth'
+import { useApiHealth } from 'common/hooks/useApiHealth'
 
-import InvoicesList from './components/InvoicesList'
-import InvoiceShow from './components/InvoiceShow'
-import InvoiceForm from './components/InvoiceForm'
+import InvoicesList from './features/InvoicesList'
+import InvoiceShow from './features/InvoiceShow'
+import InvoiceForm from './features/InvoiceForm'
 
 function App() {
   const { isChecking, isHealthy, isAuthError, error } = useApiHealth()

@@ -6,8 +6,8 @@
 
 import { render, screen, waitFor } from '@testing-library/react'
 import { rest } from 'msw'
-import { server } from '../test/server'
-import { API_BASE } from '../test/constants'
+import { server } from 'common/test/server'
+import { API_BASE } from 'common/test/constants'
 import { ApiProvider } from '../api'
 import App from './App'
 

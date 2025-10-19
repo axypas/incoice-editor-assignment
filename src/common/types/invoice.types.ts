@@ -3,7 +3,7 @@
  * Following Pennylane's domain-first naming convention
  */
 
-import { Product as APIProduct } from 'types'
+import { Product as APIProduct } from 'common/types'
 
 export interface Customer {
   id: string
