@@ -49,6 +49,7 @@ interface InvoiceFormValues {
   date: Date | null
   deadline: Date | null
   paid: boolean
+  finalized: boolean
   lineItems: LineItemFormValue[]
 }
 
@@ -66,6 +67,7 @@ const createDefaultValues = (): InvoiceFormValues => ({
   customer: null,
   date: new Date(),
   deadline: null,
+  finalized: false,
   paid: false,
   lineItems: [createDefaultLineItem()],
 })
@@ -85,7 +87,6 @@ const InvoiceForm: React.FC = () => {
 
   const [isFormInitialized, setIsFormInitialized] = useState(false)
   const [showFinalizeModal, setShowFinalizeModal] = useState(false)
-  const [shouldFinalize, setShouldFinalize] = useState(false)
 
   const defaultValuesRef = useRef<InvoiceFormValues>(createDefaultValues())
   const skipUnsavedTrackingRef = useRef(true)
@@ -159,6 +160,7 @@ const InvoiceForm: React.FC = () => {
         deadline: existingInvoice.deadline
           ? new Date(existingInvoice.deadline)
           : null,
+        finalized: false, // Always false for draft invoices being edited
         paid: existingInvoice.paid || false,
         lineItems:
           existingInvoice.invoice_lines &&
@@ -268,7 +270,6 @@ const InvoiceForm: React.FC = () => {
     existingInvoice: existingInvoice || undefined,
     setError,
     onSuccess: clearDraft,
-    shouldFinalize,
   })
 
   const handleCancel = useCallback(() => {
@@ -306,10 +307,10 @@ const InvoiceForm: React.FC = () => {
 
   const handleFinalizeConfirm = useCallback(() => {
     setShowFinalizeModal(false)
-    setShouldFinalize(true)
+    setValue('finalized', true, { shouldDirty: true })
     // Trigger form submission
     rhfHandleSubmit(handleSubmit)()
-  }, [rhfHandleSubmit, handleSubmit])
+  }, [setValue, rhfHandleSubmit, handleSubmit])
 
   // Invoice calculations hook
   const { totals, perLine, lineItems } = useInvoiceCalculations({

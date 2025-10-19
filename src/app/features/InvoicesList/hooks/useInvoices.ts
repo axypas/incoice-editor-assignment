@@ -89,7 +89,7 @@ export const useInvoices = (
         const paginationData = response.data?.pagination || null
 
         // Map API types to domain types
-        const mappedInvoices = data.map((inv: any) => ({
+        const mappedInvoices = data.map((inv) => ({
           ...inv,
           id: inv.id?.toString(),
           customer_id: inv.customer_id?.toString(),

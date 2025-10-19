@@ -22,6 +22,7 @@ interface InvoiceFormValues {
   date: Date | null
   deadline: Date | null
   paid: boolean
+  finalized: boolean
   lineItems: any[]
 }
 

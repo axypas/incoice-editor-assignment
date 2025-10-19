@@ -23,6 +23,7 @@ interface InvoiceFormValues {
   date: Date | null
   deadline: Date | null
   paid: boolean
+  finalized: boolean
   lineItems: LineItemFormValue[]
 }
 
@@ -31,6 +32,7 @@ interface DraftBackup {
   date: string | null
   deadline: string | null
   paid: boolean
+  finalized: boolean
   lineItems: LineItemFormValue[]
 }
 
@@ -74,6 +76,7 @@ export const useInvoiceDraft = ({
           date: values.date ? values.date.toISOString() : null,
           deadline: values.deadline ? values.deadline.toISOString() : null,
           paid: values.paid,
+          finalized: values.finalized,
           lineItems: values.lineItems.map((item) => ({
             ...item,
             product: item.product ? { ...item.product } : null,
@@ -106,6 +109,7 @@ export const useInvoiceDraft = ({
         date: parsed.date ? new Date(parsed.date) : null,
         deadline: parsed.deadline ? new Date(parsed.deadline) : null,
         paid: parsed.paid ?? false,
+        finalized: parsed.finalized ?? false,
         lineItems:
           parsed.lineItems && parsed.lineItems.length > 0
             ? parsed.lineItems.map((item) => ({
