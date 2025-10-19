@@ -5,8 +5,6 @@
 import React from 'react'
 import {
   Form,
-  Row as BsRow,
-  Col,
   Card,
   ButtonGroup,
   Button,
@@ -62,163 +60,148 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
   return (
     <Form onSubmit={onSubmit}>
       <Card className="p-4 shadow-sm rounded-xl">
-        {/* Line 1: Status and Payment */}
-        <BsRow className="g-5">
-          <Col md={6}>
-            <Form.Group controlId="status">
-              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
-                Status
-              </Form.Label>
-              <ButtonGroup size="sm" className="d-flex">
-                {statusOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={
-                      currentFilters.status === option.value
-                        ? 'primary'
-                        : 'outline-secondary'
-                    }
-                    onClick={() => onStatusChange(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </ButtonGroup>
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="payment">
-              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
-                Payment
-              </Form.Label>
-              <ButtonGroup size="sm" className="d-flex">
-                {paymentOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    type="button"
-                    variant={
-                      currentFilters.payment === option.value
-                        ? 'primary'
-                        : 'outline-secondary'
-                    }
-                    onClick={() => onPaymentChange(option.value)}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </ButtonGroup>
-            </Form.Group>
-          </Col>
-        </BsRow>
+        {/* Filter Fields Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5 gap-y-3">
+          <Form.Group controlId="status">
+            <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
+              Status
+            </Form.Label>
+            <ButtonGroup size="sm" className="d-flex">
+              {statusOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={
+                    currentFilters.status === option.value
+                      ? 'primary'
+                      : 'outline-secondary'
+                  }
+                  onClick={() => onStatusChange(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </Form.Group>
 
-        {/* Line 2: Customer and Product */}
-        <BsRow className="g-5 mt-2">
-          <Col md={6}>
-            <Form.Group controlId="customer">
-              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
-                Customer
-              </Form.Label>
-              <Controller
-                name="customer"
-                control={filterControl}
-                render={({ field }) => (
-                  <CustomerAutocomplete
-                    value={field.value}
-                    onChange={(customer) => field.onChange(customer)}
-                    onBlur={field.onBlur}
-                  />
-                )}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="product">
-              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
-                Product
-              </Form.Label>
-              <Controller
-                name="product"
-                control={filterControl}
-                render={({ field }) => (
-                  <ProductAutocomplete
-                    value={field.value}
-                    onChange={(product) => field.onChange(product)}
-                    onBlur={field.onBlur}
-                  />
-                )}
-              />
-            </Form.Group>
-          </Col>
-        </BsRow>
+          <Form.Group controlId="payment">
+            <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
+              Payment
+            </Form.Label>
+            <ButtonGroup size="sm" className="d-flex">
+              {paymentOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  type="button"
+                  variant={
+                    currentFilters.payment === option.value
+                      ? 'primary'
+                      : 'outline-secondary'
+                  }
+                  onClick={() => onPaymentChange(option.value)}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </ButtonGroup>
+          </Form.Group>
 
-        {/* Line 3: Date Range and Due Date Range */}
-        <BsRow className="g-5 mt-2">
-          <Col md={6}>
-            <Form.Group controlId="dateRange" className="flex flex-col">
-              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
-                Date Range
-              </Form.Label>
-              <Controller
-                name="dateRange"
-                control={filterControl}
-                render={({ field }) => (
-                  <DatePicker
-                    selectsRange
-                    startDate={field.value?.[0] ?? null}
-                    endDate={field.value?.[1] ?? null}
-                    onChange={(update: [Date | null, Date | null]) =>
-                      field.onChange(update)
-                    }
-                    placeholderText="Select date range"
-                    dateFormat="yyyy-MM-dd"
-                    className="form-control"
-                    isClearable
-                    aria-describedby="dateRangeHelp"
-                    onBlur={field.onBlur}
-                  />
-                )}
-              />
-              <Form.Text id="dateRangeHelp" muted>
-                Filter by invoice date
-              </Form.Text>
-            </Form.Group>
-          </Col>
-          <Col md={6}>
-            <Form.Group controlId="dueDateRange" className="flex flex-col">
-              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
-                Due Date Range
-              </Form.Label>
-              <Controller
-                name="dueDateRange"
-                control={filterControl}
-                render={({ field }) => (
-                  <DatePicker
-                    selectsRange
-                    startDate={field.value?.[0] ?? null}
-                    endDate={field.value?.[1] ?? null}
-                    onChange={(update: [Date | null, Date | null]) =>
-                      field.onChange(update)
-                    }
-                    placeholderText="Select due date range"
-                    dateFormat="yyyy-MM-dd"
-                    className="form-control"
-                    isClearable
-                    aria-describedby="dueDateRangeHelp"
-                    onBlur={field.onBlur}
-                  />
-                )}
-              />
-              <Form.Text id="dueDateRangeHelp" muted>
-                Filter by payment deadline
-              </Form.Text>
-            </Form.Group>
-          </Col>
-        </BsRow>
+          <Form.Group controlId="customer">
+            <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
+              Customer
+            </Form.Label>
+            <Controller
+              name="customer"
+              control={filterControl}
+              render={({ field }) => (
+                <CustomerAutocomplete
+                  value={field.value}
+                  onChange={(customer) => field.onChange(customer)}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+          </Form.Group>
 
-        {/* Line 4: Buttons */}
-        <BsRow className="g-5 mt-3">
-          <Col className="d-flex gap-2">
+          <Form.Group controlId="product">
+            <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
+              Product
+            </Form.Label>
+            <Controller
+              name="product"
+              control={filterControl}
+              render={({ field }) => (
+                <ProductAutocomplete
+                  value={field.value}
+                  onChange={(product) => field.onChange(product)}
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+          </Form.Group>
+
+          <Form.Group controlId="dateRange" className="flex flex-col">
+            <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
+              Date Range
+            </Form.Label>
+            <Controller
+              name="dateRange"
+              control={filterControl}
+              render={({ field }) => (
+                <DatePicker
+                  selectsRange
+                  startDate={field.value?.[0] ?? null}
+                  endDate={field.value?.[1] ?? null}
+                  onChange={(update: [Date | null, Date | null]) =>
+                    field.onChange(update)
+                  }
+                  placeholderText="Select date range"
+                  dateFormat="yyyy-MM-dd"
+                  className="form-control"
+                  isClearable
+                  aria-describedby="dateRangeHelp"
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+            <Form.Text id="dateRangeHelp" muted>
+              Filter by invoice date
+            </Form.Text>
+          </Form.Group>
+
+          <Form.Group controlId="dueDateRange" className="flex flex-col">
+            <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
+              Due Date Range
+            </Form.Label>
+            <Controller
+              name="dueDateRange"
+              control={filterControl}
+              render={({ field }) => (
+                <DatePicker
+                  selectsRange
+                  startDate={field.value?.[0] ?? null}
+                  endDate={field.value?.[1] ?? null}
+                  onChange={(update: [Date | null, Date | null]) =>
+                    field.onChange(update)
+                  }
+                  placeholderText="Select due date range"
+                  dateFormat="yyyy-MM-dd"
+                  className="form-control"
+                  isClearable
+                  aria-describedby="dueDateRangeHelp"
+                  onBlur={field.onBlur}
+                />
+              )}
+            />
+            <Form.Text id="dueDateRangeHelp" muted>
+              Filter by payment deadline
+            </Form.Text>
+          </Form.Group>
+        </div>
+
+        {/* Buttons */}
+        <div className="mt-3">
+          <div className="d-flex gap-2">
             <OverlayTrigger
               placement="top"
               trigger="click"
@@ -249,8 +232,8 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
             >
               Clear Filters
             </Button>
-          </Col>
-        </BsRow>
+          </div>
+        </div>
 
         {hasActiveFilters && (
           <div className="mt-3">
