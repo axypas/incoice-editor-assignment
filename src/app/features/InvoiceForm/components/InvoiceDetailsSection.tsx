@@ -52,7 +52,7 @@ const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
   trigger,
 }) => {
   return (
-    <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
+    <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">
         <h5 className="mb-3">Invoice Details</h5>
 

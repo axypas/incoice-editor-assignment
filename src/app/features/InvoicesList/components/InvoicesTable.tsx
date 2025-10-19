@@ -104,7 +104,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
           return (
             <span
               {...expandRow.getToggleRowExpandedProps()}
-              style={{ cursor: 'pointer', userSelect: 'none' }}
+              className="cursor-pointer select-none"
             >
               {expandRow.isExpanded ? '▼' : '▶'}
             </span>
@@ -315,22 +315,9 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
   } = tableInstance
 
   return (
-    <div className="mt-4" style={{ position: 'relative' }}>
+    <div className="mt-4 relative">
       {isLoading && (
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 10,
-          }}
-        >
+        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
           <div className="d-flex align-items-center">
             <Spinner
               animation="border"
@@ -344,17 +331,10 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
           </div>
         </div>
       )}
-      <Card
-        className="overflow-hidden shadow-sm"
-        style={{ borderRadius: '0.75rem' }}
-      >
+      <Card className="overflow-hidden shadow-sm rounded-xl">
         <div className="table-responsive">
-          <Table
-            {...getTableProps()}
-            className="mb-0"
-            style={{ fontSize: '0.875rem' }}
-          >
-            <thead style={{ backgroundColor: '#f8fafc' }}>
+          <Table {...getTableProps()} className="mb-0 text-sm">
+            <thead className="bg-slate-50">
               {headerGroups.map((headerGroup) => (
                 <tr {...headerGroup.getHeaderGroupProps()}>
                   {headerGroup.headers.map((column) => {
@@ -376,13 +356,9 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                         onClick={() =>
                           isSortable && onSort(column.id as string)
                         }
-                        style={{
-                          cursor: isSortable ? 'pointer' : 'default',
-                          padding: '0.75rem 1.25rem',
-                          fontWeight: 500,
-                          color: '#64748b',
-                          borderBottom: '1px solid #e2e8f0',
-                        }}
+                        className={`!py-3 !px-5 font-medium text-slate-500 border-b border-slate-200 ${
+                          isSortable ? 'cursor-pointer' : 'cursor-default'
+                        }`}
                         role={isSortable ? 'button' : undefined}
                         tabIndex={isSortable ? 0 : undefined}
                       >
@@ -403,21 +379,12 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                   <React.Fragment key={row.id}>
                     <tr
                       {...row.getRowProps()}
-                      style={{
-                        borderBottom: '1px solid #f1f5f9',
-                      }}
-                      className="align-middle"
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f8fafc'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent'
-                      }}
+                      className="group align-middle border-b border-slate-100"
                     >
                       {row.cells.map((cell) => (
                         <td
                           {...cell.getCellProps()}
-                          style={{ padding: '1rem 1.25rem' }}
+                          className="!py-4 !px-5 group-hover:bg-slate-50 transition-colors"
                         >
                           {cell.render('Cell')}
                         </td>
@@ -425,10 +392,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                     </tr>
                     {expandedRow.isExpanded && (
                       <tr>
-                        <td
-                          colSpan={visibleColumns.length}
-                          style={{ padding: 0 }}
-                        >
+                        <td colSpan={visibleColumns.length} className="p-0">
                           {renderRowSubComponent({ row: expandedRow })}
                         </td>
                       </tr>

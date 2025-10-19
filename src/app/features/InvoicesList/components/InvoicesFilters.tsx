@@ -61,15 +61,12 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
 }) => {
   return (
     <Form onSubmit={onSubmit}>
-      <Card className="p-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
+      <Card className="p-4 shadow-sm rounded-xl">
         {/* Line 1: Status and Payment */}
-        <BsRow className="g-3">
+        <BsRow className="g-5">
           <Col md={6}>
             <Form.Group controlId="status">
-              <Form.Label
-                className="text-uppercase small fw-semibold text-muted"
-                style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
-              >
+              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
                 Status
               </Form.Label>
               <ButtonGroup size="sm" className="d-flex">
@@ -92,10 +89,7 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
           </Col>
           <Col md={6}>
             <Form.Group controlId="payment">
-              <Form.Label
-                className="text-uppercase small fw-semibold text-muted"
-                style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
-              >
+              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
                 Payment
               </Form.Label>
               <ButtonGroup size="sm" className="d-flex">
@@ -119,13 +113,10 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
         </BsRow>
 
         {/* Line 2: Customer and Product */}
-        <BsRow className="g-3 mt-2">
+        <BsRow className="g-5 mt-2">
           <Col md={6}>
             <Form.Group controlId="customer">
-              <Form.Label
-                className="text-uppercase small fw-semibold text-muted"
-                style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
-              >
+              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
                 Customer
               </Form.Label>
               <Controller
@@ -143,10 +134,7 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
           </Col>
           <Col md={6}>
             <Form.Group controlId="product">
-              <Form.Label
-                className="text-uppercase small fw-semibold text-muted"
-                style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
-              >
+              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
                 Product
               </Form.Label>
               <Controller
@@ -165,13 +153,10 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
         </BsRow>
 
         {/* Line 3: Date Range and Due Date Range */}
-        <BsRow className="g-3 mt-2">
+        <BsRow className="g-5 mt-2">
           <Col md={6}>
             <Form.Group controlId="dateRange" className="flex flex-col">
-              <Form.Label
-                className="text-uppercase small fw-semibold text-muted"
-                style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
-              >
+              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
                 Date Range
               </Form.Label>
               <Controller
@@ -201,10 +186,7 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
           </Col>
           <Col md={6}>
             <Form.Group controlId="dueDateRange" className="flex flex-col">
-              <Form.Label
-                className="text-uppercase small fw-semibold text-muted"
-                style={{ fontSize: '0.75rem', letterSpacing: '0.05em' }}
-              >
+              <Form.Label className="text-uppercase small fw-semibold text-muted text-xs tracking-wide">
                 Due Date Range
               </Form.Label>
               <Controller
@@ -235,7 +217,7 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
         </BsRow>
 
         {/* Line 4: Buttons */}
-        <BsRow className="g-3 mt-3">
+        <BsRow className="g-5 mt-3">
           <Col className="d-flex gap-2">
             <OverlayTrigger
               placement="top"
@@ -255,9 +237,6 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
                   type="submit"
                   variant="primary"
                   disabled={!hasChangedFilters}
-                  style={{
-                    pointerEvents: !hasChangedFilters ? 'none' : 'auto',
-                  }}
                 >
                   Apply Filters
                 </Button>

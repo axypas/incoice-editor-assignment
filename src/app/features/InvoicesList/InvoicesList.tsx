@@ -135,7 +135,7 @@ const InvoicesList = (): React.ReactElement => {
         <Button
           variant="primary"
           onClick={() => navigate('/invoices/new')}
-          style={{ minWidth: '150px' }}
+          className="min-w-37.5"
         >
           + Create Invoice
         </Button>
@@ -185,11 +185,7 @@ const InvoicesList = (): React.ReactElement => {
         isDeleting={isDeleting}
       />
 
-      <ToastContainer
-        position="top-end"
-        className="p-3"
-        style={{ zIndex: 9999 }}
-      >
+      <ToastContainer position="top-end" className="p-3 z-50">
         <Toast
           show={toastState.show}
           onClose={() => setToastShow(false)}

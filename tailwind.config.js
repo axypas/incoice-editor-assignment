@@ -18,6 +18,9 @@ module.exports = {
           900: '#0f172a',
         },
       },
+      minWidth: {
+        '37.5': '150px',
+      },
     },
   },
   plugins: [],

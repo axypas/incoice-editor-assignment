@@ -696,9 +696,21 @@ describe('InvoiceForm - US3', () => {
     it('restores draft from localStorage on mount', () => {
       // Pre-populate localStorage with a draft
       const draftData = {
-        customer: { id: '1', first_name: 'Jane', last_name: 'Smith' },
+        customer: {
+          id: '1',
+          label: 'Jane Smith',
+          first_name: 'Jane',
+          last_name: 'Smith',
+          address: '123 Test St',
+          zip_code: '12345',
+          city: 'Test City',
+          country: 'Test Country',
+          country_code: 'TC',
+        },
         date: '2024-01-15T00:00:00.000Z',
         deadline: null,
+        paid: false,
+        finalized: false,
         lineItems: [
           {
             product: {

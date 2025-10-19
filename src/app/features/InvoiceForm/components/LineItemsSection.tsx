@@ -65,7 +65,7 @@ const LineItemsSection: React.FC<LineItemsSectionProps> = ({
   createDefaultLineItem,
 }) => {
   return (
-    <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
+    <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Line Items</h5>
@@ -75,8 +75,8 @@ const LineItemsSection: React.FC<LineItemsSectionProps> = ({
         </div>
 
         <div className="table-responsive">
-          <Table hover>
-            <thead style={{ backgroundColor: '#f8fafc' }}>
+          <Table hover className="text-sm">
+            <thead className="bg-slate-50">
               <tr>
                 <th style={{ width: '26%' }}>Product</th>
                 <th style={{ width: '10%' }}>Qty</th>
@@ -238,10 +238,11 @@ const LineItemsSection: React.FC<LineItemsSectionProps> = ({
                               aria-label={`Remove line item: ${
                                 item.label || 'Unnamed'
                               }`}
-                              style={{
-                                pointerEvents:
-                                  fields.length === 1 ? 'none' : 'auto',
-                              }}
+                              className={
+                                fields.length === 1
+                                  ? 'pointer-events-none'
+                                  : 'pointer-events-auto'
+                              }
                             >
                               Remove
                             </Button>

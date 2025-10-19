@@ -22,7 +22,7 @@ interface TotalsSectionProps {
 
 const TotalsSection: React.FC<TotalsSectionProps> = ({ totals }) => {
   return (
-    <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
+    <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">
         <h5 className="mb-3">Totals</h5>
         <Row>

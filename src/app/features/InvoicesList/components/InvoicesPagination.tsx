@@ -31,12 +31,9 @@ const InvoicesPagination: React.FC<InvoicesPaginationProps> = ({
   }
 
   return (
-    <Card className="mt-3 shadow-sm" style={{ borderRadius: '0.75rem' }}>
-      <div
-        className="d-flex justify-content-between align-items-center p-3"
-        style={{ backgroundColor: '#f8fafc' }}
-      >
-        <span className="text-secondary" style={{ fontSize: '0.875rem' }}>
+    <Card className="mt-3 shadow-sm rounded-xl">
+      <div className="d-flex justify-content-between align-items-center p-3 bg-slate-50">
+        <span className="text-secondary text-sm">
           Page {currentPage} of {pagination.total_pages} ·{' '}
           {pagination.total_entries} invoice
           {pagination.total_entries !== 1 ? 's' : ''}
@@ -47,7 +44,7 @@ const InvoicesPagination: React.FC<InvoicesPaginationProps> = ({
             size="sm"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1 || isLoading}
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+            className="text-xs !py-1 !px-3"
           >
             Previous
           </Button>
@@ -56,7 +53,7 @@ const InvoicesPagination: React.FC<InvoicesPaginationProps> = ({
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === pagination.total_pages || isLoading}
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+            className="text-xs !py-1 !px-3"
           >
             Next
           </Button>
