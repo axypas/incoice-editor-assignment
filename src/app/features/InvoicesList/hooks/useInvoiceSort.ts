@@ -13,9 +13,9 @@ interface UseInvoiceSortReturn {
 }
 
 export const useInvoiceSort = (): UseInvoiceSortReturn => {
-  // Sort state
-  const [sortField, setSortField] = useState<string>('date')
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
+  // Sort state - default to deadline ascending to show overdue invoices first
+  const [sortField, setSortField] = useState<string>('deadline')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
 
   // Mapping between UI column IDs and backend sort field names
   const sortFieldMapping: Record<string, string> = useMemo(

@@ -412,7 +412,7 @@ describe('InvoicesList - US1', () => {
   })
 
   describe('Sorting', () => {
-    it('sends default sort parameter (-date) to API', async () => {
+    it('sends default sort parameter (+deadline) to API', async () => {
       let capturedParams: any = null
 
       server.use(
@@ -441,9 +441,9 @@ describe('InvoicesList - US1', () => {
         expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      // Verify API was called with default sort parameter
+      // Verify API was called with default sort parameter (deadline ascending to show overdue first)
       expect(capturedParams).toBeTruthy()
-      expect(capturedParams.sort).toBe('-date')
+      expect(capturedParams.sort).toBe('+deadline')
     })
 
     it('sends updated sort parameter when clicking column headers', async () => {
@@ -515,29 +515,29 @@ describe('InvoicesList - US1', () => {
 
       renderInvoicesList()
 
-      // Wait for table and data to load
+      // Wait for invoices to load and table to render
       await waitFor(() => {
-        expect(screen.getByRole('table')).toBeInTheDocument()
+        expect(screen.getByText('John Doe')).toBeInTheDocument()
       })
 
-      // Initial sort should be -date (desc)
-      expect(capturedParams.sort).toBe('-date')
+      // Initial sort should be +deadline (asc)
+      expect(capturedParams.sort).toBe('+deadline')
 
-      // Click date header to toggle to ascending (name includes sort indicator)
-      const dateHeader = screen.getByRole('button', { name: /^date/i })
-      await userEvent.click(dateHeader)
+      // Click "Due Date" header to toggle to descending
+      const dueDateHeader = screen.getByRole('button', { name: /^due date/i })
+      await userEvent.click(dueDateHeader)
 
-      // Verify sort changed to +date (asc)
+      // Verify sort changed to -deadline (desc)
       await waitFor(() => {
-        expect(capturedParams.sort).toBe('+date')
+        expect(capturedParams.sort).toBe('-deadline')
       })
 
-      // Click again to toggle back to descending
-      await userEvent.click(dateHeader)
+      // Click again to toggle back to ascending
+      await userEvent.click(dueDateHeader)
 
-      // Verify sort changed back to -date (desc)
+      // Verify sort changed back to +deadline (asc)
       await waitFor(() => {
-        expect(capturedParams.sort).toBe('-date')
+        expect(capturedParams.sort).toBe('+deadline')
       })
     })
 
@@ -560,14 +560,16 @@ describe('InvoicesList - US1', () => {
 
       renderInvoicesList()
 
-      // Wait for table and data to load
+      // Wait for invoices to load and table to render
       await waitFor(() => {
-        expect(screen.getByRole('table')).toBeInTheDocument()
+        expect(screen.getByText('John Doe')).toBeInTheDocument()
       })
 
-      // Date column should show descending indicator by default
-      const dateHeader = screen.getByRole('button', { name: /^date ▼$/i })
-      expect(dateHeader).toHaveTextContent('▼')
+      // Due Date column should show ascending indicator by default
+      const dueDateHeader = screen.getByRole('button', {
+        name: /^due date ▲$/i,
+      })
+      expect(dueDateHeader).toHaveTextContent('▲')
     })
   })
 
