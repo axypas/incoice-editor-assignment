@@ -7,7 +7,6 @@ import {
   calculateLineItem,
   calculateInvoiceTotals,
   formatCurrency,
-  ensureNumber,
 } from './calculations'
 import { InvoiceLineItem } from 'common/types/invoice.types'
 
@@ -146,19 +145,6 @@ describe('Financial Calculations', () => {
 
     it('should handle negative amounts', () => {
       expect(formatCurrency(-1234.56)).toBe('€-1,234.56')
-    })
-  })
-
-  describe('ensureNumber', () => {
-    it('should convert various inputs to numbers safely', () => {
-      expect(ensureNumber(10)).toBe(10)
-      expect(ensureNumber('10')).toBe(10)
-      expect(ensureNumber('10.5')).toBe(10.5)
-      expect(ensureNumber(null)).toBe(0)
-      expect(ensureNumber(undefined)).toBe(0)
-      expect(ensureNumber('abc')).toBe(0)
-      expect(ensureNumber(NaN)).toBe(0)
-      expect(ensureNumber(Infinity)).toBe(0)
     })
   })
 })

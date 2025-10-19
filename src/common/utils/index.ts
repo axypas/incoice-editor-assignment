@@ -11,10 +11,4 @@ export * from './logger'
 
 // For currency, we only export the unique exports to avoid conflicts
 // (formatCurrency from currency.ts wraps the one from calculations.ts)
-export {
-  CURRENCIES,
-  type CurrencyCode,
-  formatCurrency,
-  formatDate,
-  getPaymentStatusLabel,
-} from './currency'
+export { formatDate, getPaymentStatusLabel } from './currency'

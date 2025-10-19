@@ -14,12 +14,8 @@ import {
 import { Spinner, Button, Badge, Table, Card } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import { Invoice } from 'common/types/invoice.types'
-import {
-  formatCurrency,
-  formatDate,
-  getPaymentStatusLabel,
-} from 'common/utils/currency'
-import { calculateLineItem } from 'common/utils/calculations'
+import { formatDate, getPaymentStatusLabel } from 'common/utils/currency'
+import { calculateLineItem, formatCurrency } from 'common/utils/calculations'
 
 interface InvoicesTableProps {
   invoices: Invoice[]

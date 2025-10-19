@@ -5,19 +5,6 @@
 
 import numeral from 'numeral'
 
-// Supported currencies with their symbols and locale defaults
-export const CURRENCIES = {
-  EUR: { symbol: '€', locale: 'fr-FR', name: 'Euro' },
-  USD: { symbol: '$', locale: 'en-US', name: 'US Dollar' },
-  GBP: { symbol: '£', locale: 'en-GB', name: 'British Pound' },
-  CHF: { symbol: 'CHF', locale: 'de-CH', name: 'Swiss Franc' },
-} as const
-
-export type CurrencyCode = keyof typeof CURRENCIES
-
-// Re-export formatCurrency from calculations for convenience
-export { formatCurrency } from './calculations'
-
 /**
  * Formats a date according to locale
  */

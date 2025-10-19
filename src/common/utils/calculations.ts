@@ -107,12 +107,3 @@ export const formatCurrency = (amount: number): string => {
   // Prepend EUR symbol
   return `€${formattedNumber}`
 }
-
-/**
- * Ensures a value is a valid number for calculations
- * Returns 0 if invalid
- */
-export const ensureNumber = (value: any): number => {
-  const num = Number(value)
-  return Number.isFinite(num) ? num : 0
-}

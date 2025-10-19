@@ -5,19 +5,21 @@
 
 import React from 'react'
 import { Card } from 'react-bootstrap'
+import numeral from 'numeral'
 import { formatCurrency } from 'common/utils/calculations'
 
 interface InvoiceTotalsProps {
-  subtotal: number
-  tax: number
-  total: number
+  tax: number | undefined
+  total: number | undefined
 }
 
-const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
-  subtotal,
-  tax,
-  total,
-}) => {
+const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({ tax, total }) => {
+  // Calculate subtotal from total and tax using numeral.js
+  const subtotal =
+    total !== undefined && tax !== undefined
+      ? numeral(total).subtract(tax).value() ?? undefined
+      : undefined
+
   return (
     <Card>
       <Card.Header>
@@ -28,16 +30,22 @@ const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({
           <div className="col-md-6 ms-auto">
             <div className="d-flex justify-content-between mb-2">
               <span className="text-muted">Subtotal:</span>
-              <span className="fw-medium">{formatCurrency(subtotal)}</span>
+              <span className="fw-medium">
+                {subtotal !== undefined ? formatCurrency(subtotal) : '—'}
+              </span>
             </div>
             <div className="d-flex justify-content-between mb-2">
               <span className="text-muted">Total VAT:</span>
-              <span className="fw-medium">{formatCurrency(tax)}</span>
+              <span className="fw-medium">
+                {tax !== undefined ? formatCurrency(tax) : '—'}
+              </span>
             </div>
             <hr />
             <div className="d-flex justify-content-between">
               <span className="fw-bold">Grand Total:</span>
-              <span className="fw-bold fs-5">{formatCurrency(total)}</span>
+              <span className="fw-bold fs-5">
+                {total !== undefined ? formatCurrency(total) : '—'}
+              </span>
             </div>
           </div>
         </div>
