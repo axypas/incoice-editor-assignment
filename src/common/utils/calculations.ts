@@ -8,7 +8,6 @@ import {
   InvoiceLineItem,
   LineItemCalculation,
   InvoiceCalculation,
-  Invoice,
 } from 'common/types/invoice.types'
 
 /**
@@ -123,17 +122,6 @@ export const formatCurrency = (
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
-}
-
-/**
- * Checks if an invoice is overdue
- */
-export const isOverdue = (invoice: Invoice): boolean => {
-  if (invoice.paid || !invoice.deadline) return false
-
-  const now = new Date()
-  const deadline = new Date(invoice.deadline)
-  return now > deadline
 }
 
 /**
