@@ -204,15 +204,12 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
           <div className="d-flex gap-2">
             <OverlayTrigger
               placement="top"
-              trigger="click"
+              trigger={['hover', 'focus']}
+              show={hasChangedFilters ? false : undefined}
               overlay={
-                hasChangedFilters ? (
-                  <div />
-                ) : (
-                  <Tooltip id="apply-filters-tooltip">
-                    Please select at least one filter to apply
-                  </Tooltip>
-                )
+                <Tooltip id="apply-filters-tooltip">
+                  Please select at least one filter to apply
+                </Tooltip>
               }
             >
               <span className="d-inline-block">
