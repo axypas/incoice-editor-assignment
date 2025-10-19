@@ -28,6 +28,7 @@ interface InvoicesTableProps {
   sortDirection: 'asc' | 'desc'
   onSort: (field: string) => void
   onDeleteClick: (invoice: Invoice) => void
+  onFinalizeClick: (invoice: Invoice) => void
 }
 
 const InvoicesTable: React.FC<InvoicesTableProps> = ({
@@ -37,6 +38,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
   sortDirection,
   onSort,
   onDeleteClick,
+  onFinalizeClick,
 }) => {
   const navigate = useNavigate()
 
@@ -276,6 +278,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
                 variant="primary"
                 size="sm"
                 style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                onClick={() => onFinalizeClick(invoice)}
               >
                 Finalize
               </Button>
@@ -296,7 +299,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
         id: 'actions',
       },
     ],
-    [onDeleteClick, navigate]
+    [onDeleteClick, onFinalizeClick, navigate]
   )
 
   const tableInstance = useTable(

@@ -15,11 +15,14 @@ import {
 } from 'app/features/InvoicesList/hooks/useInvoiceFilters'
 import { useInvoiceSort } from 'app/features/InvoicesList/hooks/useInvoiceSort'
 import { useInvoiceDelete } from 'app/features/InvoicesList/hooks/useInvoiceDelete'
+import { useInvoiceFinalize } from 'app/features/InvoicesList/hooks/useInvoiceFinalize'
 import InvoicesPagination from 'app/features/InvoicesList/components/InvoicesPagination'
 import DeleteInvoiceDialog from 'app/features/InvoicesList/components/DeleteInvoiceDialog'
+import FinalizeInvoiceDialog from 'app/features/InvoicesList/components/FinalizeInvoiceDialog'
 import InvoicesTable from 'app/features/InvoicesList/components/InvoicesTable'
 import InvoicesFilters from 'app/features/InvoicesList/components/InvoicesFilters'
 import InvoicesEmptyState from 'app/features/InvoicesList/components/InvoicesEmptyState'
+import { Invoice } from 'common/types/invoice.types'
 
 const InvoicesList = (): React.ReactElement => {
   const navigate = useNavigate()
@@ -66,6 +69,56 @@ const InvoicesList = (): React.ReactElement => {
     handleDeleteCancel,
     setToastShow,
   } = useInvoiceDelete(refetch)
+
+  // Finalize state
+  const [invoiceToFinalize, setInvoiceToFinalize] = useState<Invoice | null>(
+    null
+  )
+  const [showFinalizeDialog, setShowFinalizeDialog] = useState(false)
+  const [finalizeToast, setFinalizeToast] = useState({
+    show: false,
+    message: '',
+    variant: 'success' as 'success' | 'danger',
+  })
+  const { finalizeInvoice, isFinalizing } = useInvoiceFinalize()
+
+  // Finalize handlers
+  const handleFinalizeClick = useCallback((invoice: Invoice) => {
+    setInvoiceToFinalize(invoice)
+    setShowFinalizeDialog(true)
+  }, [])
+
+  const handleFinalizeConfirm = useCallback(async () => {
+    if (!invoiceToFinalize) return
+
+    try {
+      await finalizeInvoice(invoiceToFinalize.id || '')
+      setShowFinalizeDialog(false)
+      setInvoiceToFinalize(null)
+
+      // Show success toast
+      setFinalizeToast({
+        show: true,
+        message: 'Invoice finalized successfully',
+        variant: 'success',
+      })
+
+      // Refetch to update the list
+      refetch()
+    } catch (err) {
+      // Error toast
+      setFinalizeToast({
+        show: true,
+        message: 'Failed to finalize invoice. Please try again.',
+        variant: 'danger',
+      })
+    }
+  }, [invoiceToFinalize, finalizeInvoice, refetch])
+
+  const handleFinalizeCancel = useCallback(() => {
+    setShowFinalizeDialog(false)
+    setInvoiceToFinalize(null)
+  }, [])
 
   // Handle status filter change
   const handleStatusChange = useCallback(
@@ -165,6 +218,7 @@ const InvoicesList = (): React.ReactElement => {
             sortDirection={sortDirection}
             onSort={handleSort}
             onDeleteClick={handleDeleteClick}
+            onFinalizeClick={handleFinalizeClick}
           />
 
           {/* Pagination Footer */}
@@ -183,6 +237,14 @@ const InvoicesList = (): React.ReactElement => {
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         isDeleting={isDeleting}
+      />
+
+      <FinalizeInvoiceDialog
+        invoice={invoiceToFinalize}
+        show={showFinalizeDialog}
+        onConfirm={handleFinalizeConfirm}
+        onCancel={handleFinalizeCancel}
+        isFinalizing={isFinalizing}
       />
 
       <ToastContainer position="top-end" className="p-3 z-50">
@@ -206,6 +268,24 @@ const InvoicesList = (): React.ReactElement => {
             className={toastState.variant === 'success' ? 'text-white' : ''}
           >
             {toastState.message}
+          </Toast.Body>
+        </Toast>
+        <Toast
+          show={finalizeToast.show}
+          onClose={() => setFinalizeToast({ ...finalizeToast, show: false })}
+          delay={5000}
+          autohide
+          bg={finalizeToast.variant}
+        >
+          <Toast.Header>
+            <strong className="me-auto">
+              {finalizeToast.variant === 'success' ? 'Success' : 'Error'}
+            </strong>
+          </Toast.Header>
+          <Toast.Body
+            className={finalizeToast.variant === 'success' ? 'text-white' : ''}
+          >
+            {finalizeToast.message}
           </Toast.Body>
         </Toast>
       </ToastContainer>
