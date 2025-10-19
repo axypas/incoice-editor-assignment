@@ -107,6 +107,7 @@ const InvoiceFormInner = ({
     clearErrors,
     setError,
     trigger,
+    watch,
     formState: { errors, isSubmitting, isDirty },
   } = methods
 
@@ -178,9 +179,10 @@ const InvoiceFormInner = ({
     onSuccess: clearDraft,
   })
 
-  // Invoice calculations hook
+  // Invoice calculations hook - watch lineItems for reactive updates
+  const watchedLineItems = watch('lineItems') || []
   const { totals, perLine, lineItems } = useInvoiceCalculations({
-    lineItems: getValues('lineItems') || [],
+    lineItems: watchedLineItems,
   })
 
   const handleCancel = useCallback(() => {
