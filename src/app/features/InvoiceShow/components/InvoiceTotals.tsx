@@ -13,7 +13,7 @@ interface InvoiceTotalsProps {
   total: number | undefined
 }
 
-const InvoiceTotals: React.FC<InvoiceTotalsProps> = ({ tax, total }) => {
+const InvoiceTotals = ({ tax, total }: InvoiceTotalsProps): JSX.Element => {
   // Calculate subtotal from total and tax using numeral.js
   const subtotal =
     total !== undefined && tax !== undefined

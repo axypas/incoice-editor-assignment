@@ -17,11 +17,11 @@ interface ApiProviderProps {
   children?: ReactNode
 }
 
-export const ApiProvider: React.FC<ApiProviderProps> = ({
+export const ApiProvider = ({
   url,
   token,
   children,
-}) => {
+}: ApiProviderProps): JSX.Element => {
   const apiRef = useRef(
     new OpenAPIClientAxios({
       /* @ts-ignore */

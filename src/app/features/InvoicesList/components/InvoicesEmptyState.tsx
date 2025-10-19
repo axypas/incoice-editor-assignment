@@ -9,9 +9,9 @@ interface InvoicesEmptyStateProps {
   onCreateInvoice: () => void
 }
 
-const InvoicesEmptyState: React.FC<InvoicesEmptyStateProps> = ({
+const InvoicesEmptyState = ({
   onCreateInvoice,
-}) => {
+}: InvoicesEmptyStateProps): JSX.Element => {
   // No invoices at all - show "create invoice" message
   return (
     <div className="text-center mt-5 py-5">

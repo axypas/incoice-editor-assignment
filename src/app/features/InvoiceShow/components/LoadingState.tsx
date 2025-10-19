@@ -11,9 +11,9 @@ interface LoadingStateProps {
   message?: string
 }
 
-const LoadingState: React.FC<LoadingStateProps> = ({
+const LoadingState = ({
   message = 'Loading invoice...',
-}) => {
+}: LoadingStateProps): JSX.Element => {
   return (
     <div className="d-flex justify-content-center align-items-center mt-5 py-5">
       <Spinner animation="border" role="status" className="me-2">

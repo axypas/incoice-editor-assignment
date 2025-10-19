@@ -18,7 +18,7 @@ interface TotalsSectionProps {
   totals: InvoiceTotals
 }
 
-const TotalsSection: React.FC<TotalsSectionProps> = ({ totals }) => {
+const TotalsSection = ({ totals }: TotalsSectionProps): JSX.Element => {
   return (
     <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">

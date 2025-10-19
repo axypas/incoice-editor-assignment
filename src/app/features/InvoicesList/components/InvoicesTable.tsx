@@ -29,7 +29,7 @@ interface InvoicesTableProps {
   onFinalizeClick: (invoice: Invoice) => void
 }
 
-const InvoicesTable: React.FC<InvoicesTableProps> = ({
+const InvoicesTable = ({
   invoices,
   isLoading,
   sortField,
@@ -37,7 +37,7 @@ const InvoicesTable: React.FC<InvoicesTableProps> = ({
   onSort,
   onDeleteClick,
   onFinalizeClick,
-}) => {
+}: InvoicesTableProps): JSX.Element => {
   const navigate = useNavigate()
 
   // Render expandable row content

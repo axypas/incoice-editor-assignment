@@ -12,7 +12,7 @@ interface LineItemsTableProps {
   invoice: Invoice
 }
 
-const LineItemsTable: React.FC<LineItemsTableProps> = ({ invoice }) => {
+const LineItemsTable = ({ invoice }: LineItemsTableProps): JSX.Element => {
   return (
     <Card className="mb-4">
       <Card.Header>

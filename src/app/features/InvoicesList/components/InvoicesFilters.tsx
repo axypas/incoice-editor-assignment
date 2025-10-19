@@ -46,7 +46,7 @@ interface InvoicesFiltersProps {
   filterSummary: string
 }
 
-const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
+const InvoicesFilters = ({
   filterControl,
   onSubmit,
   onClearFilters,
@@ -56,7 +56,7 @@ const InvoicesFilters: React.FC<InvoicesFiltersProps> = ({
   hasActiveFilters,
   hasChangedFilters,
   filterSummary,
-}) => {
+}: InvoicesFiltersProps): JSX.Element => {
   return (
     <Form onSubmit={onSubmit}>
       <Card className="p-4 shadow-sm rounded-xl">

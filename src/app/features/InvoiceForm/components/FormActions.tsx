@@ -15,14 +15,14 @@ interface FormActionsProps {
   onFinalizeClick: () => void
 }
 
-const FormActions: React.FC<FormActionsProps> = ({
+const FormActions = ({
   isEditMode,
   isSubmitting,
   isUpdating,
   hasValidationErrors,
   onCancel,
   onFinalizeClick,
-}) => {
+}: FormActionsProps): JSX.Element => {
   return (
     <div className="d-flex justify-content-end gap-2">
       <Button

@@ -17,7 +17,7 @@ interface FormHeaderProps {
   onDismissSubmitError: () => void
 }
 
-const FormHeader: React.FC<FormHeaderProps> = ({
+const FormHeader = ({
   isEditMode,
   invoiceNumber,
   invoiceId,
@@ -26,7 +26,7 @@ const FormHeader: React.FC<FormHeaderProps> = ({
   saveError,
   submitError,
   onDismissSubmitError,
-}) => {
+}: FormHeaderProps): JSX.Element => {
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-4">

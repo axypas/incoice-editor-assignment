@@ -14,12 +14,12 @@ interface ErrorStateProps {
   onAction?: () => void
 }
 
-const ErrorState: React.FC<ErrorStateProps> = ({
+const ErrorState = ({
   title = 'Error Loading Invoice',
   message = 'Unable to load invoice. Please try again later.',
   actionLabel = 'Back to List',
   onAction,
-}) => {
+}: ErrorStateProps): JSX.Element => {
   return (
     <Alert variant="danger" className="mt-4">
       <Alert.Heading>{title}</Alert.Heading>

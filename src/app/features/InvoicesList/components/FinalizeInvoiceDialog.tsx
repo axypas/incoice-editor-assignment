@@ -14,13 +14,13 @@ interface FinalizeInvoiceDialogProps {
   isFinalizing: boolean
 }
 
-const FinalizeInvoiceDialog: React.FC<FinalizeInvoiceDialogProps> = ({
+const FinalizeInvoiceDialog = ({
   invoice,
   show,
   onConfirm,
   onCancel,
   isFinalizing,
-}) => {
+}: FinalizeInvoiceDialogProps): JSX.Element | null => {
   if (!invoice) return null
 
   return (

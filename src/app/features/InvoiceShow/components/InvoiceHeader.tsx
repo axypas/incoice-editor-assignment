@@ -13,11 +13,11 @@ interface InvoiceHeaderProps {
   onBackToList: () => void
 }
 
-const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
+const InvoiceHeader = ({
   invoice,
   onEdit,
   onBackToList,
-}) => {
+}: InvoiceHeaderProps): JSX.Element => {
   return (
     <div className="d-flex justify-content-between align-items-center mb-4">
       <div>

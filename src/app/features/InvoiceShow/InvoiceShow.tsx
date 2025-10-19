@@ -14,7 +14,7 @@ import InvoiceDetails from './components/InvoiceDetails'
 import LineItemsTable from './components/LineItemsTable'
 import InvoiceTotals from './components/InvoiceTotals'
 
-const InvoiceShow: React.FC = () => {
+const InvoiceShow = (): JSX.Element => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { invoice, isLoading, isError, error } = useInvoice(id || '')

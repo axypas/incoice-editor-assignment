@@ -13,12 +13,12 @@ interface FinalizeConfirmationModalProps {
   onCancel: () => void
 }
 
-const FinalizeConfirmationModal: React.FC<FinalizeConfirmationModalProps> = ({
+const FinalizeConfirmationModal = ({
   show,
   isEditMode,
   onConfirm,
   onCancel,
-}) => {
+}: FinalizeConfirmationModalProps): JSX.Element => {
   return (
     <Modal show={show} onHide={onCancel} centered>
       <Modal.Header closeButton>

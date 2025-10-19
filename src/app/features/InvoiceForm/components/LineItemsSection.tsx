@@ -53,7 +53,7 @@ interface LineItemsSectionProps {
   createDefaultLineItem: () => LineItemFormValue
 }
 
-const LineItemsSection: React.FC<LineItemsSectionProps> = ({
+const LineItemsSection = ({
   control,
   fields,
   lineItems,
@@ -63,7 +63,7 @@ const LineItemsSection: React.FC<LineItemsSectionProps> = ({
   removeLineItem,
   duplicateLineItem,
   createDefaultLineItem,
-}) => {
+}: LineItemsSectionProps): JSX.Element => {
   return (
     <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">

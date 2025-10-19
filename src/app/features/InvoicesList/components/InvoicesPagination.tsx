@@ -20,12 +20,12 @@ interface InvoicesPaginationProps {
   isLoading: boolean
 }
 
-const InvoicesPagination: React.FC<InvoicesPaginationProps> = ({
+const InvoicesPagination = ({
   pagination,
   currentPage,
   onPageChange,
   isLoading,
-}) => {
+}: InvoicesPaginationProps): JSX.Element | null => {
   if (!pagination) {
     return null
   }

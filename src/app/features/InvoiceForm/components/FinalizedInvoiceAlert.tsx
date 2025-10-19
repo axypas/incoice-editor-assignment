@@ -11,10 +11,10 @@ interface FinalizedInvoiceAlertProps {
   onViewInvoice: () => void
 }
 
-const FinalizedInvoiceAlert: React.FC<FinalizedInvoiceAlertProps> = ({
+const FinalizedInvoiceAlert = ({
   onBackToList,
   onViewInvoice,
-}) => {
+}: FinalizedInvoiceAlertProps): JSX.Element => {
   return (
     <div className="pb-4">
       <Alert variant="info" className="mt-4">

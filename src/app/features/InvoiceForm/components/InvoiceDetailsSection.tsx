@@ -32,7 +32,7 @@ interface InvoiceFormValues {
   lineItems: LineItemFormValue[]
 }
 
-const InvoiceDetailsSection: React.FC = () => {
+const InvoiceDetailsSection = (): JSX.Element => {
   const { control, getValues, setValue, trigger } =
     useFormContext<InvoiceFormValues>()
   return (

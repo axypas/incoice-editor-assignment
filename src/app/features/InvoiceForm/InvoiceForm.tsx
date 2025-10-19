@@ -72,7 +72,7 @@ const createDefaultValues = (): InvoiceFormValues => ({
   lineItems: [createDefaultLineItem()],
 })
 
-const InvoiceForm: React.FC = () => {
+const InvoiceForm = (): JSX.Element => {
   const navigate = useNavigate()
   const { id: invoiceId } = useParams<{ id: string }>()
   const isEditMode = !!invoiceId

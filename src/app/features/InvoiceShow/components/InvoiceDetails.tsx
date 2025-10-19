@@ -12,10 +12,10 @@ interface InvoiceDetailsProps {
   formatDate: (dateString: string | null | undefined) => string
 }
 
-const InvoiceDetails: React.FC<InvoiceDetailsProps> = ({
+const InvoiceDetails = ({
   invoice,
   formatDate,
-}) => {
+}: InvoiceDetailsProps): JSX.Element => {
   return (
     <Card className="mb-4">
       <Card.Header>
