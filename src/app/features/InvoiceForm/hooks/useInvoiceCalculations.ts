@@ -1,9 +1,11 @@
 /**
  * useInvoiceCalculations hook
  * Calculates invoice totals and per-line calculations
+ *
+ * Note: No memoization needed - calculations are pure, fast O(n),
+ * and need to run on every render to stay reactive with form changes.
  */
 
-import { useMemo } from 'react'
 import type { InvoiceLineItem } from 'common/types/invoice.types'
 import {
   calculateLineItem,
@@ -30,23 +32,21 @@ interface UseInvoiceCalculationsOptions {
 export const useInvoiceCalculations = ({
   lineItems,
 }: UseInvoiceCalculationsOptions) => {
-  return useMemo(() => {
-    const invoiceLineItems: InvoiceLineItem[] = lineItems.map((item) => ({
-      product: item.product,
-      product_id: item.product_id,
-      label: item.label,
-      quantity: item.quantity ?? 0,
-      unit: item.unit,
-      unit_price: item.unit_price ?? 0,
-      vat_rate: item.vat_rate,
-    }))
+  const invoiceLineItems: InvoiceLineItem[] = lineItems.map((item) => ({
+    product: item.product,
+    product_id: item.product_id,
+    label: item.label,
+    quantity: item.quantity ?? 0,
+    unit: item.unit,
+    unit_price: item.unit_price ?? 0,
+    vat_rate: item.vat_rate,
+  }))
 
-    return {
-      totals: calculateInvoiceTotals(invoiceLineItems),
-      perLine: invoiceLineItems.map((invoiceItem) =>
-        calculateLineItem(invoiceItem)
-      ),
-      lineItems,
-    }
-  }, [lineItems])
+  return {
+    totals: calculateInvoiceTotals(invoiceLineItems),
+    perLine: invoiceLineItems.map((invoiceItem) =>
+      calculateLineItem(invoiceItem)
+    ),
+    lineItems,
+  }
 }
