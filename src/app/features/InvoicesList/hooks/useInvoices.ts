@@ -12,8 +12,13 @@ import {
   AsyncStatus,
   ApiError,
 } from 'common/types/invoice.types'
-import { Paths } from 'api/gen/client'
+import { Paths, Components } from 'api/gen/client'
 import { logger } from 'common/utils/logger'
+
+// Extended API response type that includes customer object (not in OpenAPI schema but returned by API)
+type InvoiceApiResponse = Components.Schemas.Invoice & {
+  customer?: Components.Schemas.Customer
+}
 
 interface Pagination {
   page: number
@@ -127,13 +132,17 @@ export const useInvoices = (
         setInvoices(mappedInvoices)
         setPagination(paginationData)
         setStatus('success')
-      } catch (err: any) {
+      } catch (err) {
         logger.error('Failed to fetch invoices:', err)
 
         const apiError: ApiError = {
-          error: err.name || 'FetchError',
+          error: err instanceof Error ? err.name : 'FetchError',
           message: 'Unable to load invoices. Please try again.',
-          statusCode: err.response?.status || 500,
+          statusCode:
+            err && typeof err === 'object' && 'response' in err
+              ? (err as { response?: { status?: number } }).response?.status ||
+                500
+              : 500,
         }
 
         setError(apiError)
@@ -182,44 +191,62 @@ export const useInvoice = (invoiceId: string) => {
       const response = await api.getInvoice(invoiceId)
 
       // Extract invoice from response (API returns { invoices: [...] } even for single invoice)
-      const inv = (response.data as any).invoices?.[0] || response.data
-
-      // Calculate totals from invoice_lines if not provided by API
-      let calculatedTotal = 0
-      let calculatedTax = 0
-
-      if (inv.invoice_lines && inv.invoice_lines.length > 0) {
-        inv.invoice_lines.forEach((line: any) => {
-          calculatedTotal += parseFloat(line.price || '0')
-          calculatedTax += parseFloat(line.tax || '0')
-        })
-      }
+      const inv = response.data as InvoiceApiResponse
 
       // Map API type to domain type
-      const mappedInvoice = {
-        ...inv,
+      const mappedInvoice: Invoice = {
         id: inv.id?.toString(),
         customer_id: inv.customer_id?.toString(),
-        invoice_number: inv.id?.toString(), // API doesn't provide invoice_number, use id as fallback
-        total: inv.total != null ? parseFloat(inv.total) : calculatedTotal,
-        tax: inv.tax != null ? parseFloat(inv.tax) : calculatedTax,
-        invoice_lines: ((inv as any).invoice_lines || []).map((line: any) => ({
-          ...line,
-          id: line.id?.toString(),
-          unit_price: parseFloat(line.price || '0'),
-          vat_rate: parseFloat(line.vat_rate || '0'),
-        })),
-      } as Invoice
+        customer: inv.customer
+          ? {
+              id: inv.customer.id?.toString() || '',
+              label: `${inv.customer.first_name} ${inv.customer.last_name}`,
+              first_name: inv.customer.first_name,
+              last_name: inv.customer.last_name,
+              address: inv.customer.address || '',
+              zip_code: inv.customer.zip_code || '',
+              city: inv.customer.city || '',
+              country: inv.customer.country || '',
+              country_code: inv.customer.country_code || '',
+            }
+          : undefined,
+        invoice_number: inv.id?.toString() || '', // API doesn't provide invoice_number, use id as fallback
+        date: inv.date || '',
+        deadline: inv.deadline || undefined,
+        finalized: inv.finalized || false,
+        paid: inv.paid || false,
+        total: inv.total != null ? parseFloat(inv.total) : undefined,
+        tax: inv.tax != null ? parseFloat(inv.tax) : undefined,
+        invoice_lines: (inv.invoice_lines || []).map(
+          (line: Components.Schemas.InvoiceLine) => ({
+            id: line.id?.toString(),
+            product_id: line.product_id?.toString(),
+            product: line.product || null,
+            label: line.label || '',
+            quantity: line.quantity || 0,
+            unit: line.unit || 'piece',
+            unit_price: parseFloat(line.price || '0'),
+            vat_rate: parseFloat(line.vat_rate || '0'),
+          })
+        ),
+      }
 
       setInvoice(mappedInvoice)
       setStatus('success')
-    } catch (err: any) {
+    } catch (err) {
       logger.error(`Failed to fetch invoice ${invoiceId}:`, err)
 
       const apiError: ApiError = {
-        error: err.name || 'FetchError',
-        message: err.message || 'Failed to load invoice. Please try again.',
-        statusCode: err.response?.status || 500,
+        error: err instanceof Error ? err.name : 'FetchError',
+        message:
+          err instanceof Error
+            ? err.message
+            : 'Failed to load invoice. Please try again.',
+        statusCode:
+          err && typeof err === 'object' && 'response' in err
+            ? (err as { response?: { status?: number } }).response?.status ||
+              500
+            : 500,
       }
 
       setError(apiError)
@@ -292,35 +319,62 @@ export const useUpdateInvoice = (): UseUpdateInvoiceResult => {
           { invoice: payload }
         )
 
-        const inv = response.data
+        const inv = response.data as InvoiceApiResponse
 
         // Map API type to domain type
-        const mappedInvoice = {
-          ...inv,
+        const mappedInvoice: Invoice = {
           id: inv.id?.toString(),
           customer_id: inv.customer_id?.toString(),
-          invoice_number: inv.id?.toString(),
-          total: parseFloat((inv as any).total || '0'),
-          tax: parseFloat((inv as any).tax || '0'),
-          invoice_lines: ((inv as any).invoice_lines || []).map(
-            (line: any) => ({
-              ...line,
+          customer: inv.customer
+            ? {
+                id: inv.customer.id?.toString() || '',
+                label: `${inv.customer.first_name} ${inv.customer.last_name}`,
+                first_name: inv.customer.first_name,
+                last_name: inv.customer.last_name,
+                address: inv.customer.address || '',
+                zip_code: inv.customer.zip_code || '',
+                city: inv.customer.city || '',
+                country: inv.customer.country || '',
+                country_code: inv.customer.country_code || '',
+              }
+            : undefined,
+          invoice_number: inv.id?.toString() || '',
+          date: inv.date || '',
+          deadline: inv.deadline || undefined,
+          finalized: inv.finalized || false,
+          paid: inv.paid || false,
+          total: inv.total != null ? parseFloat(inv.total) : undefined,
+          tax: inv.tax != null ? parseFloat(inv.tax) : undefined,
+          invoice_lines: (inv.invoice_lines || []).map(
+            (line: Components.Schemas.InvoiceLine) => ({
               id: line.id?.toString(),
+              product_id: line.product_id?.toString(),
+              product: line.product || null,
+              label: line.label || '',
+              quantity: line.quantity || 0,
+              unit: line.unit || 'piece',
               unit_price: parseFloat(line.price || '0'),
               vat_rate: parseFloat(line.vat_rate || '0'),
             })
           ),
-        } as Invoice
+        }
 
         setStatus('success')
         return mappedInvoice
-      } catch (err: any) {
+      } catch (err) {
         logger.error(`Failed to update invoice ${invoiceId}:`, err)
 
         const apiError: ApiError = {
-          error: err.name || 'UpdateError',
-          message: err.message || 'Failed to update invoice. Please try again.',
-          statusCode: err.response?.status || 500,
+          error: err instanceof Error ? err.name : 'UpdateError',
+          message:
+            err instanceof Error
+              ? err.message
+              : 'Failed to update invoice. Please try again.',
+          statusCode:
+            err && typeof err === 'object' && 'response' in err
+              ? (err as { response?: { status?: number } }).response?.status ||
+                500
+              : 500,
         }
 
         setError(apiError)

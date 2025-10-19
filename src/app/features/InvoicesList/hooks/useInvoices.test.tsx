@@ -21,8 +21,8 @@ const createWrapper = () => {
 
 describe('useInvoice hook', () => {
   describe('when API returns invoice with null total and tax', () => {
-    it('calculates totals from invoice_lines', async () => {
-      // Mock API response with null total/tax but valid invoice_lines
+    it('keeps totals as undefined (unpaid invoice)', async () => {
+      // Mock API response with null total/tax - this indicates unpaid invoice
       server.use(
         rest.get(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
           return res(
@@ -33,8 +33,8 @@ describe('useInvoice hook', () => {
               paid: false,
               date: '2025-11-09',
               deadline: '2025-11-22',
-              total: null, // Total is null
-              tax: null, // Tax is null
+              total: null, // Total is null = unpaid
+              tax: null, // Tax is null = unpaid
               customer: {
                 id: 151,
                 first_name: 'Gabriel',
@@ -98,16 +98,12 @@ describe('useInvoice hook', () => {
       expect(result.current.invoice).toBeTruthy()
       expect(result.current.invoice?.id).toBe('61113')
 
-      // Verify totals were calculated from invoice_lines
-      // 37515.0 + 112060.0 + 87875.0 = 237450.0
-      expect(result.current.invoice?.total).toBe(237450.0)
-
-      // Verify tax was calculated from invoice_lines
-      // 7503.0 + 0.0 + 0.0 = 7503.0
-      expect(result.current.invoice?.tax).toBe(7503.0)
+      // Verify totals remain undefined when backend returns null (unpaid invoice)
+      expect(result.current.invoice?.total).toBeUndefined()
+      expect(result.current.invoice?.tax).toBeUndefined()
     })
 
-    it('handles empty invoice_lines by setting totals to 0', async () => {
+    it('handles empty invoice_lines with undefined totals', async () => {
       server.use(
         rest.get(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
           return res(
@@ -144,9 +140,9 @@ describe('useInvoice hook', () => {
         expect(result.current.status).toBe('success')
       })
 
-      // Verify totals default to 0 when no lines exist
-      expect(result.current.invoice?.total).toBe(0)
-      expect(result.current.invoice?.tax).toBe(0)
+      // Verify totals remain undefined when backend returns null
+      expect(result.current.invoice?.total).toBeUndefined()
+      expect(result.current.invoice?.tax).toBeUndefined()
     })
   })
 
@@ -341,7 +337,7 @@ describe('useInvoice hook', () => {
   })
 
   describe('edge cases', () => {
-    it('handles invoice_lines with invalid price values', async () => {
+    it('keeps totals as undefined when backend returns null, regardless of invoice_lines', async () => {
       server.use(
         rest.get(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
           return res(
@@ -401,10 +397,10 @@ describe('useInvoice hook', () => {
         expect(result.current.status).toBe('success')
       })
 
-      // Verify it handles null values gracefully (parseFloat returns NaN, which becomes 0)
-      // Only the valid line item values should be included
-      expect(result.current.invoice?.total).toBe(100.0)
-      expect(result.current.invoice?.tax).toBe(20.0)
+      // When backend returns null, keep it as undefined (unpaid invoice)
+      // Do not calculate from invoice_lines
+      expect(result.current.invoice?.total).toBeUndefined()
+      expect(result.current.invoice?.tax).toBeUndefined()
     })
   })
 })
