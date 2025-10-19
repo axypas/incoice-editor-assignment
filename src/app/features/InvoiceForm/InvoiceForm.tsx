@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useForm, useFieldArray, useWatch } from 'react-hook-form'
+import { useForm, useFieldArray, useWatch, FormProvider } from 'react-hook-form'
 import { Form } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Customer, Product } from 'common/types'
@@ -93,6 +93,12 @@ const InvoiceForm: React.FC = () => {
   const storageKey =
     isEditMode && invoiceId ? getEditStorageKey(invoiceId) : STORAGE_KEY
 
+  const methods = useForm<InvoiceFormValues>({
+    mode: 'onBlur',
+    reValidateMode: 'onBlur',
+    defaultValues: defaultValuesRef.current,
+  })
+
   const {
     control,
     handleSubmit: rhfHandleSubmit,
@@ -103,11 +109,7 @@ const InvoiceForm: React.FC = () => {
     setError,
     trigger,
     formState: { errors, isSubmitting },
-  } = useForm<InvoiceFormValues>({
-    mode: 'onBlur',
-    reValidateMode: 'onBlur',
-    defaultValues: defaultValuesRef.current,
-  })
+  } = methods
 
   const { fields, append, remove, insert } = useFieldArray({
     control,
@@ -380,37 +382,34 @@ const InvoiceForm: React.FC = () => {
         onDismissSubmitError={() => setSubmitError(null)}
       />
 
-      <Form onSubmit={rhfHandleSubmit(handleSubmit)}>
-        <InvoiceDetailsSection
-          control={control}
-          getValues={getValues}
-          setValue={setValue}
-          trigger={trigger}
-        />
+      <FormProvider {...methods}>
+        <Form onSubmit={rhfHandleSubmit(handleSubmit)}>
+          <InvoiceDetailsSection />
 
-        <LineItemsSection
-          control={control}
-          fields={fields}
-          lineItems={lineItems}
-          perLine={perLine}
-          handleProductSelect={handleProductSelect}
-          addLineItem={addLineItem}
-          removeLineItem={removeLineItem}
-          duplicateLineItem={duplicateLineItem}
-          createDefaultLineItem={createDefaultLineItem}
-        />
+          <LineItemsSection
+            control={control}
+            fields={fields}
+            lineItems={lineItems}
+            perLine={perLine}
+            handleProductSelect={handleProductSelect}
+            addLineItem={addLineItem}
+            removeLineItem={removeLineItem}
+            duplicateLineItem={duplicateLineItem}
+            createDefaultLineItem={createDefaultLineItem}
+          />
 
-        <TotalsSection totals={totals} />
+          <TotalsSection totals={totals} />
 
-        <FormActions
-          isEditMode={isEditMode}
-          isSubmitting={isSubmitting}
-          isUpdating={false}
-          hasValidationErrors={hasValidationErrors}
-          onCancel={handleCancel}
-          onFinalizeClick={handleFinalizeClick}
-        />
-      </Form>
+          <FormActions
+            isEditMode={isEditMode}
+            isSubmitting={isSubmitting}
+            isUpdating={false}
+            hasValidationErrors={hasValidationErrors}
+            onCancel={handleCancel}
+            onFinalizeClick={handleFinalizeClick}
+          />
+        </Form>
+      </FormProvider>
 
       <FinalizeConfirmationModal
         show={showFinalizeModal}

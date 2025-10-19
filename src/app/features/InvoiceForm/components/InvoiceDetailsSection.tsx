@@ -5,13 +5,7 @@
 
 import React from 'react'
 import { Form, Card, Row, Col } from 'react-bootstrap'
-import {
-  Controller,
-  Control,
-  UseFormGetValues,
-  UseFormSetValue,
-  UseFormTrigger,
-} from 'react-hook-form'
+import { Controller, useFormContext } from 'react-hook-form'
 import DatePicker from 'react-datepicker'
 import { CustomerAutocomplete } from 'common/components'
 import type { Customer, Product } from 'common/types'
@@ -38,19 +32,9 @@ interface InvoiceFormValues {
   lineItems: LineItemFormValue[]
 }
 
-interface InvoiceDetailsSectionProps {
-  control: Control<InvoiceFormValues>
-  getValues: UseFormGetValues<InvoiceFormValues>
-  setValue: UseFormSetValue<InvoiceFormValues>
-  trigger?: UseFormTrigger<InvoiceFormValues>
-}
-
-const InvoiceDetailsSection: React.FC<InvoiceDetailsSectionProps> = ({
-  control,
-  getValues,
-  setValue,
-  trigger,
-}) => {
+const InvoiceDetailsSection: React.FC = () => {
+  const { control, getValues, setValue, trigger } =
+    useFormContext<InvoiceFormValues>()
   return (
     <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">
