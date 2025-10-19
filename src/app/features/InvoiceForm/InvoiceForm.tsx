@@ -6,35 +6,29 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { useForm, Controller, useFieldArray, useWatch } from 'react-hook-form'
-import {
-  Form,
-  Button,
-  Card,
-  Row,
-  Col,
-  Alert,
-  Spinner,
-  Table,
-  OverlayTrigger,
-  Tooltip,
-} from 'react-bootstrap'
-import DatePicker from 'react-datepicker'
+import { useForm, useFieldArray, useWatch } from 'react-hook-form'
+import { Form } from 'react-bootstrap'
 import { useNavigate, useParams } from 'react-router-dom'
 import { InvoiceLineItem } from 'common/types/invoice.types'
 import { Customer, Product } from 'common/types'
 import { useApi } from 'api'
-import CustomerAutocomplete from 'common/components/CustomerAutocomplete'
-import ProductAutocomplete from 'common/components/ProductAutocomplete'
 import {
   calculateLineItem,
   calculateInvoiceTotals,
-  formatCurrency,
 } from 'common/utils/calculations'
 import {
   useInvoice,
   useUpdateInvoice,
 } from 'app/features/InvoicesList/hooks/useInvoices'
+import {
+  FinalizedInvoiceAlert,
+  FormHeader,
+  InvoiceDetailsSection,
+  LineItemsSection,
+  TotalsSection,
+  FormActions,
+} from './components'
+import ErrorState from 'app/features/InvoiceShow/components/ErrorState'
 import 'react-datepicker/dist/react-datepicker.css'
 
 const STORAGE_KEY = 'invoice_draft'
@@ -637,9 +631,6 @@ const InvoiceForm: React.FC = () => {
   if (isEditMode && isLoadingInvoice) {
     return (
       <div className="d-flex justify-content-center align-items-center mt-5 py-5">
-        <Spinner animation="border" role="status" className="me-2">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
         <span>Loading invoice...</span>
       </div>
     )
@@ -648,512 +639,69 @@ const InvoiceForm: React.FC = () => {
   // Show error state if failed to load invoice in edit mode
   if (isEditMode && isInvoiceError) {
     return (
-      <Alert variant="danger" className="mt-4">
-        <Alert.Heading>Error Loading Invoice</Alert.Heading>
-        <p>
-          {invoiceError?.message ||
-            'Unable to load invoice. Please try again later.'}
-        </p>
-        <Button variant="outline-danger" onClick={() => navigate('/')}>
-          Back to List
-        </Button>
-      </Alert>
+      <ErrorState
+        title="Error Loading Invoice"
+        message={
+          invoiceError?.message ||
+          'Unable to load invoice. Please try again later.'
+        }
+        actionLabel="Back to List"
+        onAction={() => navigate('/')}
+      />
     )
   }
 
   // Show read-only view if invoice is finalized
   if (isEditMode && existingInvoice?.finalized) {
     return (
-      <div className="pb-4">
-        <Alert variant="info" className="mt-4">
-          <Alert.Heading>Invoice Finalized</Alert.Heading>
-          <p>This invoice is finalized and cannot be edited.</p>
-          <div className="d-flex gap-2">
-            <Button variant="outline-primary" onClick={() => navigate('/')}>
-              Back to List
-            </Button>
-            <Button
-              variant="outline-secondary"
-              onClick={() => navigate(`/invoice/${invoiceId}`)}
-            >
-              View Invoice
-            </Button>
-          </div>
-        </Alert>
-      </div>
+      <FinalizedInvoiceAlert
+        onBackToList={() => navigate('/')}
+        onViewInvoice={() => navigate(`/invoice/${invoiceId}`)}
+      />
     )
   }
 
   return (
     <div className="pb-4">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2>{isEditMode ? 'Edit Invoice' : 'Create Invoice'}</h2>
-        {isEditMode && (
-          <span className="text-muted">
-            Invoice #{existingInvoice?.invoice_number || invoiceId}
-          </span>
-        )}
-      </div>
-
-      {(isAutoSaving || lastSaved || saveError) && (
-        <Alert variant={saveError ? 'warning' : 'info'} className="mb-3">
-          {isAutoSaving && (
-            <>
-              <Spinner animation="border" size="sm" className="me-2" />
-              Saving draft...
-            </>
-          )}
-          {!isAutoSaving && lastSaved && !saveError && (
-            <>
-              Draft saved at{' '}
-              {lastSaved.toLocaleTimeString([], {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </>
-          )}
-          {saveError && <>{saveError}</>}
-        </Alert>
-      )}
-
-      {submitError && (
-        <Alert
-          variant="danger"
-          dismissible
-          onClose={() => setSubmitError(null)}
-        >
-          {submitError}
-        </Alert>
-      )}
+      <FormHeader
+        isEditMode={isEditMode}
+        invoiceNumber={existingInvoice?.invoice_number}
+        invoiceId={invoiceId}
+        isAutoSaving={isAutoSaving}
+        lastSaved={lastSaved}
+        saveError={saveError}
+        submitError={submitError}
+        onDismissSubmitError={() => setSubmitError(null)}
+      />
 
       <Form onSubmit={handleSubmit(onSubmit)}>
-        <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
-          <Card.Body className="p-4">
-            <h5 className="mb-3">Invoice Details</h5>
+        <InvoiceDetailsSection
+          control={control}
+          getValues={getValues}
+          setValue={setValue}
+        />
 
-            <Row className="g-3">
-              <Col md={12}>
-                <Form.Group controlId="customer" className="flex flex-col">
-                  <Form.Label>
-                    Customer <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Controller
-                    name="customer"
-                    control={control}
-                    rules={{
-                      validate: (value) =>
-                        value ? true : 'Please select a customer',
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <CustomerAutocomplete
-                          value={field.value}
-                          onChange={(customer) => field.onChange(customer)}
-                          onBlur={field.onBlur}
-                        />
-                        {fieldState.error && (
-                          <Form.Text className="text-danger">
-                            {fieldState.error.message}
-                          </Form.Text>
-                        )}
-                      </>
-                    )}
-                  />
-                  <Form.Text className="text-muted">
-                    Invoice number will be generated automatically
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
+        <LineItemsSection
+          control={control}
+          fields={fields}
+          lineItems={lineItems}
+          perLine={perLine}
+          handleProductSelect={handleProductSelect}
+          addLineItem={addLineItem}
+          removeLineItem={removeLineItem}
+          duplicateLineItem={duplicateLineItem}
+          createDefaultLineItem={createDefaultLineItem}
+        />
 
-            <Row className="g-3 mt-2">
-              <Col md={6}>
-                <Form.Group controlId="date" className="flex flex-col">
-                  <Form.Label>
-                    Invoice Date <span className="text-danger">*</span>
-                  </Form.Label>
-                  <Controller
-                    name="date"
-                    control={control}
-                    rules={{
-                      validate: (value) => {
-                        if (!value) return 'Invoice date is required'
-                        const today = new Date()
-                        today.setHours(0, 0, 0, 0)
-                        const normalizedValue = new Date(value)
-                        normalizedValue.setHours(0, 0, 0, 0)
-                        if (normalizedValue > today) {
-                          return 'Invoice date cannot be in the future'
-                        }
-                        return true
-                      },
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <DatePicker
-                          selected={field.value}
-                          isClearable
-                          onChange={(selected: Date | null) => {
-                            field.onChange(selected)
-                            const currentDeadline = getValues('deadline')
-                            if (selected && !currentDeadline) {
-                              const autoDeadline = new Date(selected)
-                              autoDeadline.setDate(autoDeadline.getDate() + 30)
-                              setValue('deadline', autoDeadline, {
-                                shouldDirty: true,
-                              })
-                            }
-                          }}
-                          maxDate={new Date()}
-                          dateFormat="yyyy-MM-dd"
-                          className="form-control"
-                          onBlur={field.onBlur}
-                        />
-                        {fieldState.error && (
-                          <Form.Text className="text-danger">
-                            {fieldState.error.message}
-                          </Form.Text>
-                        )}
-                      </>
-                    )}
-                  />
-                  <Form.Text className="text-muted">
-                    Cannot be in the future
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-              <Col md={6}>
-                <Form.Group controlId="deadline" className="flex flex-col">
-                  <Form.Label>Payment Deadline</Form.Label>
-                  <Controller
-                    name="deadline"
-                    control={control}
-                    rules={{
-                      validate: (value) => {
-                        if (!value) return true
-                        const invoiceDate = getValues('date')
-                        if (invoiceDate && value < invoiceDate) {
-                          return 'Payment deadline must be after invoice date'
-                        }
-                        return true
-                      },
-                    }}
-                    render={({ field, fieldState }) => (
-                      <>
-                        <DatePicker
-                          selected={field.value}
-                          onChange={(selected: Date | null) => {
-                            field.onChange(selected)
-                          }}
-                          dateFormat="yyyy-MM-dd"
-                          className="form-control"
-                          isClearable
-                          placeholderText="Select payment deadline"
-                          onBlur={field.onBlur}
-                        />
-                        {fieldState.error && (
-                          <Form.Text className="text-danger">
-                            {fieldState.error.message}
-                          </Form.Text>
-                        )}
-                      </>
-                    )}
-                  />
-                  <Form.Text className="text-muted">
-                    When payment is due
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
+        <TotalsSection totals={totals} />
 
-            <Row className="g-3 mt-2">
-              <Col md={12}>
-                <Controller
-                  name="paid"
-                  control={control}
-                  render={({ field }) => (
-                    <Form.Check
-                      type="checkbox"
-                      id="paid"
-                      label="Mark as paid"
-                      checked={field.value}
-                      onChange={(event) => field.onChange(event.target.checked)}
-                    />
-                  )}
-                />
-                <Form.Text className="text-muted">
-                  Check this if the invoice has already been paid
-                </Form.Text>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-
-        <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
-          <Card.Body className="p-4">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h5 className="mb-0">Line Items</h5>
-              <Button variant="primary" size="sm" onClick={addLineItem}>
-                + Add Line
-              </Button>
-            </div>
-
-            <div className="table-responsive">
-              <Table hover>
-                <thead style={{ backgroundColor: '#f8fafc' }}>
-                  <tr>
-                    <th style={{ width: '26%' }}>Product</th>
-                    <th style={{ width: '10%' }}>Qty</th>
-                    <th style={{ width: '10%' }}>Unit</th>
-                    <th style={{ width: '12%' }}>Price</th>
-                    <th style={{ width: '10%' }}>Tax %</th>
-                    <th style={{ width: '12%' }} className="text-end">
-                      Tax Amount
-                    </th>
-                    <th style={{ width: '12%' }} className="text-end">
-                      Total
-                    </th>
-                    <th style={{ width: '8%' }}></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fields.map((field, index) => {
-                    const item = lineItems[index] ?? createDefaultLineItem()
-                    const calculation = perLine[index]
-
-                    return (
-                      <tr key={field.id} className="align-middle">
-                        <td>
-                          <Controller
-                            name={`lineItems.${index}.product`}
-                            control={control}
-                            rules={{
-                              validate: (value) =>
-                                value ? true : 'Please select a product',
-                            }}
-                            render={({ field: productField, fieldState }) => (
-                              <>
-                                <ProductAutocomplete
-                                  value={productField.value}
-                                  onChange={(product) => {
-                                    productField.onChange(product)
-                                    handleProductSelect(index, product)
-                                  }}
-                                  onBlur={productField.onBlur}
-                                />
-                                {fieldState.error && (
-                                  <Form.Text className="text-danger">
-                                    {fieldState.error.message}
-                                  </Form.Text>
-                                )}
-                              </>
-                            )}
-                          />
-                        </td>
-                        <td>
-                          <Controller
-                            name={`lineItems.${index}.quantity`}
-                            control={control}
-                            rules={{
-                              required: 'Quantity must be greater than 0',
-                              validate: (value) =>
-                                value > 0 || 'Quantity must be greater than 0',
-                            }}
-                            render={({ field: quantityField, fieldState }) => (
-                              <>
-                                <Form.Control
-                                  type="number"
-                                  size="sm"
-                                  min="0"
-                                  step="1"
-                                  disabled={!item.product_id}
-                                  value={
-                                    Number.isFinite(quantityField.value)
-                                      ? quantityField.value
-                                      : ''
-                                  }
-                                  onChange={(event) => {
-                                    const nextValue = Number(event.target.value)
-                                    quantityField.onChange(
-                                      Number.isNaN(nextValue) ? 0 : nextValue
-                                    )
-                                  }}
-                                  onBlur={quantityField.onBlur}
-                                />
-                                {fieldState.error && (
-                                  <Form.Text className="text-danger">
-                                    {fieldState.error.message}
-                                  </Form.Text>
-                                )}
-                              </>
-                            )}
-                          />
-                        </td>
-                        <td>
-                          <Form.Control
-                            type="text"
-                            size="sm"
-                            value={item.unit}
-                            readOnly
-                            disabled
-                          />
-                        </td>
-                        <td>
-                          <Form.Control
-                            type="number"
-                            size="sm"
-                            value={item.unit_price}
-                            readOnly
-                            disabled
-                          />
-                        </td>
-                        <td>
-                          <Form.Control
-                            type="text"
-                            size="sm"
-                            value={item.vat_rate}
-                            readOnly
-                            disabled
-                          />
-                        </td>
-                        <td className="text-end">
-                          <strong>
-                            {formatCurrency(
-                              item.product?.unit_tax
-                                ? item.quantity *
-                                    parseFloat(item.product.unit_tax)
-                                : 0
-                            )}
-                          </strong>
-                        </td>
-                        <td className="text-end">
-                          <strong>
-                            {formatCurrency(calculation?.total ?? 0)}
-                          </strong>
-                        </td>
-                        <td>
-                          <div className="d-flex gap-1">
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              onClick={() => duplicateLineItem(index)}
-                              title="Duplicate this line"
-                              aria-label={`Duplicate line item: ${
-                                item.label || 'Unnamed'
-                              }`}
-                            >
-                              Copy
-                            </Button>
-                            <OverlayTrigger
-                              placement="top"
-                              overlay={
-                                <Tooltip id={`remove-line-${index}-tooltip`}>
-                                  {fields.length === 1
-                                    ? 'Invoice must have at least one line item'
-                                    : `Remove line item: ${
-                                        item.label || 'Unnamed'
-                                      }`}
-                                </Tooltip>
-                              }
-                            >
-                              <span className="d-inline-block">
-                                <Button
-                                  variant="outline-danger"
-                                  size="sm"
-                                  onClick={() => removeLineItem(index)}
-                                  disabled={fields.length === 1}
-                                  aria-label={`Remove line item: ${
-                                    item.label || 'Unnamed'
-                                  }`}
-                                  style={{
-                                    pointerEvents:
-                                      fields.length === 1 ? 'none' : 'auto',
-                                  }}
-                                >
-                                  Remove
-                                </Button>
-                              </span>
-                            </OverlayTrigger>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </Table>
-            </div>
-          </Card.Body>
-        </Card>
-
-        <Card className="mb-4 shadow-sm" style={{ borderRadius: '0.75rem' }}>
-          <Card.Body className="p-4">
-            <h5 className="mb-3">Totals</h5>
-            <Row>
-              <Col md={{ span: 6, offset: 6 }}>
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Subtotal:</span>
-                  <strong>{formatCurrency(totals.subtotal)}</strong>
-                </div>
-                {totals.totalDiscount > 0 && (
-                  <div className="d-flex justify-content-between mb-2 text-success">
-                    <span>Discount:</span>
-                    <strong>-{formatCurrency(totals.totalDiscount)}</strong>
-                  </div>
-                )}
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Taxable Amount:</span>
-                  <strong>{formatCurrency(totals.taxableAmount)}</strong>
-                </div>
-                {Object.entries(totals.vatBreakdown).map(([rate, amount]) => (
-                  <div
-                    key={rate}
-                    className="d-flex justify-content-between mb-2 text-muted"
-                  >
-                    <span className="small">VAT {rate}%:</span>
-                    <span className="small">{formatCurrency(amount)}</span>
-                  </div>
-                ))}
-                <div className="d-flex justify-content-between mb-2">
-                  <span>Total VAT:</span>
-                  <strong>{formatCurrency(totals.totalVat)}</strong>
-                </div>
-                <hr />
-                <div className="d-flex justify-content-between">
-                  <strong className="h5">Grand Total:</strong>
-                  <strong className="h5">
-                    {formatCurrency(totals.grandTotal)}
-                  </strong>
-                </div>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-
-        <div className="d-flex justify-content-end gap-2">
-          <Button
-            variant="outline-secondary"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            type="submit"
-            disabled={isSubmitting || isUpdating || hasValidationErrors}
-          >
-            {isSubmitting || isUpdating ? (
-              <>
-                <Spinner animation="border" size="sm" className="me-2" />
-                {isEditMode ? 'Updating...' : 'Creating...'}
-              </>
-            ) : isEditMode ? (
-              'Save Changes'
-            ) : (
-              'Create Invoice'
-            )}
-          </Button>
-        </div>
+        <FormActions
+          isEditMode={isEditMode}
+          isSubmitting={isSubmitting}
+          isUpdating={isUpdating}
+          hasValidationErrors={hasValidationErrors}
+          onCancel={handleCancel}
+        />
       </Form>
     </div>
   )
