@@ -501,7 +501,7 @@ describe('InvoicesList - US1', () => {
       })
 
       // Find and click on Amount column header to sort by amount
-      const amountHeader = screen.getByRole('button', { name: /amount/i })
+      const amountHeader = screen.getByRole('columnheader', { name: /amount/i })
       await userEvent.click(amountHeader)
 
       // Verify API was called with new sort parameter
@@ -544,7 +544,9 @@ describe('InvoicesList - US1', () => {
       expect(capturedParams.sort).toBe('+deadline')
 
       // Click "Due Date" header to toggle to descending
-      const dueDateHeader = screen.getByRole('button', { name: /^due date/i })
+      const dueDateHeader = screen.getByRole('columnheader', {
+        name: /^due date/i,
+      })
       await userEvent.click(dueDateHeader)
 
       // Verify sort changed to -deadline (desc)
@@ -586,8 +588,8 @@ describe('InvoicesList - US1', () => {
       })
 
       // Due Date column should show ascending indicator by default
-      const dueDateHeader = screen.getByRole('button', {
-        name: /^due date ▲$/i,
+      const dueDateHeader = screen.getByRole('columnheader', {
+        name: /due date, sortable column, sorted ascending/i,
       })
       expect(dueDateHeader).toHaveTextContent('▲')
     })

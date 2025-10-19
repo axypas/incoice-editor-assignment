@@ -38,7 +38,7 @@ const InvoiceHeader = ({
             Edit Invoice
           </Button>
         )}
-        <Button variant="outline-secondary" onClick={onBackToList}>
+        <Button variant="outline-dark" onClick={onBackToList}>
           Back to List
         </Button>
       </div>

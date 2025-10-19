@@ -19,7 +19,7 @@ const InvoiceDetails = ({
   return (
     <Card className="mb-4">
       <Card.Header>
-        <h5 className="mb-0">Invoice Details</h5>
+        <h3 className="mb-0 h5">Invoice Details</h3>
       </Card.Header>
       <Card.Body>
         <div className="row">

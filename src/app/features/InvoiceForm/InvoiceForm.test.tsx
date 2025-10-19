@@ -442,7 +442,7 @@ describe('InvoiceForm - US3', () => {
       })
 
       // Click Copy button
-      const copyButton = screen.getByRole('button', { name: /duplicate/i })
+      const copyButton = screen.getByRole('button', { name: /copy/i })
       await userEvent.click(copyButton)
 
       await waitFor(() => {
@@ -1040,12 +1040,16 @@ describe('InvoiceForm - US3', () => {
         expect(screen.getByDisplayValue('Product A')).toBeInTheDocument()
       })
 
-      // Check for aria-label on remove button
-      const removeButton = screen.getByRole('button', {
-        name: /remove line item/i,
+      // Check for title attribute on remove button (for tooltip)
+      const removeButtons = screen.getAllByRole('button', {
+        name: /remove/i,
       })
-      expect(removeButton).toBeInTheDocument()
-      expect(removeButton).toHaveAttribute('aria-label')
+      // Should have remove buttons (filter out other buttons with "remove" in name)
+      const lineItemRemoveButtons = removeButtons.filter(
+        (btn) => btn.getAttribute('title')?.includes('Remove line item')
+      )
+      expect(lineItemRemoveButtons.length).toBeGreaterThan(0)
+      expect(lineItemRemoveButtons[0]).toHaveAttribute('title')
     })
 
     it('navigates to list after successful update', async () => {

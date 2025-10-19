@@ -1,8 +1,7 @@
 /**
  * DeleteInvoiceDialog - Destructive confirmation dialog for invoice deletion
- * Features: focus trapping, keyboard support (Escape/Enter), clear messaging
+ * Features: keyboard support (Escape/Enter), clear messaging
  */
-import { useRef, useEffect } from 'react'
 import { Modal, Button } from 'react-bootstrap'
 import { Invoice } from 'common/types/invoice.types'
 
@@ -21,32 +20,13 @@ const DeleteInvoiceDialog = ({
   onCancel,
   isDeleting = false,
 }: Props) => {
-  const confirmButtonRef = useRef<HTMLButtonElement>(null)
-
   // Handle Enter key to confirm deletion
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (show && e.key === 'Enter' && !isDeleting) {
-        e.preventDefault()
-        onConfirm()
-      }
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isDeleting) {
+      e.preventDefault()
+      onConfirm()
     }
-
-    if (show) {
-      document.addEventListener('keydown', handleKeyDown)
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [show, onConfirm, isDeleting])
-
-  // Focus confirm button when dialog opens
-  useEffect(() => {
-    if (show && confirmButtonRef.current) {
-      confirmButtonRef.current.focus()
-    }
-  }, [show])
+  }
 
   if (!invoice) return null
 
@@ -58,6 +38,7 @@ const DeleteInvoiceDialog = ({
       backdrop="static"
       keyboard={!isDeleting}
       aria-labelledby="delete-invoice-dialog-title"
+      onKeyDown={handleKeyDown}
     >
       <Modal.Header closeButton={!isDeleting}>
         <Modal.Title id="delete-invoice-dialog-title">
@@ -83,7 +64,7 @@ const DeleteInvoiceDialog = ({
           Cancel
         </Button>
         <Button
-          ref={confirmButtonRef}
+          autoFocus
           variant="danger"
           onClick={onConfirm}
           disabled={isDeleting}

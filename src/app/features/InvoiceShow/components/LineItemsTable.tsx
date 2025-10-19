@@ -16,20 +16,30 @@ const LineItemsTable = ({ invoice }: LineItemsTableProps): JSX.Element => {
   return (
     <Card className="mb-4">
       <Card.Header>
-        <h5 className="mb-0">Line Items</h5>
+        <h3 className="mb-0 h5">Line Items</h3>
       </Card.Header>
       <Card.Body className="p-0">
         <Table responsive className="mb-0">
           <thead>
             <tr>
-              <th>Product</th>
-              <th>Label</th>
-              <th className="text-center">Quantity</th>
-              <th>Unit</th>
-              <th className="text-end">Unit Price</th>
-              <th className="text-center">VAT Rate</th>
-              <th className="text-end">Tax</th>
-              <th className="text-end">Total</th>
+              <th scope="col">Product</th>
+              <th scope="col">Label</th>
+              <th scope="col" className="text-center">
+                Quantity
+              </th>
+              <th scope="col">Unit</th>
+              <th scope="col" className="text-end">
+                Unit Price
+              </th>
+              <th scope="col" className="text-center">
+                VAT Rate
+              </th>
+              <th scope="col" className="text-end">
+                Tax
+              </th>
+              <th scope="col" className="text-end">
+                Total
+              </th>
             </tr>
           </thead>
           <tbody>

@@ -68,7 +68,7 @@ const LineItemsSection = ({
     <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="mb-0">Line Items</h5>
+          <h3 className="mb-0 h5">Line Items</h3>
           <Button variant="primary" size="sm" onClick={addLineItem}>
             + Add Line
           </Button>
@@ -78,18 +78,32 @@ const LineItemsSection = ({
           <Table hover className="text-sm">
             <thead className="bg-slate-50">
               <tr>
-                <th style={{ width: '26%' }}>Product</th>
-                <th style={{ width: '10%' }}>Qty</th>
-                <th style={{ width: '10%' }}>Unit</th>
-                <th style={{ width: '12%' }}>Price</th>
-                <th style={{ width: '10%' }}>Tax %</th>
-                <th style={{ width: '12%' }} className="text-end">
+                <th scope="col" style={{ width: '26%' }}>
+                  Product
+                </th>
+                <th scope="col" style={{ width: '10%' }}>
+                  Qty
+                </th>
+                <th scope="col" style={{ width: '10%' }}>
+                  Unit
+                </th>
+                <th scope="col" style={{ width: '12%' }}>
+                  Price
+                </th>
+                <th scope="col" style={{ width: '10%' }}>
+                  Tax %
+                </th>
+                <th scope="col" style={{ width: '12%' }} className="text-end">
                   Tax Amount
                 </th>
-                <th style={{ width: '12%' }} className="text-end">
+                <th scope="col" style={{ width: '12%' }} className="text-end">
                   Total
                 </th>
-                <th style={{ width: '8%' }}></th>
+                <th
+                  scope="col"
+                  style={{ width: '8%' }}
+                  aria-label="Actions"
+                ></th>
               </tr>
             </thead>
             <tbody>
@@ -143,6 +157,9 @@ const LineItemsSection = ({
                               min="0"
                               step="1"
                               disabled={!item.product_id}
+                              aria-label={`Quantity for ${
+                                item.label || 'line item'
+                              }`}
                               value={
                                 Number.isFinite(quantityField.value)
                                   ? quantityField.value
@@ -172,6 +189,7 @@ const LineItemsSection = ({
                         value={item.unit}
                         readOnly
                         disabled
+                        aria-label={`Unit for ${item.label || 'line item'}`}
                       />
                     </td>
                     <td>
@@ -181,6 +199,9 @@ const LineItemsSection = ({
                         value={item.unit_price}
                         readOnly
                         disabled
+                        aria-label={`Unit price for ${
+                          item.label || 'line item'
+                        }`}
                       />
                     </td>
                     <td>
@@ -190,6 +211,7 @@ const LineItemsSection = ({
                         value={item.vat_rate}
                         readOnly
                         disabled
+                        aria-label={`VAT rate for ${item.label || 'line item'}`}
                       />
                     </td>
                     <td className="text-end">
@@ -210,8 +232,7 @@ const LineItemsSection = ({
                           variant="outline-secondary"
                           size="sm"
                           onClick={() => duplicateLineItem(index)}
-                          title="Duplicate this line"
-                          aria-label={`Duplicate line item: ${
+                          title={`Duplicate line item: ${
                             item.label || 'Unnamed'
                           }`}
                         >
@@ -235,7 +256,7 @@ const LineItemsSection = ({
                               size="sm"
                               onClick={() => removeLineItem(index)}
                               disabled={fields.length === 1}
-                              aria-label={`Remove line item: ${
+                              title={`Remove line item: ${
                                 item.label || 'Unnamed'
                               }`}
                               className={

@@ -108,6 +108,7 @@ const InvoicesFilters = ({
               control={filterControl}
               render={({ field }) => (
                 <CustomerAutocomplete
+                  inputId="customer"
                   value={field.value}
                   onChange={(customer) => field.onChange(customer)}
                   onBlur={field.onBlur}
@@ -125,6 +126,7 @@ const InvoicesFilters = ({
               control={filterControl}
               render={({ field }) => (
                 <ProductAutocomplete
+                  inputId="product"
                   value={field.value}
                   onChange={(product) => field.onChange(product)}
                   onBlur={field.onBlur}

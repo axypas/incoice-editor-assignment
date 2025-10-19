@@ -22,7 +22,7 @@ const TotalsSection = ({ totals }: TotalsSectionProps): JSX.Element => {
   return (
     <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">
-        <h5 className="mb-3">Totals</h5>
+        <h3 className="mb-3 h5">Totals</h3>
         <Row>
           <Col md={{ span: 6, offset: 6 }}>
             <div className="d-flex justify-content-between mb-2">

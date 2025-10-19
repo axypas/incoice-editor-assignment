@@ -23,23 +23,28 @@ const FormActions = ({
   onCancel,
   onFinalizeClick,
 }: FormActionsProps): JSX.Element => {
+  const isBusy = isSubmitting || isUpdating
+
   return (
     <div className="d-flex justify-content-end gap-2">
-      <Button
-        variant="outline-secondary"
-        onClick={onCancel}
-        disabled={isSubmitting}
-      >
+      <Button variant="outline-dark" onClick={onCancel} disabled={isSubmitting}>
         Cancel
       </Button>
       <Button
         variant="primary"
         type="submit"
-        disabled={isSubmitting || isUpdating || hasValidationErrors}
+        disabled={isBusy || hasValidationErrors}
+        aria-busy={isBusy}
       >
-        {isSubmitting || isUpdating ? (
+        {isBusy ? (
           <>
-            <Spinner animation="border" size="sm" className="me-2" />
+            <Spinner
+              animation="border"
+              size="sm"
+              className="me-2"
+              role="status"
+              aria-hidden="true"
+            />
             {isEditMode ? 'Updating...' : 'Creating...'}
           </>
         ) : isEditMode ? (
@@ -51,7 +56,7 @@ const FormActions = ({
       <Button
         variant="success"
         onClick={onFinalizeClick}
-        disabled={isSubmitting || isUpdating || hasValidationErrors}
+        disabled={isBusy || hasValidationErrors}
       >
         {isEditMode
           ? 'Save and Finalize Invoice'

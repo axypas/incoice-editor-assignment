@@ -9,6 +9,7 @@ interface Props {
   value: Product | null
   onChange: (product: Product | null) => void
   onBlur?: () => void
+  inputId?: string
 }
 
 const defaultAdditional = { page: 1 }
@@ -17,7 +18,7 @@ const getProductLabel = (product: Product) => {
   return product.label
 }
 
-const ProductAutocomplete = ({ value, onChange, onBlur }: Props) => {
+const ProductAutocomplete = ({ value, onChange, onBlur, inputId }: Props) => {
   const api = useApi()
 
   const loadOptions: LoadOptions<
@@ -46,6 +47,8 @@ const ProductAutocomplete = ({ value, onChange, onBlur }: Props) => {
 
   return (
     <AsyncPaginate
+      inputId={inputId}
+      aria-label={!inputId ? 'Search a product' : undefined}
       placeholder="Search a product"
       getOptionLabel={getProductLabel}
       additional={defaultAdditional}

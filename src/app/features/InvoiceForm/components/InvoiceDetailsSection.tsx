@@ -38,7 +38,7 @@ const InvoiceDetailsSection = (): JSX.Element => {
   return (
     <Card className="mb-4 shadow-sm rounded-xl">
       <Card.Body className="p-4">
-        <h5 className="mb-3">Invoice Details</h5>
+        <h3 className="mb-3 h5">Invoice Details</h3>
 
         <Row className="g-3">
           <Col md={12}>
@@ -56,6 +56,7 @@ const InvoiceDetailsSection = (): JSX.Element => {
                 render={({ field, fieldState }) => (
                   <>
                     <CustomerAutocomplete
+                      inputId="customer"
                       value={field.value}
                       onChange={(customer) => field.onChange(customer)}
                       onBlur={field.onBlur}
@@ -93,6 +94,7 @@ const InvoiceDetailsSection = (): JSX.Element => {
                 render={({ field, fieldState }) => (
                   <>
                     <DatePicker
+                      id="date"
                       selected={field.value}
                       isClearable
                       onChange={async (selected: Date | null) => {
@@ -161,6 +163,7 @@ const InvoiceDetailsSection = (): JSX.Element => {
                 render={({ field, fieldState }) => (
                   <>
                     <DatePicker
+                      id="deadline"
                       selected={field.value}
                       onChange={async (selected: Date | null) => {
                         field.onChange(selected)

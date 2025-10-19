@@ -105,6 +105,20 @@ const InvoicesTable = ({
             <span
               {...expandRow.getToggleRowExpandedProps()}
               className="cursor-pointer select-none"
+              role="button"
+              aria-expanded={expandRow.isExpanded}
+              aria-label={
+                expandRow.isExpanded
+                  ? 'Collapse invoice details'
+                  : 'Expand invoice details'
+              }
+              tabIndex={0}
+              onKeyDown={(e: React.KeyboardEvent) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  expandRow.toggleRowExpanded()
+                }
+              }}
             >
               {expandRow.isExpanded ? '▼' : '▶'}
             </span>
@@ -400,17 +414,55 @@ const InvoicesTable = ({
                         : ' ▲'
                       : ''
 
+                    // Get aria-sort value for sortable columns
+                    const ariaSortValue = isSortable
+                      ? sortField === column.id
+                        ? sortDirection === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                      : undefined
+
+                    // Keyboard handler for sortable headers
+                    const handleKeyDown = (e: React.KeyboardEvent) => {
+                      if (isSortable && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        onSort(column.id as string)
+                      }
+                    }
+
                     return (
                       <th
                         {...column.getHeaderProps()}
+                        scope="col"
                         onClick={() =>
                           isSortable && onSort(column.id as string)
                         }
+                        onKeyDown={handleKeyDown}
                         className={`!py-3 !px-5 font-medium text-slate-500 border-b border-slate-200 ${
                           isSortable ? 'cursor-pointer' : 'cursor-default'
                         }`}
-                        role={isSortable ? 'button' : undefined}
                         tabIndex={isSortable ? 0 : undefined}
+                        aria-sort={
+                          ariaSortValue as
+                            | 'none'
+                            | 'ascending'
+                            | 'descending'
+                            | undefined
+                        }
+                        aria-label={
+                          isSortable
+                            ? `${column.render('Header')}, sortable column, ${
+                                sortField === column.id
+                                  ? `sorted ${
+                                      sortDirection === 'asc'
+                                        ? 'ascending'
+                                        : 'descending'
+                                    }`
+                                  : 'not sorted'
+                              }`
+                            : undefined
+                        }
                       >
                         {column.render('Header')}
                         {sortIcon}

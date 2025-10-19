@@ -23,7 +23,7 @@ const InvoiceTotals = ({ tax, total }: InvoiceTotalsProps): JSX.Element => {
   return (
     <Card>
       <Card.Header>
-        <h5 className="mb-0">Totals</h5>
+        <h3 className="mb-0 h5">Totals</h3>
       </Card.Header>
       <Card.Body>
         <div className="row">

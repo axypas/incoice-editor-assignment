@@ -33,14 +33,14 @@ const InvoicesPagination = ({
   return (
     <Card className="mt-3 shadow-sm rounded-xl">
       <div className="d-flex justify-content-between align-items-center p-3 bg-slate-50">
-        <span className="text-secondary text-sm">
+        <span className="text-slate-600 text-sm">
           Page {currentPage} of {pagination.total_pages} ·{' '}
           {pagination.total_entries} invoice
           {pagination.total_entries !== 1 ? 's' : ''}
         </span>
         <div className="d-flex gap-2">
           <Button
-            variant="outline-secondary"
+            variant="outline-dark"
             size="sm"
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage === 1 || isLoading}
@@ -49,7 +49,7 @@ const InvoicesPagination = ({
             Previous
           </Button>
           <Button
-            variant="outline-secondary"
+            variant="outline-dark"
             size="sm"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === pagination.total_pages || isLoading}

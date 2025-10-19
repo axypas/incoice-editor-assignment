@@ -16,7 +16,7 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-100">
       <div className="mx-auto w-full max-w-6xl px-6 py-10">
-        <div className="space-y-8">
+        <main className="space-y-8">
           {/* API Health Check - US0 */}
           {isChecking && (
             <div
@@ -73,7 +73,7 @@ function App() {
               </Routes>
             </Router>
           )}
-        </div>
+        </main>
       </div>
     </div>
   )

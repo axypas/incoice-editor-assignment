@@ -21,15 +21,35 @@ const FinalizeInvoiceDialog = ({
   onCancel,
   isFinalizing,
 }: FinalizeInvoiceDialogProps): JSX.Element | null => {
+  // Keyboard handler for Enter key
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !isFinalizing) {
+      e.preventDefault()
+      onConfirm()
+    }
+  }
+
   if (!invoice) return null
 
   return (
-    <Modal show={show} onHide={onCancel} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Finalize Invoice #{invoice.id}</Modal.Title>
+    <Modal
+      show={show}
+      onHide={onCancel}
+      centered
+      aria-labelledby="finalize-invoice-dialog-title"
+      aria-describedby="finalize-invoice-dialog-description"
+      keyboard={!isFinalizing}
+      onKeyDown={handleKeyDown}
+    >
+      <Modal.Header closeButton={!isFinalizing}>
+        <Modal.Title id="finalize-invoice-dialog-title">
+          Finalize Invoice #{invoice.id}
+        </Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p>Are you sure you want to finalize this invoice?</p>
+        <p id="finalize-invoice-dialog-description">
+          Are you sure you want to finalize this invoice?
+        </p>
         <p className="text-muted mb-0">
           <strong>Note:</strong> Once finalized, this invoice cannot be edited
           or modified. Please ensure all details are correct before proceeding.
@@ -40,10 +60,18 @@ const FinalizeInvoiceDialog = ({
           variant="outline-secondary"
           onClick={onCancel}
           disabled={isFinalizing}
+          aria-label="Cancel finalization"
         >
           Cancel
         </Button>
-        <Button variant="primary" onClick={onConfirm} disabled={isFinalizing}>
+        <Button
+          autoFocus
+          variant="primary"
+          onClick={onConfirm}
+          disabled={isFinalizing}
+          aria-label="Confirm finalization"
+          aria-busy={isFinalizing}
+        >
           {isFinalizing ? 'Finalizing...' : 'Finalize Invoice'}
         </Button>
       </Modal.Footer>
