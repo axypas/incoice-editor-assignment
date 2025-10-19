@@ -6,6 +6,7 @@
 
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import numeral from 'numeral'
 import { useInvoice } from 'app/features/InvoicesList/hooks/useInvoices'
 import { ensureNumber } from 'common/utils/calculations'
 import LoadingState from './components/LoadingState'
@@ -56,7 +57,8 @@ const InvoiceShow: React.FC = () => {
   // Calculate totals (convert strings to numbers if needed)
   const total = ensureNumber(invoice.total)
   const tax = ensureNumber(invoice.tax)
-  const subtotal = total - tax
+  // Use numeral.js for subtraction to maintain consistency
+  const subtotal = numeral(total).subtract(tax).value() || 0
 
   return (
     <div className="pb-4">

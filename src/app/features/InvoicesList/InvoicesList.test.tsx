@@ -291,7 +291,7 @@ describe('InvoicesList - US1', () => {
       renderInvoicesList()
 
       await waitFor(() => {
-        expect(screen.getByText(/1\s?250,50\s?€/)).toBeInTheDocument()
+        expect(screen.getByText(/€1,250\.50/)).toBeInTheDocument()
       })
     })
 
@@ -319,7 +319,7 @@ describe('InvoicesList - US1', () => {
       })
 
       // Amount should be displayed even for unpaid invoice
-      expect(screen.getByText(/1\s?250,50\s?€/)).toBeInTheDocument()
+      expect(screen.getByText(/€1,250\.50/)).toBeInTheDocument()
     })
 
     it('shows Draft status badge for non-finalized invoice', async () => {

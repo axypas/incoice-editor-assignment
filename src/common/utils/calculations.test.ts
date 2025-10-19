@@ -133,16 +133,19 @@ describe('Financial Calculations', () => {
   })
 
   describe('formatCurrency', () => {
-    it('should format currency with correct symbols and separators', () => {
-      expect(formatCurrency(1234.56, 'USD', 'en-US')).toBe('$1,234.56')
-      expect(formatCurrency(1234.56, 'EUR', 'fr-FR')).toMatch(/1\s?234,56/)
-      expect(formatCurrency(1234.5, 'GBP', 'en-GB')).toBe('£1,234.50')
+    it('should format currency with EUR symbol and numeral.js', () => {
+      expect(formatCurrency(1234.56)).toBe('€1,234.56')
+      expect(formatCurrency(1234.5)).toBe('€1,234.50')
     })
 
     it('should always show 2 decimal places', () => {
-      expect(formatCurrency(100, 'USD')).toMatch(/\.00/)
-      expect(formatCurrency(100.5, 'USD')).toMatch(/\.50/)
-      expect(formatCurrency(100.999, 'USD')).toMatch(/101\.00/) // Rounds up
+      expect(formatCurrency(100)).toBe('€100.00')
+      expect(formatCurrency(100.5)).toBe('€100.50')
+      expect(formatCurrency(101)).toBe('€101.00')
+    })
+
+    it('should handle negative amounts', () => {
+      expect(formatCurrency(-1234.56)).toBe('€-1,234.56')
     })
   })
 

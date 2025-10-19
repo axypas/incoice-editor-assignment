@@ -3,7 +3,7 @@
  * Ensures consistent financial display across the application
  */
 
-import { formatCurrency as formatAmount } from './calculations'
+import numeral from 'numeral'
 
 // Supported currencies with their symbols and locale defaults
 export const CURRENCIES = {
@@ -15,23 +15,8 @@ export const CURRENCIES = {
 
 export type CurrencyCode = keyof typeof CURRENCIES
 
-/**
- * Gets the currency configuration (internal use only)
- */
-const getCurrencyConfig = (code: CurrencyCode = 'EUR') => {
-  return CURRENCIES[code] || CURRENCIES.EUR
-}
-
-/**
- * Formats an amount with the appropriate currency symbol and locale
- */
-export const formatCurrency = (
-  amount: number,
-  currencyCode: CurrencyCode = 'EUR'
-): string => {
-  const config = getCurrencyConfig(currencyCode)
-  return formatAmount(amount, currencyCode, config.locale)
-}
+// Re-export formatCurrency from calculations for convenience
+export { formatCurrency } from './calculations'
 
 /**
  * Formats a date according to locale
@@ -70,8 +55,13 @@ export const getPaymentStatusLabel = (
     const due = new Date(deadline)
 
     if (now > due) {
+      // Use numeral.js for date math operations
+      const timeDiff =
+        numeral(now.getTime()).subtract(due.getTime()).value() || 0
       const daysOverdue = Math.ceil(
-        (now.getTime() - due.getTime()) / (1000 * 60 * 60 * 24)
+        numeral(timeDiff)
+          .divide(1000 * 60 * 60 * 24)
+          .value() || 0
       )
       return {
         label: `${daysOverdue} days overdue`,
@@ -79,8 +69,12 @@ export const getPaymentStatusLabel = (
       }
     }
 
+    // Use numeral.js for date math operations
+    const timeDiff = numeral(due.getTime()).subtract(now.getTime()).value() || 0
     const daysUntilDue = Math.ceil(
-      (due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      numeral(timeDiff)
+        .divide(1000 * 60 * 60 * 24)
+        .value() || 0
     )
     if (daysUntilDue <= 7) {
       return {

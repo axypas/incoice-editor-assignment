@@ -1,9 +1,10 @@
 /**
  * Pure calculation functions for financial accuracy
- * All calculations use integer math to avoid floating point errors
- * Amounts are stored in cents and converted for display
+ * All calculations use numeral.js to avoid floating point errors
+ * Formatting uses numeral.js for proper locale support
  */
 
+import numeral from 'numeral'
 import {
   InvoiceLineItem,
   LineItemCalculation,
@@ -11,117 +12,100 @@ import {
 } from 'common/types/invoice.types'
 
 /**
- * Converts amount to cents for precise calculation (internal use only)
- * @param amount - Amount in decimal format
- * @returns Amount in cents (integer)
- */
-const toCents = (amount: number): number => {
-  return Math.round(amount * 100)
-}
-
-/**
- * Converts cents back to decimal with 2 decimal places (internal use only)
- * @param cents - Amount in cents
- * @returns Amount in decimal format
- */
-const fromCents = (cents: number): number => {
-  return Math.round(cents) / 100
-}
-
-/**
- * Calculates line item totals with proper decimal precision
- * Formula: (quantity × unit_price) × (1 + vat_rate)
+ * Calculates line item totals using numeral.js for precision
+ * Formula: (quantity × unit_price) + VAT
+ * Rounds at each step to avoid cumulative rounding errors
  */
 export const calculateLineItem = (
   item: InvoiceLineItem
 ): LineItemCalculation => {
-  // Convert to cents for precision
-  const unitPriceCents = toCents(item.unit_price)
-  const quantity = item.quantity
-
-  // Calculate subtotal
-  const subtotalCents = Math.round(unitPriceCents * quantity)
+  // Calculate subtotal using numeral.js multiply and round to 2 decimals
+  const subtotalRaw =
+    numeral(item.unit_price).multiply(item.quantity).value() || 0
+  const subtotal = Number(subtotalRaw.toFixed(2))
 
   // Calculate VAT (convert string to number if needed)
   const vatRate =
     typeof item.vat_rate === 'string'
       ? parseFloat(item.vat_rate)
       : item.vat_rate || 0
-  const vatAmountCents = Math.round((subtotalCents * vatRate) / 100)
 
-  // Total with VAT
-  const totalCents = subtotalCents + vatAmountCents
+  // Calculate VAT amount on ROUNDED subtotal: subtotal * (vatRate / 100)
+  const vatAmountRaw =
+    numeral(subtotal).multiply(vatRate).divide(100).value() || 0
+  const vatAmount = Number(vatAmountRaw.toFixed(2))
+
+  // Calculate total using numeral.js add on ROUNDED values
+  const totalRaw = numeral(subtotal).add(vatAmount).value() || 0
+  const total = Number(totalRaw.toFixed(2))
 
   return {
-    subtotal: fromCents(subtotalCents),
-    vatAmount: fromCents(vatAmountCents),
-    total: fromCents(totalCents),
+    subtotal,
+    vatAmount,
+    total,
   }
 }
 
 /**
- * Calculates invoice totals from line items
+ * Calculates invoice totals from line items using numeral.js
  */
 export const calculateInvoiceTotals = (
   lineItems: InvoiceLineItem[]
 ): InvoiceCalculation => {
-  // Initialize accumulators in cents
-  let subtotalCents = 0
-  let totalVatCents = 0
-  const vatBreakdownCents: Record<number, number> = {}
+  // Initialize accumulators using numeral
+  let subtotalNum = numeral(0)
+  let totalVatNum = numeral(0)
+  const vatBreakdown: Record<number, number> = {}
 
   // Calculate each line item
   lineItems.forEach((item) => {
     const calc = calculateLineItem(item)
 
-    // Accumulate totals (convert back to cents for precision)
-    subtotalCents += toCents(calc.subtotal)
-    totalVatCents += toCents(calc.vatAmount)
+    // Accumulate totals using numeral.js add
+    subtotalNum = numeral(subtotalNum.value()).add(calc.subtotal)
+    totalVatNum = numeral(totalVatNum.value()).add(calc.vatAmount)
 
-    // Track VAT breakdown by rate (convert string to number if needed)
+    // Track VAT breakdown by rate
     const vatRate =
       typeof item.vat_rate === 'string'
         ? parseFloat(item.vat_rate)
         : item.vat_rate || 0
-    if (!vatBreakdownCents[vatRate]) {
-      vatBreakdownCents[vatRate] = 0
+
+    if (!vatBreakdown[vatRate]) {
+      vatBreakdown[vatRate] = 0
     }
-    vatBreakdownCents[vatRate] += toCents(calc.vatAmount)
+    // Add to VAT breakdown using numeral
+    vatBreakdown[vatRate] =
+      numeral(vatBreakdown[vatRate]).add(calc.vatAmount).value() || 0
   })
 
-  const grandTotalCents = subtotalCents + totalVatCents
-
-  // Convert VAT breakdown back to decimal
-  const vatBreakdown: Record<number, number> = {}
-  Object.entries(vatBreakdownCents).forEach(([rate, amount]) => {
-    vatBreakdown[Number(rate)] = fromCents(amount)
-  })
+  // Calculate grand total using numeral.js add
+  const grandTotalNum = numeral(subtotalNum.value()).add(totalVatNum.value())
 
   return {
-    subtotal: fromCents(subtotalCents),
-    totalVat: fromCents(totalVatCents),
-    grandTotal: fromCents(grandTotalCents),
-    vatBreakdown,
+    subtotal: Number((subtotalNum.value() || 0).toFixed(2)),
+    totalVat: Number((totalVatNum.value() || 0).toFixed(2)),
+    grandTotal: Number((grandTotalNum.value() || 0).toFixed(2)),
+    vatBreakdown: Object.fromEntries(
+      Object.entries(vatBreakdown).map(([rate, amount]) => [
+        Number(rate),
+        Number(amount.toFixed(2)),
+      ])
+    ),
   }
 }
 
 /**
- * Formats a number as currency with proper locale
+ * Formats a number as currency using numeral.js
+ * Always uses EUR (€) as the currency
  * @param amount - Amount to format
- * @param currency - Currency code (default EUR)
- * @param locale - Locale for formatting (default en-US)
  */
-export const formatCurrency = (
-  amount: number,
-  currency: string = 'EUR',
-  locale: string = 'en-US'
-): string => {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
+export const formatCurrency = (amount: number): string => {
+  // Format number with thousand separators and 2 decimals using numeral.js
+  const formattedNumber = numeral(amount).format('0,0.00')
+
+  // Prepend EUR symbol
+  return `€${formattedNumber}`
 }
 
 /**
