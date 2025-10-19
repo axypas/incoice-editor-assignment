@@ -29,8 +29,6 @@ export interface InvoiceLineItem {
   unit: string // Enum: "hour" | "day" | "piece"
   unit_price: number
   vat_rate: string | number // API expects string enum: "0" | "5.5" | "10" | "20"
-  discount?: number // Percentage discount (0-100)
-  discount_amount?: number // Fixed amount discount
 }
 
 export interface Invoice {
@@ -46,8 +44,6 @@ export interface Invoice {
   invoice_lines: InvoiceLineItem[]
   tax?: number
   total?: number
-  notes?: string
-  terms?: string
 }
 
 // Re-export API Product type for convenience
@@ -60,8 +56,6 @@ export interface InvoiceFormData {
   date: string
   deadline?: string
   invoice_lines: InvoiceLineFormData[]
-  notes?: string
-  terms?: string
 }
 
 export interface InvoiceLineFormData {
@@ -70,22 +64,17 @@ export interface InvoiceLineFormData {
   unit: string
   unit_price: string // String for form input
   vat_rate: string // String for form input
-  discount?: string // String for form input
 }
 
 // Calculation types
 export interface LineItemCalculation {
   subtotal: number // quantity * unit_price
-  discountAmount: number
-  taxableAmount: number // subtotal - discount
   vatAmount: number
-  total: number // taxableAmount + vatAmount
+  total: number // subtotal + vatAmount
 }
 
 export interface InvoiceCalculation {
   subtotal: number // Sum of all line subtotals
-  totalDiscount: number
-  taxableAmount: number
   totalVat: number
   grandTotal: number
   vatBreakdown: Record<number, number> // VAT rate -> amount

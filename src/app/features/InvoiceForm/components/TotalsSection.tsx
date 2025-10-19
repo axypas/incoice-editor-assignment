@@ -1,6 +1,6 @@
 /**
  * TotalsSection component
- * Displays invoice totals breakdown (subtotal, discount, VAT, grand total)
+ * Displays invoice totals breakdown (subtotal, VAT, grand total)
  */
 
 import React from 'react'
@@ -9,8 +9,6 @@ import { formatCurrency } from 'common/utils/calculations'
 
 interface InvoiceTotals {
   subtotal: number
-  totalDiscount: number
-  taxableAmount: number
   vatBreakdown: Record<string, number>
   totalVat: number
   grandTotal: number
@@ -28,18 +26,8 @@ const TotalsSection: React.FC<TotalsSectionProps> = ({ totals }) => {
         <Row>
           <Col md={{ span: 6, offset: 6 }}>
             <div className="d-flex justify-content-between mb-2">
-              <span>Subtotal:</span>
-              <strong>{formatCurrency(totals.subtotal)}</strong>
-            </div>
-            {totals.totalDiscount > 0 && (
-              <div className="d-flex justify-content-between mb-2 text-success">
-                <span>Discount:</span>
-                <strong>-{formatCurrency(totals.totalDiscount)}</strong>
-              </div>
-            )}
-            <div className="d-flex justify-content-between mb-2">
               <span>Taxable Amount:</span>
-              <strong>{formatCurrency(totals.taxableAmount)}</strong>
+              <strong>{formatCurrency(totals.subtotal)}</strong>
             </div>
             {Object.entries(totals.vatBreakdown).map(([rate, amount]) => (
               <div

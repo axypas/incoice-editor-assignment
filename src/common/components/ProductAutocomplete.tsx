@@ -25,7 +25,7 @@ const ProductAutocomplete = ({ value, onChange, onBlur }: Props) => {
     GroupBase<Product>,
     { page: number }
   > = useCallback(
-    async (search, loadedOptions, additional) => {
+    async (search, _, additional) => {
       const page = additional?.page ?? 1
       const { data } = await api.getSearchProducts({
         query: search,

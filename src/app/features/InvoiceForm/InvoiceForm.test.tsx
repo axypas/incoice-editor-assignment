@@ -766,7 +766,7 @@ describe('InvoiceForm - US3', () => {
       })
 
       // Verify totals section shows calculated values
-      expect(screen.getByText('Subtotal:')).toBeInTheDocument()
+      expect(screen.getByText('Taxable Amount:')).toBeInTheDocument()
       expect(screen.getByText('Total VAT:')).toBeInTheDocument()
       expect(screen.getByText('Grand Total:')).toBeInTheDocument()
     })

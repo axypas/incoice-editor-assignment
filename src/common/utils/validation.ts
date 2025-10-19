@@ -94,18 +94,6 @@ export const validateLineItem = (
     })
   }
 
-  // Discount validation (if provided)
-  if (item.discount) {
-    const discount = parseFormattedNumber(item.discount)
-    if (discount < 0 || discount > 100) {
-      errors.push({
-        field: `${fieldPrefix}.discount`,
-        message: 'Discount must be between 0% and 100%',
-        code: 'invalid',
-      })
-    }
-  }
-
   return errors
 }
 
@@ -190,8 +178,12 @@ export const validateInvoiceForm = (
     })
   }
 
-  // Notes/terms length validation
-  if (formData.notes && formData.notes.length > 1000) {
+  // Notes/terms length validation (optional fields)
+  const formDataWithOptional = formData as InvoiceFormData & {
+    notes?: string
+    terms?: string
+  }
+  if (formDataWithOptional.notes && formDataWithOptional.notes.length > 1000) {
     errors.push({
       field: 'notes',
       message: 'Notes cannot exceed 1000 characters',
@@ -199,7 +191,7 @@ export const validateInvoiceForm = (
     })
   }
 
-  if (formData.terms && formData.terms.length > 1000) {
+  if (formDataWithOptional.terms && formDataWithOptional.terms.length > 1000) {
     errors.push({
       field: 'terms',
       message: 'Terms cannot exceed 1000 characters',

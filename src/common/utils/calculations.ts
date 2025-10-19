@@ -31,7 +31,7 @@ export const fromCents = (cents: number): number => {
 
 /**
  * Calculates line item totals with proper decimal precision
- * Formula: (quantity × unit_price - discount) × (1 + vat_rate)
+ * Formula: (quantity × unit_price) × (1 + vat_rate)
  */
 export const calculateLineItem = (
   item: InvoiceLineItem
@@ -43,33 +43,18 @@ export const calculateLineItem = (
   // Calculate subtotal
   const subtotalCents = Math.round(unitPriceCents * quantity)
 
-  // Calculate discount
-  let discountCents = 0
-  if (item.discount) {
-    // Percentage discount
-    discountCents = Math.round((subtotalCents * item.discount) / 100)
-  } else if (item.discount_amount) {
-    // Fixed amount discount
-    discountCents = toCents(item.discount_amount)
-  }
-
-  // Taxable amount after discount
-  const taxableAmountCents = subtotalCents - discountCents
-
   // Calculate VAT (convert string to number if needed)
   const vatRate =
     typeof item.vat_rate === 'string'
       ? parseFloat(item.vat_rate)
       : item.vat_rate || 0
-  const vatAmountCents = Math.round((taxableAmountCents * vatRate) / 100)
+  const vatAmountCents = Math.round((subtotalCents * vatRate) / 100)
 
   // Total with VAT
-  const totalCents = taxableAmountCents + vatAmountCents
+  const totalCents = subtotalCents + vatAmountCents
 
   return {
     subtotal: fromCents(subtotalCents),
-    discountAmount: fromCents(discountCents),
-    taxableAmount: fromCents(taxableAmountCents),
     vatAmount: fromCents(vatAmountCents),
     total: fromCents(totalCents),
   }
@@ -83,7 +68,6 @@ export const calculateInvoiceTotals = (
 ): InvoiceCalculation => {
   // Initialize accumulators in cents
   let subtotalCents = 0
-  let totalDiscountCents = 0
   let totalVatCents = 0
   const vatBreakdownCents: Record<number, number> = {}
 
@@ -93,7 +77,6 @@ export const calculateInvoiceTotals = (
 
     // Accumulate totals (convert back to cents for precision)
     subtotalCents += toCents(calc.subtotal)
-    totalDiscountCents += toCents(calc.discountAmount)
     totalVatCents += toCents(calc.vatAmount)
 
     // Track VAT breakdown by rate (convert string to number if needed)
@@ -107,8 +90,7 @@ export const calculateInvoiceTotals = (
     vatBreakdownCents[vatRate] += toCents(calc.vatAmount)
   })
 
-  const taxableAmountCents = subtotalCents - totalDiscountCents
-  const grandTotalCents = taxableAmountCents + totalVatCents
+  const grandTotalCents = subtotalCents + totalVatCents
 
   // Convert VAT breakdown back to decimal
   const vatBreakdown: Record<number, number> = {}
@@ -118,8 +100,6 @@ export const calculateInvoiceTotals = (
 
   return {
     subtotal: fromCents(subtotalCents),
-    totalDiscount: fromCents(totalDiscountCents),
-    taxableAmount: fromCents(taxableAmountCents),
     totalVat: fromCents(totalVatCents),
     grandTotal: fromCents(grandTotalCents),
     vatBreakdown,

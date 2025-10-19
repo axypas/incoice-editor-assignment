@@ -52,36 +52,12 @@ describe('Financial Calculations', () => {
       vat_rate: 20,
     }
 
-    it('should calculate basic line item without discount', () => {
+    it('should calculate basic line item', () => {
       const result = calculateLineItem(baseItem)
 
       expect(result.subtotal).toBe(500.0) // 10 * 50
-      expect(result.discountAmount).toBe(0)
-      expect(result.taxableAmount).toBe(500.0)
       expect(result.vatAmount).toBe(100.0) // 500 * 0.20
       expect(result.total).toBe(600.0) // 500 + 100
-    })
-
-    it('should calculate with percentage discount', () => {
-      const item = { ...baseItem, discount: 10 } // 10% discount
-      const result = calculateLineItem(item)
-
-      expect(result.subtotal).toBe(500.0)
-      expect(result.discountAmount).toBe(50.0) // 500 * 0.10
-      expect(result.taxableAmount).toBe(450.0) // 500 - 50
-      expect(result.vatAmount).toBe(90.0) // 450 * 0.20
-      expect(result.total).toBe(540.0) // 450 + 90
-    })
-
-    it('should calculate with fixed amount discount', () => {
-      const item = { ...baseItem, discount_amount: 25.5 }
-      const result = calculateLineItem(item)
-
-      expect(result.subtotal).toBe(500.0)
-      expect(result.discountAmount).toBe(25.5)
-      expect(result.taxableAmount).toBe(474.5) // 500 - 25.50
-      expect(result.vatAmount).toBe(94.9) // 474.50 * 0.20
-      expect(result.total).toBe(569.4) // 474.50 + 94.90
     })
 
     it('should handle fractional quantities correctly', () => {
@@ -109,20 +85,15 @@ describe('Financial Calculations', () => {
         unit: 'items',
         unit_price: 19.99,
         vat_rate: 19,
-        discount: 7.5,
       }
       const result = calculateLineItem(item)
 
       // 3.33 * 19.99 = 66.5667 → 66.57 (rounded)
       expect(result.subtotal).toBe(66.57)
-      // 66.57 * 0.075 = 4.99275 → 4.99 (rounded)
-      expect(result.discountAmount).toBe(4.99)
-      // 66.57 - 4.99 = 61.58
-      expect(result.taxableAmount).toBe(61.58)
-      // 61.58 * 0.19 = 11.7002 → 11.70 (rounded)
-      expect(result.vatAmount).toBe(11.7)
-      // 61.58 + 11.70 = 73.28
-      expect(result.total).toBe(73.28)
+      // 66.57 * 0.19 = 12.6483 → 12.65 (rounded)
+      expect(result.vatAmount).toBe(12.65)
+      // 66.57 + 12.65 = 79.22
+      expect(result.total).toBe(79.22)
     })
   })
 
@@ -142,7 +113,6 @@ describe('Financial Calculations', () => {
           unit: 'items',
           unit_price: 50,
           vat_rate: 10,
-          discount: 10, // 10% discount
         },
         {
           label: 'Item 3',
@@ -150,33 +120,28 @@ describe('Financial Calculations', () => {
           unit: 'service',
           unit_price: 300,
           vat_rate: 20,
-          discount_amount: 50, // Fixed discount
         },
       ]
 
       const result = calculateInvoiceTotals(lineItems)
 
       // Item 1: 2 * 100 = 200, VAT = 40, Total = 240
-      // Item 2: 5 * 50 = 250, Discount = 25, Taxable = 225, VAT = 22.50, Total = 247.50
-      // Item 3: 1 * 300 = 300, Discount = 50, Taxable = 250, VAT = 50, Total = 300
+      // Item 2: 5 * 50 = 250, VAT = 25, Total = 275
+      // Item 3: 1 * 300 = 300, VAT = 60, Total = 360
 
       expect(result.subtotal).toBe(750.0) // 200 + 250 + 300
-      expect(result.totalDiscount).toBe(75.0) // 0 + 25 + 50
-      expect(result.taxableAmount).toBe(675.0) // 750 - 75
-      expect(result.totalVat).toBe(112.5) // 40 + 22.50 + 50
-      expect(result.grandTotal).toBe(787.5) // 675 + 112.50
+      expect(result.totalVat).toBe(125.0) // 40 + 25 + 60
+      expect(result.grandTotal).toBe(875.0) // 750 + 125
 
       // VAT breakdown
-      expect(result.vatBreakdown[20]).toBe(90.0) // Items 1 & 3
-      expect(result.vatBreakdown[10]).toBe(22.5) // Item 2
+      expect(result.vatBreakdown[20]).toBe(100.0) // Items 1 & 3
+      expect(result.vatBreakdown[10]).toBe(25.0) // Item 2
     })
 
     it('should handle empty line items array', () => {
       const result = calculateInvoiceTotals([])
 
       expect(result.subtotal).toBe(0)
-      expect(result.totalDiscount).toBe(0)
-      expect(result.taxableAmount).toBe(0)
       expect(result.totalVat).toBe(0)
       expect(result.grandTotal).toBe(0)
       expect(Object.keys(result.vatBreakdown).length).toBe(0)

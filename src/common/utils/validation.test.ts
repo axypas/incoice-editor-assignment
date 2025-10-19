@@ -124,26 +124,10 @@ describe('Validation Utilities', () => {
       errors = validateLineItem(item, 0)
       expect(errors).toHaveLength(0)
     })
-
-    it('should validate discount if provided', () => {
-      // Valid percentage discount
-      let item = { ...validItem, discount: '10' }
-      let errors = validateLineItem(item, 0)
-      expect(errors).toHaveLength(0)
-
-      // Invalid discount
-      item = { ...validItem, discount: '150' }
-      errors = validateLineItem(item, 0)
-      expect(errors).toContainEqual({
-        field: 'invoice_lines.0.discount',
-        message: 'Discount must be between 0% and 100%',
-        code: 'invalid',
-      })
-    })
   })
 
   describe('validateInvoiceForm', () => {
-    const validForm: InvoiceFormData = {
+    const validForm = {
       customer_id: 'cust_123',
       invoice_number: 'INV-2024-001',
       date: '2024-01-15',
@@ -159,7 +143,7 @@ describe('Validation Utilities', () => {
       ],
       notes: 'Test notes',
       terms: 'Net 30',
-    }
+    } as InvoiceFormData & { notes?: string; terms?: string }
 
     it('should validate a complete valid form', () => {
       const result = validateInvoiceForm(validForm)
