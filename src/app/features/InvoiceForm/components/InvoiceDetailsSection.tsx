@@ -87,13 +87,6 @@ const InvoiceDetailsSection = (): JSX.Element => {
                 rules={{
                   validate: (value) => {
                     if (!value) return 'Invoice date is required'
-                    const today = new Date()
-                    today.setHours(0, 0, 0, 0)
-                    const normalizedValue = new Date(value)
-                    normalizedValue.setHours(0, 0, 0, 0)
-                    if (normalizedValue > today) {
-                      return 'Invoice date cannot be in the future'
-                    }
                     return true
                   },
                 }}
@@ -121,7 +114,6 @@ const InvoiceDetailsSection = (): JSX.Element => {
                           }
                         }
                       }}
-                      maxDate={new Date()}
                       dateFormat="yyyy-MM-dd"
                       className="form-control"
                       onBlur={field.onBlur}
@@ -135,7 +127,7 @@ const InvoiceDetailsSection = (): JSX.Element => {
                 )}
               />
               <Form.Text className="text-muted">
-                Cannot be in the future
+                Date when the invoice was or will be issued
               </Form.Text>
             </Form.Group>
           </Col>

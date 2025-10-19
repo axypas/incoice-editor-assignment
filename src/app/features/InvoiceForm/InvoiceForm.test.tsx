@@ -343,7 +343,7 @@ describe('InvoiceForm - US3', () => {
       })
     })
 
-    it('validates invoice date cannot be in the future', async () => {
+    it('allows future invoice dates', async () => {
       renderInvoiceForm()
 
       // Get today's date plus 1 day
@@ -354,11 +354,9 @@ describe('InvoiceForm - US3', () => {
       const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
       fireEvent.change(invoiceDateInput, { target: { value: tomorrowStr } })
 
-      // Validation should trigger immediately
+      // Future dates should be allowed without validation error
       await waitFor(() => {
-        expect(
-          screen.getByText('Invoice date cannot be in the future')
-        ).toBeInTheDocument()
+        expect(invoiceDateInput).toHaveValue(tomorrowStr)
       })
     })
 
@@ -371,10 +369,6 @@ describe('InvoiceForm - US3', () => {
       await waitFor(() => {
         expect(invoiceDateInput).toHaveValue('2024-01-15')
       })
-
-      expect(
-        screen.queryByText('Invoice date cannot be in the future')
-      ).not.toBeInTheDocument()
     })
 
     it('allows past payment deadlines', async () => {
