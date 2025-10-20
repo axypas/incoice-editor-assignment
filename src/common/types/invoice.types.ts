@@ -17,13 +17,6 @@ export interface LineItemCalculation {
   total: number // subtotal + vatAmount
 }
 
-export interface InvoiceCalculation {
-  subtotal: number // Sum of all line subtotals
-  totalVat: number
-  grandTotal: number
-  vatBreakdown: Record<number, number> // VAT rate -> amount
-}
-
 // Filter types for list view
 export interface InvoiceFilter {
   field:
@@ -49,10 +42,3 @@ export interface ApiError {
 
 // Status types for async operations
 export type AsyncStatus = 'idle' | 'loading' | 'success' | 'error'
-
-// Validation types
-export interface ValidationError {
-  field: string
-  message: string
-  code: 'required' | 'invalid' | 'min' | 'max' | 'format' | 'duplicate'
-}

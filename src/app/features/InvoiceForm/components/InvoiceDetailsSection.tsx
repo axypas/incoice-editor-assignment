@@ -3,7 +3,6 @@
  * Displays customer, date, deadline, and paid status fields
  */
 
-import React from 'react'
 import { Form, Card, Row, Col } from 'react-bootstrap'
 import { Controller, useFormContext } from 'react-hook-form'
 import DatePicker from 'react-datepicker'

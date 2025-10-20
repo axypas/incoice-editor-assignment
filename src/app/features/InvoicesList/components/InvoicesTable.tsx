@@ -2,7 +2,7 @@
  * InvoicesTable component
  * Displays invoices in a sortable table with expandable rows showing invoice lines
  */
-import React, { useMemo, useCallback } from 'react'
+import { Fragment, useMemo, useCallback } from 'react'
 import {
   useTable,
   useExpanded,
@@ -469,7 +469,7 @@ const InvoicesTable = ({
                 const expandedRow = row as Row<Invoice> &
                   UseExpandedRowProps<Invoice>
                 return (
-                  <React.Fragment key={row.id}>
+                  <Fragment key={row.id}>
                     <tr
                       {...row.getRowProps()}
                       className="group align-middle border-b border-slate-100"
@@ -490,7 +490,7 @@ const InvoicesTable = ({
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 )
               })}
             </tbody>

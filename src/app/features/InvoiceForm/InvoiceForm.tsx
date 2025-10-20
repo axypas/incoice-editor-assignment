@@ -4,7 +4,7 @@
  * Simplified version using extracted components, hooks, and types
  */
 
-import React, { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useForm, useFieldArray, FormProvider } from 'react-hook-form'
 import { Form } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'

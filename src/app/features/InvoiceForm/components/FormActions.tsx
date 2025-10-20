@@ -3,7 +3,6 @@
  * Displays cancel and submit buttons with loading states
  */
 
-import React from 'react'
 import { Button, Spinner } from 'react-bootstrap'
 
 interface FormActionsProps {

@@ -3,7 +3,6 @@
  * Confirmation dialog for finalizing an invoice
  * Once finalized, an invoice cannot be edited
  */
-import React from 'react'
 import { Modal, Button } from 'react-bootstrap'
 
 interface FinalizeConfirmationModalProps {

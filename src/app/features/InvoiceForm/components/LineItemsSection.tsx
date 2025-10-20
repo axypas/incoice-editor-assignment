@@ -3,7 +3,6 @@
  * Displays line items table with product selection, quantity, pricing, and actions
  */
 
-import React from 'react'
 import {
   Card,
   Button,

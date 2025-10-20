@@ -3,7 +3,6 @@
  * Displays invoice totals summary (subtotal, VAT, grand total)
  */
 
-import React from 'react'
 import { Card } from 'react-bootstrap'
 import numeral from 'numeral'
 import { formatCurrency } from 'common/utils/calculations'

@@ -4,7 +4,6 @@
  * Orchestrates sub-components for better maintainability
  */
 
-import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useInvoice } from 'app/features/InvoicesList/hooks/useInvoices'
 import LoadingState from './components/LoadingState'

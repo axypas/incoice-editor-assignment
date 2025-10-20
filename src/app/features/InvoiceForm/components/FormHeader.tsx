@@ -3,7 +3,6 @@
  * Displays form title, invoice number, and auto-save status
  */
 
-import React from 'react'
 import { Alert, Spinner } from 'react-bootstrap'
 
 interface FormHeaderProps {

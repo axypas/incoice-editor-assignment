@@ -3,7 +3,6 @@
  * Displays current page info and navigation buttons
  */
 
-import React from 'react'
 import { Button, Card } from 'react-bootstrap'
 
 interface Pagination {

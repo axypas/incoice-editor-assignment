@@ -4,7 +4,6 @@
  * Reusable across invoice-related features
  */
 
-import React from 'react'
 import { Spinner } from 'react-bootstrap'
 
 interface LoadingStateProps {

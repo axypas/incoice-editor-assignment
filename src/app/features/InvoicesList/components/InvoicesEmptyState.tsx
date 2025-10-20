@@ -2,7 +2,6 @@
  * InvoicesEmptyState component
  * Displays appropriate empty state based on whether filters are active
  */
-import React from 'react'
 import { Button } from 'react-bootstrap'
 
 interface InvoicesEmptyStateProps {

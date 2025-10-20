@@ -3,7 +3,6 @@
  * Displays alert when trying to edit a finalized invoice
  */
 
-import React from 'react'
 import { Alert, Button } from 'react-bootstrap'
 
 interface FinalizedInvoiceAlertProps {

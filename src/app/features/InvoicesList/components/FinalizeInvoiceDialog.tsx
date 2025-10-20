@@ -2,7 +2,6 @@
  * FinalizeInvoiceDialog component
  * Confirmation dialog for finalizing an invoice from the table
  */
-import React from 'react'
 import { Modal, Button } from 'react-bootstrap'
 import { Invoice } from 'common/types/invoice.types'
 

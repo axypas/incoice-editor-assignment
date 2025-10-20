@@ -4,7 +4,6 @@
  * Reusable across invoice-related features
  */
 
-import React from 'react'
 import { Alert, Button } from 'react-bootstrap'
 
 interface ErrorStateProps {

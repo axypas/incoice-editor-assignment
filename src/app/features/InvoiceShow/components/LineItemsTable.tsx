@@ -3,7 +3,6 @@
  * Displays invoice line items in a table format
  */
 
-import React from 'react'
 import { Card, Table } from 'react-bootstrap'
 import type { Invoice } from 'common/types/invoice.types'
 import { formatCurrency } from 'common/utils/calculations'

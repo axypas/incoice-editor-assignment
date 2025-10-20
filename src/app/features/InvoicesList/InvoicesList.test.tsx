@@ -4,7 +4,7 @@
  * Uses MSW to mock API responses
  */
 
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { rest } from 'msw'
@@ -79,7 +79,7 @@ const renderInvoicesList = () => {
 
 // Sample invoice data
 const mockInvoice = {
-  id: '1',
+  id: 1, // BE uses number IDs
   customer_id: 1,
   customer: {
     id: 1,
@@ -690,7 +690,7 @@ describe('InvoicesList - US1', () => {
       ).toBeInTheDocument()
     })
 
-    it.skip('applies date filter and calls API with correct filter param', async () => {
+    it('applies date filter and calls API with correct filter param', async () => {
       let capturedParams: any = null
       let requestCount = 0
 
@@ -725,27 +725,22 @@ describe('InvoicesList - US1', () => {
       })
 
       // Fill in date filter using date range picker (mocked)
+      // The mock date picker triggers onChange with formatted date
       const dateInput = screen.getByPlaceholderText(
         /select date range/i
       ) as HTMLInputElement
-      fireEvent.change(dateInput, { target: { value: '2024-01-01' } })
 
-      // Submit filter
-      await userEvent.click(
-        screen.getByRole('button', { name: /apply filters/i })
-      )
+      // Simulate user typing - trigger change and blur
+      await userEvent.type(dateInput, '2024-01-01')
+      await userEvent.tab() // Move focus away to trigger blur
 
-      // Wait for active filters to appear (indicates filter was applied)
-      await waitFor(() => {
-        expect(screen.getByText(/active filters/i)).toBeInTheDocument()
-      })
-
+      // Wait for filter to be applied automatically (filters are debounced)
       // Verify API was called with filter param
       await waitFor(
         () => {
           expect(capturedParams).toBeTruthy()
         },
-        { timeout: 5000 }
+        { timeout: 6000 }
       )
 
       expect(capturedParams.filter).toBeTruthy()
@@ -759,7 +754,9 @@ describe('InvoicesList - US1', () => {
       ])
 
       // Verify active filters summary is shown
-      expect(screen.getByText(/date from 2024-01-01/i)).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText(/date from 2024-01-01/i)).toBeInTheDocument()
+      })
     })
 
     it('applies status filter and calls API with correct filter param', async () => {
@@ -823,15 +820,15 @@ describe('InvoicesList - US1', () => {
       })
     })
 
-    it.skip('applies both filters together', async () => {
+    it('applies both filters together', async () => {
       let capturedParams: any = null
       let requestCount = 0
 
       server.use(
         rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
           requestCount++
-          if (requestCount > 1) {
-            // Capture params from second request (after filter applied)
+          if (requestCount > 2) {
+            // Capture params from third request (after both filters applied)
             capturedParams = {
               filter: req.url.searchParams.get('filter'),
             }
@@ -856,22 +853,26 @@ describe('InvoicesList - US1', () => {
         expect(screen.getByRole('table')).toBeInTheDocument()
       })
 
-      // Fill in date filter
+      // Fill in date filter - applies automatically after debounce
       const dateInput = screen.getByPlaceholderText(
         /select date range/i
       ) as HTMLInputElement
-      fireEvent.change(dateInput, { target: { value: '2024-01-01' } })
+      await userEvent.type(dateInput, '2024-01-01')
+      await userEvent.tab() // Move focus away to trigger blur
 
-      // Click on Paid payment button
+      // Wait for first filter to apply (debounced)
+      await waitFor(
+        () => {
+          expect(requestCount).toBeGreaterThan(1)
+        },
+        { timeout: 6000 }
+      )
+
+      // Click on Paid payment button - applies automatically
       const paidButton = screen.getAllByRole('button', {
         name: /^paid$/i,
       })[0] // Get first one (from filter controls, not table)
       await userEvent.click(paidButton)
-
-      // Submit filter
-      await userEvent.click(
-        screen.getByRole('button', { name: /apply filters/i })
-      )
 
       // Verify API was called with both filters
       await waitFor(() => {
@@ -950,7 +951,7 @@ describe('InvoicesList - US1', () => {
       expect(clearButtons.length).toBeGreaterThan(0)
     })
 
-    it.skip('clears filters and reloads all invoices', async () => {
+    it('clears filters and reloads all invoices', async () => {
       server.use(
         rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
           const filterParam = req.url.searchParams.get('filter')
@@ -993,29 +994,37 @@ describe('InvoicesList - US1', () => {
       await waitFor(() => {
         expect(screen.getByText('#1')).toBeInTheDocument()
       })
-      expect(screen.getByText('#2')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('#2')).toBeInTheDocument()
+      })
 
-      // Apply a filter
+      // Apply a filter - auto-applies after debounce
       const dateInput = screen.getByPlaceholderText(
         /select date range/i
       ) as HTMLInputElement
-      fireEvent.change(dateInput, { target: { value: '2024-01-01' } })
-      await userEvent.click(
-        screen.getByRole('button', { name: /apply filters/i })
+      await userEvent.type(dateInput, '2024-01-01')
+      await userEvent.tab() // Move focus away to trigger blur
+
+      // Wait for filtered results (1 invoice) - with longer timeout for debounce
+      await waitFor(
+        () => {
+          expect(screen.getByText(/active filters/i)).toBeInTheDocument()
+        },
+        { timeout: 6000 }
       )
 
-      // Wait for filtered results (1 invoice)
+      // Should now show only 1 invoice
       await waitFor(() => {
-        expect(screen.getByText(/active filters/i)).toBeInTheDocument()
+        expect(screen.queryByText('#2')).not.toBeInTheDocument()
       })
 
-      // Clear Filters or Reset button should now be visible
+      // Clear Filters button should be visible
       const clearButton = screen.getByRole('button', {
-        name: /(clear filters|reset)/i,
+        name: /clear filters/i,
       })
       expect(clearButton).toBeInTheDocument()
 
-      // Click Clear Filters / Reset
+      // Click Clear Filters
       await userEvent.click(clearButton)
 
       // Verify filters are cleared
@@ -1027,7 +1036,9 @@ describe('InvoicesList - US1', () => {
       await waitFor(() => {
         expect(screen.getByText('#1')).toBeInTheDocument()
       })
-      expect(screen.getByText('#2')).toBeInTheDocument()
+      await waitFor(() => {
+        expect(screen.getByText('#2')).toBeInTheDocument()
+      })
     })
   })
 

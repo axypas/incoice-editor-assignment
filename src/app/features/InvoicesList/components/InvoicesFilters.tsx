@@ -2,7 +2,6 @@
  * InvoicesFilters component
  * Displays filter controls for invoices (status, payment, customer, product, dates)
  */
-import React from 'react'
 import { Form, Card, ButtonGroup, Button } from 'react-bootstrap'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'

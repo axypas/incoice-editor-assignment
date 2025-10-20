@@ -3,7 +3,6 @@
  * Displays customer information, dates, and payment status
  */
 
-import React from 'react'
 import { Card, Badge } from 'react-bootstrap'
 import type { Invoice } from 'common/types/invoice.types'
 

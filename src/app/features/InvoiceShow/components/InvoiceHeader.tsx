@@ -3,7 +3,6 @@
  * Displays invoice title, status badges, and action buttons
  */
 
-import React from 'react'
 import { Badge, Button } from 'react-bootstrap'
 import type { Invoice } from 'common/types/invoice.types'
 

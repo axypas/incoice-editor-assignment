@@ -1,5 +1,6 @@
 import { OperationMethods } from 'api/gen/client'
-import { Awaited } from './helpers'
+
+export type Awaited<T> = T extends PromiseLike<infer U> ? Awaited<U> : T
 
 export type Invoice = Awaited<
   ReturnType<OperationMethods['getInvoices']>
