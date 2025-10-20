@@ -243,7 +243,7 @@ const InvoiceFormInner = ({
     <div className="pb-4">
       <FormHeader
         isEditMode={isEditMode}
-        invoiceNumber={existingInvoice?.invoice_number}
+        invoiceNumber={existingInvoice?.id}
         invoiceId={invoiceId}
         isAutoSaving={isAutoSaving}
         lastSaved={lastSaved}

@@ -1,5 +1,5 @@
 import { ReactNode, createContext, useContext, useRef } from 'react'
-import OpenAPIClientAxios from 'openapi-client-axios'
+import OpenAPIClientAxios, { Document } from 'openapi-client-axios'
 import { Client } from './gen/client'
 import definition from './gen/schema.json'
 
@@ -24,8 +24,7 @@ export const ApiProvider = ({
 }: ApiProviderProps): JSX.Element => {
   const apiRef = useRef(
     new OpenAPIClientAxios({
-      /* @ts-ignore */
-      definition,
+      definition: definition as Document,
       withServer: { url },
       axiosConfigDefaults: {
         headers: {

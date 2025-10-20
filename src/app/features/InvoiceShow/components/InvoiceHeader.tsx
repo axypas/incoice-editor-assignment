@@ -21,7 +21,7 @@ const InvoiceHeader = ({
   return (
     <div className="d-flex justify-content-between align-items-center mb-4">
       <div>
-        <h2>Invoice #{invoice.invoice_number || invoice.id}</h2>
+        <h2>Invoice #{invoice.id}</h2>
         {invoice.finalized ? (
           <Badge bg="success" className="mt-2">
             Finalized

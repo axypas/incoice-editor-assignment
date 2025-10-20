@@ -4,6 +4,8 @@ import { AsyncPaginate, LoadOptions } from 'react-select-async-paginate'
 import { Product } from 'common/types'
 import { useApi } from 'api'
 import { GroupBase } from 'react-select'
+import { logger } from 'common/utils/logger'
+import { DEFAULT_PAGE_SIZE } from 'common/constants/ui'
 
 interface Props {
   value: Product | null
@@ -27,19 +29,30 @@ const ProductAutocomplete = ({ value, onChange, onBlur, inputId }: Props) => {
     { page: number }
   > = useCallback(
     async (search, _, additional) => {
-      const page = additional?.page ?? 1
-      const { data } = await api.getSearchProducts({
-        query: search,
-        per_page: 10,
-        page,
-      })
+      try {
+        const page = additional?.page ?? 1
+        const { data } = await api.getSearchProducts({
+          query: search,
+          per_page: DEFAULT_PAGE_SIZE,
+          page,
+        })
 
-      return {
-        options: data.products,
-        hasMore: data.pagination.page < data.pagination.total_pages,
-        additional: {
-          page: page + 1,
-        },
+        return {
+          options: data.products,
+          hasMore: data.pagination.page < data.pagination.total_pages,
+          additional: {
+            page: page + 1,
+          },
+        }
+      } catch (error) {
+        logger.error('Failed to load products:', error)
+        return {
+          options: [],
+          hasMore: false,
+          additional: {
+            page: 1,
+          },
+        }
       }
     },
     [api]

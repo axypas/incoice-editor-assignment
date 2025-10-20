@@ -769,8 +769,7 @@ describe('InvoiceForm - US3', () => {
 
   describe('Edit Mode - US4', () => {
     const mockInvoice = {
-      id: 123,
-      invoice_number: '123',
+      id: '123',
       customer_id: 1,
       customer: {
         id: 1,

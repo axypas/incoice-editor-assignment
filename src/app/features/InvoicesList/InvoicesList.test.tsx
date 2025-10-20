@@ -79,8 +79,7 @@ const renderInvoicesList = () => {
 
 // Sample invoice data
 const mockInvoice = {
-  id: 1,
-  invoice_number: '1',
+  id: '1',
   customer_id: 1,
   customer: {
     id: 1,

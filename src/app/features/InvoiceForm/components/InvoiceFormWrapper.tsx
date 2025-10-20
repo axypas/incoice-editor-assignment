@@ -4,7 +4,6 @@
  * Separates these concerns from the main form logic
  */
 
-import React from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useInvoice } from 'app/features/InvoicesList/hooks/useInvoices'
 import ErrorState from 'app/features/InvoiceShow/components/ErrorState'
@@ -16,7 +15,7 @@ interface InvoiceFormWrapperProps {
     isEditMode: boolean
     invoiceId?: string
     existingInvoice: Invoice | null
-  }) => React.ReactElement
+  }) => JSX.Element
 }
 
 const InvoiceFormWrapper = ({

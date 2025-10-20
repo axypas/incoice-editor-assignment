@@ -397,7 +397,11 @@ const InvoicesTable = ({
       )}
       <Card className="overflow-hidden shadow-sm rounded-xl">
         <div className="table-responsive">
-          <Table {...getTableProps()} className="mb-0 text-sm">
+          <Table
+            {...getTableProps()}
+            className="mb-0 text-sm"
+            aria-label="List of invoices"
+          >
             <thead className="bg-slate-50">
               {headerGroups.map((headerGroup) => (
                 <tr {...headerGroup.getHeaderGroupProps()}>

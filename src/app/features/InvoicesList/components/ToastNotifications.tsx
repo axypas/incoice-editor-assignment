@@ -4,7 +4,6 @@
  * Includes: save success, delete, and finalize toasts
  */
 
-import React from 'react'
 import { Toast, ToastContainer } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
 
@@ -42,14 +41,14 @@ const getToastTitle = (variant: 'success' | 'danger' | 'warning'): string => {
   }
 }
 
-const ToastNotifications: React.FC<ToastNotificationsProps> = ({
+const ToastNotifications = ({
   deleteToast,
   onDeleteToastClose,
   finalizeToast,
   onFinalizeToastClose,
   saveToast,
   onSaveToastClose,
-}) => {
+}: ToastNotificationsProps) => {
   // Regular toasts without special content
   const regularToasts = [
     {

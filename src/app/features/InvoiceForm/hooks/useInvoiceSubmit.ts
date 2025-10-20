@@ -6,11 +6,13 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { UseFormSetError } from 'react-hook-form'
+import axios from 'axios'
 import { useApi } from 'api'
 import { useUpdateInvoice } from 'app/features/InvoicesList/hooks/useInvoices'
 import type { Customer, Product } from 'common/types'
 import type { Invoice } from 'common/types/invoice.types'
 import { logger } from 'common/utils/logger'
+import { parseApiError } from 'common/utils/apiErrorParser'
 
 interface LineItemFormValue {
   id?: string
@@ -199,27 +201,20 @@ export const useInvoiceSubmit = ({
           })
         }
       } catch (error: unknown) {
-        const isErrorWithResponse = (
-          err: unknown
-        ): err is {
-          response: {
-            status: number
-            data?: { errors?: Record<string, unknown> }
-          }
-        } => {
-          return (
-            typeof err === 'object' &&
-            err !== null &&
-            'response' in err &&
-            typeof (err as { response: unknown }).response === 'object' &&
-            (err as { response: unknown }).response !== null &&
-            'status' in (err as { response: { status: unknown } }).response
-          )
-        }
+        // Parse API error for clean access
+        const apiError = parseApiError(error, 'Failed to save invoice')
 
-        if (isErrorWithResponse(error) && error.response.status === 422) {
-          const serverErrors: Record<string, unknown> =
-            error.response.data?.errors || {}
+        // Handle validation errors (422) with field-specific messages
+        if (
+          axios.isAxiosError(error) &&
+          apiError.statusCode === 422 &&
+          error.response?.data &&
+          typeof error.response.data === 'object' &&
+          'errors' in error.response.data
+        ) {
+          const serverErrors: Record<string, unknown> = (
+            error.response.data as { errors: Record<string, unknown> }
+          ).errors
           Object.entries(serverErrors).forEach(([field, message]) => {
             const rawMessage = Array.isArray(message)
               ? message
@@ -265,20 +260,14 @@ export const useInvoiceSubmit = ({
           })
 
           setSubmitError('Please fix the validation errors and try again.')
-        } else if (
-          isErrorWithResponse(error) &&
-          error.response.status === 409
-        ) {
+        } else if (apiError.statusCode === 409) {
           // Concurrent edit conflict
           setSubmitError(
             'This invoice was updated by someone else. Please refresh and try again.'
           )
         } else {
-          setSubmitError(
-            `Unable to ${
-              isEditMode ? 'update' : 'create'
-            } invoice. Please check your connection and try again.`
-          )
+          // Use parsed error message for better feedback
+          setSubmitError(apiError.message)
         }
         logger.error(
           `Invoice ${isEditMode ? 'update' : 'creation'} error:`,

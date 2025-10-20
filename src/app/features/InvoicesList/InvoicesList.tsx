@@ -4,7 +4,7 @@
  * Supports filtering by date range, due date range, status, payment, customer, and product
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Spinner, Alert, Button } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
 import isEqual from 'lodash/isEqual'
@@ -25,8 +25,9 @@ import InvoicesTable from 'app/features/InvoicesList/components/InvoicesTable'
 import InvoicesFilters from 'app/features/InvoicesList/components/InvoicesFilters'
 import InvoicesEmptyState from 'app/features/InvoicesList/components/InvoicesEmptyState'
 import ToastNotifications from 'app/features/InvoicesList/components/ToastNotifications'
+import { DEFAULT_PAGE_SIZE } from 'common/constants/ui'
 
-const InvoicesList = (): React.ReactElement => {
+const InvoicesList = () => {
   const navigate = useNavigate()
 
   // Filter state managed via custom hook
@@ -42,7 +43,7 @@ const InvoicesList = (): React.ReactElement => {
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
-  const perPage = 10
+  const perPage = DEFAULT_PAGE_SIZE
 
   // Sort state managed via custom hook
   const { sortField, sortDirection, sortParam, handleSort } = useInvoiceSort()

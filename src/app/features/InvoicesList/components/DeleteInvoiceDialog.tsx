@@ -48,8 +48,8 @@ const DeleteInvoiceDialog = ({
 
       <Modal.Body>
         <p>
-          Are you sure you want to delete invoice{' '}
-          <strong>#{invoice.invoice_number}</strong>?
+          Are you sure you want to delete invoice <strong>#{invoice.id}</strong>
+          ?
         </p>
         <p className="text-muted mb-0">This action cannot be undone.</p>
       </Modal.Body>

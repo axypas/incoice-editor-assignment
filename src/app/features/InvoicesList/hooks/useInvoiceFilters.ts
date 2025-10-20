@@ -60,8 +60,11 @@ export const useInvoiceFilters = (): UseInvoiceFiltersReturn => {
   const currentFilters = filterFormValues as FilterFormData
   const [activeFilters, setActiveFilters] = useState<InvoiceFilter[]>([])
 
-  // Format date to YYYY-MM-DD for API
-  const formatDateForAPI = useCallback((date: Date): string => {
+  // Format date to YYYY-MM-DD for API with validation
+  const formatDateForAPI = useCallback((date: Date | null): string | null => {
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return null
+    }
     const year = date.getFullYear()
     const month = String(date.getMonth() + 1).padStart(2, '0')
     const day = String(date.getDate()).padStart(2, '0')
@@ -76,35 +79,39 @@ export const useInvoiceFilters = (): UseInvoiceFiltersReturn => {
       const [startDate, endDate] = formData.dateRange
       const [dueDateStart, dueDateEnd] = formData.dueDateRange
 
-      if (startDate) {
+      const startDateStr = formatDateForAPI(startDate)
+      if (startDateStr) {
         filters.push({
           field: 'date',
           operator: 'gteq',
-          value: formatDateForAPI(startDate),
+          value: startDateStr,
         })
       }
 
-      if (endDate) {
+      const endDateStr = formatDateForAPI(endDate)
+      if (endDateStr) {
         filters.push({
           field: 'date',
           operator: 'lteq',
-          value: formatDateForAPI(endDate),
+          value: endDateStr,
         })
       }
 
-      if (dueDateStart) {
+      const dueDateStartStr = formatDateForAPI(dueDateStart)
+      if (dueDateStartStr) {
         filters.push({
           field: 'deadline',
           operator: 'gteq',
-          value: formatDateForAPI(dueDateStart),
+          value: dueDateStartStr,
         })
       }
 
-      if (dueDateEnd) {
+      const dueDateEndStr = formatDateForAPI(dueDateEnd)
+      if (dueDateEndStr) {
         filters.push({
           field: 'deadline',
           operator: 'lteq',
-          value: formatDateForAPI(dueDateEnd),
+          value: dueDateEndStr,
         })
       }
 
@@ -244,10 +251,13 @@ export const useInvoiceFilters = (): UseInvoiceFiltersReturn => {
   useEffect(() => {
     // Only apply filters if they have changed to avoid infinite loop
     const formFilters = buildFilters(currentFilters)
-    if (!areFiltersEqual(formFilters, activeFilters)) {
-      setActiveFilters(formFilters)
-    }
-  }, [currentFilters, buildFilters, areFiltersEqual, activeFilters])
+    setActiveFilters((prev) => {
+      if (!areFiltersEqual(formFilters, prev)) {
+        return formFilters
+      }
+      return prev
+    })
+  }, [currentFilters, buildFilters, areFiltersEqual])
 
   return {
     filterControl,

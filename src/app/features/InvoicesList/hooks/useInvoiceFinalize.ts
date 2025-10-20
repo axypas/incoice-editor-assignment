@@ -7,6 +7,7 @@ import { useState, useCallback } from 'react'
 import { useApi } from 'api'
 import { AsyncStatus, ApiError } from 'common/types/invoice.types'
 import { logger } from 'common/utils/logger'
+import { parseApiError } from 'common/utils/apiErrorParser'
 
 interface UseInvoiceFinalizeResult {
   finalizeInvoice: (invoiceId: string) => Promise<void>
@@ -41,18 +42,8 @@ export const useInvoiceFinalize = (): UseInvoiceFinalizeResult => {
       } catch (err) {
         logger.error(`Failed to finalize invoice ${invoiceId}:`, err)
 
-        const apiError: ApiError = {
-          error: err instanceof Error ? err.name : 'FinalizeError',
-          message:
-            err instanceof Error
-              ? err.message
-              : 'Failed to finalize invoice. Please try again.',
-          statusCode:
-            err && typeof err === 'object' && 'response' in err
-              ? (err as { response?: { status?: number } }).response?.status ||
-                500
-              : 500,
-        }
+        // Use parseApiError for clean, consistent error parsing
+        const apiError = parseApiError(err, 'Failed to finalize invoice')
 
         setError(apiError)
         setStatus('error')

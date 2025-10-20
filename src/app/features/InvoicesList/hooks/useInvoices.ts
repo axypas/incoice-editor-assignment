@@ -95,8 +95,7 @@ export const useInvoices = (
 
         // Map API types to domain types
         const mappedInvoices: Invoice[] = data.map((inv) => ({
-          id: inv.id?.toString(),
-          invoice_number: inv.id?.toString() || '',
+          id: inv.id.toString(),
           customer_id: inv.customer_id?.toString(),
           customer: inv.customer
             ? {
@@ -195,7 +194,7 @@ export const useInvoice = (invoiceId: string) => {
 
       // Map API type to domain type
       const mappedInvoice: Invoice = {
-        id: inv.id?.toString(),
+        id: inv.id.toString(),
         customer_id: inv.customer_id?.toString(),
         customer: inv.customer
           ? {
@@ -210,7 +209,6 @@ export const useInvoice = (invoiceId: string) => {
               country_code: inv.customer.country_code || '',
             }
           : undefined,
-        invoice_number: inv.id?.toString() || '', // API doesn't provide invoice_number, use id as fallback
         date: inv.date || '',
         deadline: inv.deadline || undefined,
         finalized: inv.finalized || false,
@@ -323,7 +321,7 @@ export const useUpdateInvoice = (): UseUpdateInvoiceResult => {
 
         // Map API type to domain type
         const mappedInvoice: Invoice = {
-          id: inv.id?.toString(),
+          id: inv.id.toString(),
           customer_id: inv.customer_id?.toString(),
           customer: inv.customer
             ? {
@@ -338,7 +336,6 @@ export const useUpdateInvoice = (): UseUpdateInvoiceResult => {
                 country_code: inv.customer.country_code || '',
               }
             : undefined,
-          invoice_number: inv.id?.toString() || '',
           date: inv.date || '',
           deadline: inv.deadline || undefined,
           finalized: inv.finalized || false,

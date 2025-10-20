@@ -32,15 +32,13 @@ export interface InvoiceLineItem {
 }
 
 export interface Invoice {
-  id?: string
-  invoice_number: string
+  id: string
   customer_id?: string
   customer?: Customer
   date: string // ISO date string
   deadline?: string // ISO date string
   finalized: boolean
   paid: boolean
-  currency?: string
   invoice_lines: InvoiceLineItem[]
   tax?: number
   total?: number
@@ -52,7 +50,6 @@ export type { APIProduct as Product }
 // Form-specific types for create/edit
 export interface InvoiceFormData {
   customer_id: string
-  invoice_number: string
   date: string
   deadline?: string
   invoice_lines: InvoiceLineFormData[]

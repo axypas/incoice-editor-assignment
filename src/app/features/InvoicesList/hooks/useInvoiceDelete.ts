@@ -7,6 +7,7 @@ import { useState, useCallback } from 'react'
 import { Invoice } from 'common/types/invoice.types'
 import { useApi } from 'api'
 import { logger } from 'common/utils/logger'
+import { parseApiError } from 'common/utils/apiErrorParser'
 
 interface ToastState {
   show: boolean
@@ -68,21 +69,18 @@ export const useInvoiceDelete = (
 
     setIsDeleting(true)
 
-    // Save invoice number before clearing state
-    const invoiceNumber = invoiceToDelete.invoice_number
+    // Save invoice id before clearing state
+    const invoiceId = invoiceToDelete.id
 
     try {
       // Call delete API
       await api.deleteInvoice(invoiceToDelete.id)
 
       // Success: show success messages first (before clearing state)
-      showToastNotification(
-        `Invoice #${invoiceNumber} has been deleted`,
-        'success'
-      )
+      showToastNotification(`Invoice #${invoiceId} has been deleted`, 'success')
 
       // Announce to screen readers
-      setLiveRegionMessage(`Invoice #${invoiceNumber} deleted successfully`)
+      setLiveRegionMessage(`Invoice #${invoiceId} deleted successfully`)
 
       // Then close dialog and clear state
       setShowDeleteDialog(false)
@@ -93,18 +91,10 @@ export const useInvoiceDelete = (
     } catch (err: unknown) {
       logger.error('Failed to delete invoice:', err)
 
-      // Handle specific error cases based on HTTP status
-      const status =
-        typeof err === 'object' &&
-        err !== null &&
-        'response' in err &&
-        typeof (err as { response: unknown }).response === 'object' &&
-        (err as { response: unknown }).response !== null &&
-        'status' in (err as { response: { status: unknown } }).response
-          ? (err as { response: { status: number } }).response.status
-          : undefined
+      // Parse API error for clean status code access
+      const apiError = parseApiError(err, 'Failed to delete invoice')
 
-      if (status === 404) {
+      if (apiError.statusCode === 404) {
         // Invoice was already deleted
         showToastNotification(
           'This invoice has already been deleted',
@@ -114,7 +104,7 @@ export const useInvoiceDelete = (
         setShowDeleteDialog(false)
         setInvoiceToDelete(null)
         refetchInvoices() // Refresh to remove from UI
-      } else if (status === 403 || status === 409) {
+      } else if (apiError.statusCode === 403 || apiError.statusCode === 409) {
         // Invoice is finalized or cannot be deleted
         showToastNotification('Cannot delete finalized invoice', 'danger')
         setLiveRegionMessage('Cannot delete finalized invoice')
@@ -122,11 +112,8 @@ export const useInvoiceDelete = (
         setInvoiceToDelete(null)
         refetchInvoices() // Refresh to get updated state
       } else {
-        // Generic error
-        showToastNotification(
-          'Failed to delete invoice. Please try again.',
-          'danger'
-        )
+        // Use parsed error message
+        showToastNotification(apiError.message, 'danger')
         setLiveRegionMessage('Failed to delete invoice')
       }
     } finally {

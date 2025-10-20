@@ -6,6 +6,7 @@
 import { useState, useCallback } from 'react'
 import { Invoice } from 'common/types/invoice.types'
 import { useInvoiceFinalize } from './useInvoiceFinalize'
+import { parseApiError } from 'common/utils/apiErrorParser'
 
 interface ToastState {
   show: boolean
@@ -64,10 +65,13 @@ export const useInvoiceFinalizeDialog = (
       // Refresh invoices list
       refetchInvoices()
     } catch (err) {
-      // Error toast
+      // Parse API error for better messaging
+      const apiError = parseApiError(err, 'Failed to finalize invoice')
+
+      // Error toast with parsed message
       setFinalizeToast({
         show: true,
-        message: 'Failed to finalize invoice. Please try again.',
+        message: apiError.message,
         variant: 'danger',
       })
     }

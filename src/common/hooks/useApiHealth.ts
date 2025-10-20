@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { useApi } from 'api'
 import { logger } from 'common/utils/logger'
+import { parseApiError } from 'common/utils/apiErrorParser'
 
 interface ApiHealthState {
   isChecking: boolean
@@ -43,11 +44,10 @@ export const useApiHealth = (): ApiHealthState => {
       } catch (err: unknown) {
         logger.error('API health check failed:', err)
 
-        const statusCode =
-          err && typeof err === 'object' && 'response' in err
-            ? (err as { response?: { status?: number } }).response?.status
-            : undefined
-        const isAuthError = statusCode === 401 || statusCode === 403
+        // Parse API error for clean status code access
+        const apiError = parseApiError(err, 'Unable to connect to the API')
+        const isAuthError =
+          apiError.statusCode === 401 || apiError.statusCode === 403
 
         setState({
           isChecking: false,
@@ -55,7 +55,7 @@ export const useApiHealth = (): ApiHealthState => {
           isAuthError,
           error: isAuthError
             ? 'Authentication failed. Please check your API token.'
-            : 'Unable to connect to the API. Please check your network connection.',
+            : apiError.message,
         })
       }
     }

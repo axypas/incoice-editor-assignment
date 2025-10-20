@@ -114,9 +114,7 @@ describe('App - API Health Check (US0)', () => {
       })
 
       expect(
-        screen.getByText(
-          'Unable to connect to the API. Please check your network connection.'
-        )
+        screen.getByText('Unable to connect to the API')
       ).toBeInTheDocument()
 
       // Should NOT show auth-specific instructions
@@ -138,9 +136,7 @@ describe('App - API Health Check (US0)', () => {
       })
 
       expect(
-        screen.getByText(
-          'Unable to connect to the API. Please check your network connection.'
-        )
+        screen.getByText('Unable to connect to the API')
       ).toBeInTheDocument()
     })
   })
