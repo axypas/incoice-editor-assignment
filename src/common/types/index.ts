@@ -12,3 +12,6 @@ export type Product = Awaited<
 export type Customer = Awaited<
   ReturnType<OperationMethods['getSearchCustomers']>
 >['data']['customers'][0]
+
+// Extract InvoiceLine from Invoice.invoice_lines
+export type InvoiceLine = Invoice['invoice_lines'][0]

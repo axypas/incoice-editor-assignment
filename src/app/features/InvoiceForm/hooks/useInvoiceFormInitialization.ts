@@ -39,19 +39,8 @@ interface UseInvoiceFormInitializationReturn {
  * Converts invoice from API format to form format
  */
 const convertInvoiceToFormValues = (invoice: Invoice): InvoiceFormValues => {
-  // Convert customer from domain type (id: string) to API type (id: number)
-  const customerForForm: Customer | null = invoice.customer
-    ? {
-        id: parseInt(invoice.customer.id, 10),
-        first_name: invoice.customer.first_name,
-        last_name: invoice.customer.last_name,
-        address: invoice.customer.address || '',
-        zip_code: invoice.customer.zip_code || '',
-        city: invoice.customer.city || '',
-        country: invoice.customer.country || '',
-        country_code: invoice.customer.country_code || '',
-      }
-    : null
+  // BE already has Customer with number ID, use directly
+  const customerForForm: Customer | null = invoice.customer || null
 
   return {
     customer: customerForForm,
@@ -63,13 +52,13 @@ const convertInvoiceToFormValues = (invoice: Invoice): InvoiceFormValues => {
       invoice.invoice_lines && invoice.invoice_lines.length > 0
         ? invoice.invoice_lines.map(
             (line): LineItemFormValue => ({
-              id: line.id,
-              product: line.product || null,
-              product_id: line.product_id,
+              id: line.id.toString(), // Convert number to string for form
+              product: line.product,
+              product_id: line.product_id.toString(), // Convert number to string for form
               label: line.label,
               quantity: line.quantity,
               unit: line.unit,
-              unit_price: line.unit_price,
+              unit_price: parseFloat(line.price), // BE uses 'price' (string), parse to number
               vat_rate: String(line.vat_rate),
             })
           )

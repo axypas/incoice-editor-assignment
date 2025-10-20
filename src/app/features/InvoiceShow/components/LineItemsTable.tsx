@@ -46,11 +46,12 @@ const LineItemsTable = ({ invoice }: LineItemsTableProps): JSX.Element => {
             {invoice.invoice_lines && invoice.invoice_lines.length > 0 ? (
               invoice.invoice_lines.map((line, index) => {
                 const quantity = line.quantity ?? 0
-                const unitPrice = line.unit_price ?? 0
+                // BE uses 'price' field (string), not 'unit_price'
+                const unitPrice = parseFloat(line.price) || 0
                 const vatRate =
-                  typeof line.vat_rate === 'number'
-                    ? line.vat_rate
-                    : parseFloat(String(line.vat_rate)) || 0
+                  typeof line.vat_rate === 'string'
+                    ? parseFloat(line.vat_rate)
+                    : line.vat_rate || 0
                 const lineTotal = quantity * unitPrice * (1 + vatRate / 100)
                 const lineTax = quantity * unitPrice * (vatRate / 100)
                 return (

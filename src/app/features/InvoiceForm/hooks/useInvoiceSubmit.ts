@@ -84,15 +84,17 @@ export const useInvoiceSubmit = ({
 
         if (isEditMode && invoiceId) {
           // Edit mode: Build update payload with invoice_lines_attributes
+          // BE invoice_lines have number IDs
           const originalLineIds = new Set(
             existingInvoice?.invoice_lines
               ?.map((line) => line.id)
               .filter(Boolean) || []
           )
+          // Form values have string IDs, convert to numbers for comparison
           const updatedLineIds = new Set(
             values.lineItems
-              .map((item) => item.id)
-              .filter((id): id is string => !!id)
+              .map((item) => (item.id ? parseInt(item.id, 10) : null))
+              .filter((id): id is number => id !== null)
           )
 
           const invoice_lines_attributes = [
@@ -122,11 +124,11 @@ export const useInvoiceSubmit = ({
             // Delete removed lines
             ...Array.from(originalLineIds)
               .filter(
-                (id): id is string =>
-                  typeof id === 'string' && !updatedLineIds.has(id)
+                (id): id is number =>
+                  typeof id === 'number' && !updatedLineIds.has(id)
               )
               .map((id) => ({
-                id: parseInt(id, 10),
+                id,
                 _destroy: true,
               })),
           ]

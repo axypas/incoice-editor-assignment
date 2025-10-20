@@ -769,7 +769,7 @@ describe('InvoiceForm - US3', () => {
 
   describe('Edit Mode - US4', () => {
     const mockInvoice = {
-      id: '123',
+      id: 123, // BE uses number IDs
       customer_id: 1,
       customer: {
         id: 1,
@@ -789,21 +789,24 @@ describe('InvoiceForm - US3', () => {
       tax: '20.00',
       invoice_lines: [
         {
-          id: '1',
-          product_id: '1',
+          id: 1, // BE uses number IDs
+          invoice_id: 123,
+          product_id: 1, // BE uses number IDs
           product: {
             id: 1,
             label: 'Product A',
             unit: 'piece',
             vat_rate: '20',
-            unit_price_without_tax: '100',
-            unit_tax: '20',
+            unit_price: '100.00', // BE has unit_price field
+            unit_price_without_tax: '100.00',
+            unit_tax: '20.00',
           },
           label: 'Product A',
           quantity: 1,
           unit: 'piece',
-          unit_price: 100,
+          price: '100.00', // BE uses 'price' (string) not 'unit_price' (number)
           vat_rate: '20',
+          tax: '20.00',
         },
       ],
     }

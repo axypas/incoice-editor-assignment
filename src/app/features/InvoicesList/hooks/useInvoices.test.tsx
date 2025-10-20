@@ -96,11 +96,11 @@ describe('useInvoice hook', () => {
 
       // Verify invoice was loaded
       expect(result.current.invoice).toBeTruthy()
-      expect(result.current.invoice?.id).toBe('61113')
+      expect(result.current.invoice?.id).toBe(61113) // BE uses number IDs
 
-      // Verify totals remain undefined when backend returns null (unpaid invoice)
-      expect(result.current.invoice?.total).toBeUndefined()
-      expect(result.current.invoice?.tax).toBeUndefined()
+      // Verify totals remain null when backend returns null (unpaid invoice)
+      expect(result.current.invoice?.total).toBeNull() // BE uses null not undefined
+      expect(result.current.invoice?.tax).toBeNull() // BE uses null not undefined
     })
 
     it('handles empty invoice_lines with undefined totals', async () => {
@@ -140,9 +140,9 @@ describe('useInvoice hook', () => {
         expect(result.current.status).toBe('success')
       })
 
-      // Verify totals remain undefined when backend returns null
-      expect(result.current.invoice?.total).toBeUndefined()
-      expect(result.current.invoice?.tax).toBeUndefined()
+      // Verify totals remain null when backend returns null
+      expect(result.current.invoice?.total).toBeNull() // BE uses null not undefined
+      expect(result.current.invoice?.tax).toBeNull() // BE uses null not undefined
     })
   })
 
@@ -196,9 +196,9 @@ describe('useInvoice hook', () => {
         expect(result.current.status).toBe('success')
       })
 
-      // Verify API-provided values are used (converted from string to number)
-      expect(result.current.invoice?.total).toBe(5000.0)
-      expect(result.current.invoice?.tax).toBe(1000.0)
+      // Verify API-provided values are used (BE returns string)
+      expect(result.current.invoice?.total).toBe('5000.00') // BE returns string
+      expect(result.current.invoice?.tax).toBe('1000.00') // BE returns string
       // Not 100.0 and 20.0 from invoice_lines calculation
     })
 
@@ -397,10 +397,10 @@ describe('useInvoice hook', () => {
         expect(result.current.status).toBe('success')
       })
 
-      // When backend returns null, keep it as undefined (unpaid invoice)
+      // When backend returns null, keep it as null (unpaid invoice)
       // Do not calculate from invoice_lines
-      expect(result.current.invoice?.total).toBeUndefined()
-      expect(result.current.invoice?.tax).toBeUndefined()
+      expect(result.current.invoice?.total).toBeNull() // BE uses null not undefined
+      expect(result.current.invoice?.tax).toBeNull() // BE uses null not undefined
     })
   })
 })

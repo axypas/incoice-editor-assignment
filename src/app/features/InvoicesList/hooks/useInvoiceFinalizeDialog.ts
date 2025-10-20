@@ -12,7 +12,7 @@ interface ToastState {
   show: boolean
   message: string
   variant: 'success' | 'danger'
-  invoiceId?: string
+  invoiceId?: number // BE uses number IDs
 }
 
 interface UseInvoiceFinalizeDialogReturn {
@@ -49,7 +49,8 @@ export const useInvoiceFinalizeDialog = (
     if (!invoiceToFinalize) return
 
     try {
-      await finalizeInvoice(invoiceToFinalize.id || '')
+      // BE invoice.id is number
+      await finalizeInvoice(invoiceToFinalize.id)
       setShowFinalizeDialog(false)
 
       // Show success toast with invoice ID for link

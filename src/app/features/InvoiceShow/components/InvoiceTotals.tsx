@@ -9,15 +9,19 @@ import numeral from 'numeral'
 import { formatCurrency } from 'common/utils/calculations'
 
 interface InvoiceTotalsProps {
-  tax: number | undefined
-  total: number | undefined
+  tax: string | null
+  total: string | null
 }
 
 const InvoiceTotals = ({ tax, total }: InvoiceTotalsProps): JSX.Element => {
+  // Parse string values from BE to numbers
+  const taxNum = tax ? parseFloat(tax) : undefined
+  const totalNum = total ? parseFloat(total) : undefined
+
   // Calculate subtotal from total and tax using numeral.js
   const subtotal =
-    total !== undefined && tax !== undefined
-      ? numeral(total).subtract(tax).value() ?? undefined
+    totalNum !== undefined && taxNum !== undefined
+      ? numeral(totalNum).subtract(taxNum).value() ?? undefined
       : undefined
 
   return (
@@ -37,14 +41,14 @@ const InvoiceTotals = ({ tax, total }: InvoiceTotalsProps): JSX.Element => {
             <div className="d-flex justify-content-between mb-2">
               <span className="text-muted">Total VAT:</span>
               <span className="fw-medium">
-                {tax !== undefined ? formatCurrency(tax) : '—'}
+                {taxNum !== undefined ? formatCurrency(taxNum) : '—'}
               </span>
             </div>
             <hr />
             <div className="d-flex justify-content-between">
               <span className="fw-bold">Grand Total:</span>
               <span className="fw-bold fs-5">
-                {total !== undefined ? formatCurrency(total) : '—'}
+                {totalNum !== undefined ? formatCurrency(totalNum) : '—'}
               </span>
             </div>
           </div>

@@ -75,7 +75,7 @@ const InvoicesTable = ({
                     <td className="text-end">{line.quantity}</td>
                     <td>{line.unit}</td>
                     <td className="text-end">
-                      {formatCurrency(line.unit_price)}
+                      {formatCurrency(parseFloat(line.price))}
                     </td>
                     <td className="text-end">{line.vat_rate}%</td>
                     <td className="text-end font-monospace">
@@ -129,11 +129,11 @@ const InvoicesTable = ({
       {
         Header: 'ID',
         accessor: 'id',
-        Cell: ({ row }: CellProps<Invoice, string | undefined>) => {
+        Cell: ({ row }: CellProps<Invoice, number>) => {
           const invoice = row.original
           return (
             <div>
-              <div className="fw-semibold text-dark">#{invoice.id || '—'}</div>
+              <div className="fw-semibold text-dark">#{invoice.id}</div>
               <div className="text-muted" style={{ fontSize: '0.75rem' }}>
                 {invoice.invoice_lines.length} line(s)
               </div>
@@ -159,32 +159,18 @@ const InvoicesTable = ({
               <div className="fw-semibold text-dark">
                 {customer.first_name} {customer.last_name}
               </div>
-              {customer.email && (
-                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                  {customer.email}
-                </div>
-              )}
-              {customer.address && (
-                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                  {customer.address}
-                </div>
-              )}
-              {(customer.city || customer.country_code) && (
-                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                  {customer.city && <span>{customer.city}</span>}
-                  {customer.country_code && (
-                    <span>
-                      {customer.city && ', '}
-                      {customer.country_code}
-                    </span>
-                  )}
-                </div>
-              )}
-              {customer.vat_number && (
-                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                  VAT: {customer.vat_number}
-                </div>
-              )}
+              <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                {customer.address}
+              </div>
+              <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                {customer.city && <span>{customer.city}</span>}
+                {customer.country_code && (
+                  <span>
+                    {customer.city && ', '}
+                    {customer.country_code}
+                  </span>
+                )}
+              </div>
             </div>
           )
         },
@@ -193,7 +179,7 @@ const InvoicesTable = ({
       {
         Header: 'Date',
         accessor: 'date',
-        Cell: ({ value }: CellProps<Invoice, string>) => (
+        Cell: ({ value }: CellProps<Invoice, string | null>) => (
           <span className="text-secondary whitespace-nowrap">
             {value ? formatDate(value) : '—'}
           </span>
@@ -202,7 +188,7 @@ const InvoicesTable = ({
       {
         Header: 'Due Date',
         accessor: 'deadline',
-        Cell: ({ value, row }: CellProps<Invoice, string | undefined>) => {
+        Cell: ({ value, row }: CellProps<Invoice, string | null>) => {
           const isOverdue =
             !row.original.paid && value && new Date(value) < new Date()
 
@@ -221,8 +207,9 @@ const InvoicesTable = ({
       {
         Header: 'Amount',
         accessor: 'total',
-        Cell: ({ value, row }: CellProps<Invoice, number | undefined>) => {
-          const total = value
+        Cell: ({ value, row }: CellProps<Invoice, string | null>) => {
+          // BE sends total as string, parse to number for formatting
+          const total = value ? parseFloat(value) : null
 
           return (
             <span className="fw-semibold text-dark">
@@ -240,7 +227,7 @@ const InvoicesTable = ({
            */
           const getPaymentStatusLabel = (
             paid: boolean,
-            deadline: string | undefined
+            deadline: string | null
           ): { label: string; color: Variant } => {
             if (paid) {
               return { label: 'Paid', color: 'success' }

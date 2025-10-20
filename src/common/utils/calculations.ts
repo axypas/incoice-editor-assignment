@@ -8,21 +8,23 @@ import numeral from 'numeral'
 import {
   InvoiceLineItem,
   LineItemCalculation,
-  InvoiceCalculation,
 } from 'common/types/invoice.types'
 
 /**
  * Calculates line item totals using numeral.js for precision
- * Formula: (quantity × unit_price) + VAT
+ * Formula: (quantity × price) + VAT
  * Rounds at each step to avoid cumulative rounding errors
+ * Note: BE uses 'price' field (string), not 'unit_price'
  */
 export const calculateLineItem = (
   item: InvoiceLineItem
 ): LineItemCalculation => {
+  // Parse price from string to number (BE sends it as string)
+  const price = typeof item.price === 'string' ? parseFloat(item.price) : 0
+
   // Calculate subtotal using numeral.js multiply and round to 2 decimals
-  const subtotalRaw =
-    numeral(item.unit_price).multiply(item.quantity).value() || 0
-  const subtotal = Number(subtotalRaw.toFixed(2))
+  const subtotalRaw = numeral(price).multiply(item.quantity).value()
+  const subtotal = Number((subtotalRaw ?? 0).toFixed(2))
 
   // Calculate VAT (convert string to number if needed)
   const vatRate =
@@ -31,19 +33,24 @@ export const calculateLineItem = (
       : item.vat_rate || 0
 
   // Calculate VAT amount on ROUNDED subtotal: subtotal * (vatRate / 100)
-  const vatAmountRaw =
-    numeral(subtotal).multiply(vatRate).divide(100).value() || 0
-  const vatAmount = Number(vatAmountRaw.toFixed(2))
+  const vatAmountRaw = numeral(subtotal).multiply(vatRate).divide(100).value()
+  const vatAmount = Number((vatAmountRaw ?? 0).toFixed(2))
 
   // Calculate total using numeral.js add on ROUNDED values
-  const totalRaw = numeral(subtotal).add(vatAmount).value() || 0
-  const total = Number(totalRaw.toFixed(2))
+  const totalRaw = numeral(subtotal).add(vatAmount).value()
+  const total = Number((totalRaw ?? 0).toFixed(2))
 
   return {
     subtotal,
     vatAmount,
     total,
   }
+}
+interface InvoiceCalculation {
+  subtotal: number // Sum of all line subtotals
+  totalVat: number
+  grandTotal: number
+  vatBreakdown: Record<number, number> // VAT rate -> amount
 }
 
 /**
@@ -76,20 +83,20 @@ export const calculateInvoiceTotals = (
     }
     // Add to VAT breakdown using numeral
     vatBreakdown[vatRate] =
-      numeral(vatBreakdown[vatRate]).add(calc.vatAmount).value() || 0
+      numeral(vatBreakdown[vatRate]).add(calc.vatAmount).value() ?? 0
   })
 
   // Calculate grand total using numeral.js add
   const grandTotalNum = numeral(subtotalNum.value()).add(totalVatNum.value())
 
   return {
-    subtotal: Number((subtotalNum.value() || 0).toFixed(2)),
-    totalVat: Number((totalVatNum.value() || 0).toFixed(2)),
-    grandTotal: Number((grandTotalNum.value() || 0).toFixed(2)),
+    subtotal: Number((subtotalNum.value() ?? 0).toFixed(2)),
+    totalVat: Number((totalVatNum.value() ?? 0).toFixed(2)),
+    grandTotal: Number((grandTotalNum.value() ?? 0).toFixed(2)),
     vatBreakdown: Object.fromEntries(
       Object.entries(vatBreakdown).map(([rate, amount]) => [
         Number(rate),
-        Number(amount.toFixed(2)),
+        Number((amount ?? 0).toFixed(2)),
       ])
     ),
   }

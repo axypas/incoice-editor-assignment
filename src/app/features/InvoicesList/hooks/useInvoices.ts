@@ -12,13 +12,8 @@ import {
   AsyncStatus,
   ApiError,
 } from 'common/types/invoice.types'
-import { Paths, Components } from 'api/gen/client'
+import { Paths } from 'api/gen/client'
 import { logger } from 'common/utils/logger'
-
-// Extended API response type that includes customer object (not in OpenAPI schema but returned by API)
-type InvoiceApiResponse = Components.Schemas.Invoice & {
-  customer?: Components.Schemas.Customer
-}
 
 interface Pagination {
   page: number
@@ -93,42 +88,8 @@ export const useInvoices = (
         const data = response.data?.invoices || []
         const paginationData = response.data?.pagination || null
 
-        // Map API types to domain types
-        const mappedInvoices: Invoice[] = data.map((inv) => ({
-          id: inv.id.toString(),
-          customer_id: inv.customer_id?.toString(),
-          customer: inv.customer
-            ? {
-                id: inv.customer.id?.toString() || '',
-                label: `${inv.customer.first_name} ${inv.customer.last_name}`,
-                first_name: inv.customer.first_name,
-                last_name: inv.customer.last_name,
-                address: inv.customer.address || '',
-                zip_code: inv.customer.zip_code || '',
-                city: inv.customer.city || '',
-                country: inv.customer.country || '',
-                country_code: inv.customer.country_code || '',
-              }
-            : undefined,
-          date: inv.date || '',
-          deadline: inv.deadline || undefined,
-          finalized: inv.finalized || false,
-          paid: inv.paid || false,
-          invoice_lines: (inv.invoice_lines || []).map((line) => ({
-            id: line.id?.toString(),
-            product_id: line.product_id?.toString(),
-            product: line.product || null,
-            label: line.label || '',
-            quantity: parseFloat(line.quantity?.toString() || '0'),
-            unit: line.unit || 'piece',
-            unit_price: parseFloat(line.price || '0'),
-            vat_rate: parseFloat(line.vat_rate || '0'),
-          })),
-          total: parseFloat(inv.total || '0'),
-          tax: parseFloat(inv.tax || '0'),
-        }))
-
-        setInvoices(mappedInvoices)
+        // Use BE types directly (no mapping needed)
+        setInvoices(data)
         setPagination(paginationData)
         setStatus('success')
       } catch (err) {
@@ -173,7 +134,7 @@ export const useInvoices = (
 /**
  * Hook for fetching a single invoice by ID
  */
-export const useInvoice = (invoiceId: string) => {
+export const useInvoice = (invoiceId: number | string) => {
   const api = useApi()
 
   const [invoice, setInvoice] = useState<Invoice | null>(null)
@@ -187,49 +148,15 @@ export const useInvoice = (invoiceId: string) => {
       setStatus('loading')
       setError(null)
 
-      const response = await api.getInvoice(invoiceId)
+      // Convert string to number if needed
+      const numericId =
+        typeof invoiceId === 'string' ? parseInt(invoiceId, 10) : invoiceId
+      const response = await api.getInvoice({ id: numericId })
 
-      // Extract invoice from response (API returns { invoices: [...] } even for single invoice)
-      const inv = response.data as InvoiceApiResponse
+      // Use BE type directly (no mapping needed)
+      const inv = response.data
 
-      // Map API type to domain type
-      const mappedInvoice: Invoice = {
-        id: inv.id.toString(),
-        customer_id: inv.customer_id?.toString(),
-        customer: inv.customer
-          ? {
-              id: inv.customer.id?.toString() || '',
-              label: `${inv.customer.first_name} ${inv.customer.last_name}`,
-              first_name: inv.customer.first_name,
-              last_name: inv.customer.last_name,
-              address: inv.customer.address || '',
-              zip_code: inv.customer.zip_code || '',
-              city: inv.customer.city || '',
-              country: inv.customer.country || '',
-              country_code: inv.customer.country_code || '',
-            }
-          : undefined,
-        date: inv.date || '',
-        deadline: inv.deadline || undefined,
-        finalized: inv.finalized || false,
-        paid: inv.paid || false,
-        total: inv.total != null ? parseFloat(inv.total) : undefined,
-        tax: inv.tax != null ? parseFloat(inv.tax) : undefined,
-        invoice_lines: (inv.invoice_lines || []).map(
-          (line: Components.Schemas.InvoiceLine) => ({
-            id: line.id?.toString(),
-            product_id: line.product_id?.toString(),
-            product: line.product || null,
-            label: line.label || '',
-            quantity: line.quantity || 0,
-            unit: line.unit || 'piece',
-            unit_price: parseFloat(line.price || '0'),
-            vat_rate: parseFloat(line.vat_rate || '0'),
-          })
-        ),
-      }
-
-      setInvoice(mappedInvoice)
+      setInvoice(inv)
       setStatus('success')
     } catch (err) {
       logger.error(`Failed to fetch invoice ${invoiceId}:`, err)
@@ -289,7 +216,7 @@ interface UpdateInvoicePayload {
 
 interface UseUpdateInvoiceResult {
   updateInvoice: (
-    invoiceId: string,
+    invoiceId: number | string,
     payload: UpdateInvoicePayload
   ) => Promise<Invoice>
   status: AsyncStatus
@@ -305,59 +232,27 @@ export const useUpdateInvoice = (): UseUpdateInvoiceResult => {
 
   const updateInvoice = useCallback(
     async (
-      invoiceId: string,
+      invoiceId: number | string,
       payload: UpdateInvoicePayload
     ): Promise<Invoice> => {
       try {
         setStatus('loading')
         setError(null)
 
+        // Convert string to number if needed
+        const numericId =
+          typeof invoiceId === 'string' ? parseInt(invoiceId, 10) : invoiceId
+
         const response = await api.putInvoice(
-          { id: parseInt(invoiceId, 10) },
+          { id: numericId },
           { invoice: payload }
         )
 
-        const inv = response.data as InvoiceApiResponse
-
-        // Map API type to domain type
-        const mappedInvoice: Invoice = {
-          id: inv.id.toString(),
-          customer_id: inv.customer_id?.toString(),
-          customer: inv.customer
-            ? {
-                id: inv.customer.id?.toString() || '',
-                label: `${inv.customer.first_name} ${inv.customer.last_name}`,
-                first_name: inv.customer.first_name,
-                last_name: inv.customer.last_name,
-                address: inv.customer.address || '',
-                zip_code: inv.customer.zip_code || '',
-                city: inv.customer.city || '',
-                country: inv.customer.country || '',
-                country_code: inv.customer.country_code || '',
-              }
-            : undefined,
-          date: inv.date || '',
-          deadline: inv.deadline || undefined,
-          finalized: inv.finalized || false,
-          paid: inv.paid || false,
-          total: inv.total != null ? parseFloat(inv.total) : undefined,
-          tax: inv.tax != null ? parseFloat(inv.tax) : undefined,
-          invoice_lines: (inv.invoice_lines || []).map(
-            (line: Components.Schemas.InvoiceLine) => ({
-              id: line.id?.toString(),
-              product_id: line.product_id?.toString(),
-              product: line.product || null,
-              label: line.label || '',
-              quantity: line.quantity || 0,
-              unit: line.unit || 'piece',
-              unit_price: parseFloat(line.price || '0'),
-              vat_rate: parseFloat(line.vat_rate || '0'),
-            })
-          ),
-        }
+        // Use BE type directly (no mapping needed)
+        const invoice = response.data
 
         setStatus('success')
-        return mappedInvoice
+        return invoice
       } catch (err) {
         logger.error(`Failed to update invoice ${invoiceId}:`, err)
 

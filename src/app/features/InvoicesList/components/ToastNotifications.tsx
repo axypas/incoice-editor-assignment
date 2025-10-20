@@ -11,13 +11,13 @@ interface ToastState {
   show: boolean
   message: string
   variant: 'success' | 'danger' | 'warning'
-  invoiceId?: string
+  invoiceId?: number // BE uses number IDs
 }
 
 interface SaveToastState {
   show: boolean
   message: string
-  invoiceId?: string
+  invoiceId?: number // BE uses number IDs
   isFinalized?: boolean
 }
 

@@ -10,7 +10,7 @@ import { logger } from 'common/utils/logger'
 import { parseApiError } from 'common/utils/apiErrorParser'
 
 interface UseInvoiceFinalizeResult {
-  finalizeInvoice: (invoiceId: string) => Promise<void>
+  finalizeInvoice: (invoiceId: number | string) => Promise<void>
   status: AsyncStatus
   error: ApiError | null
   isFinalizing: boolean
@@ -22,17 +22,21 @@ export const useInvoiceFinalize = (): UseInvoiceFinalizeResult => {
   const [error, setError] = useState<ApiError | null>(null)
 
   const finalizeInvoice = useCallback(
-    async (invoiceId: string): Promise<void> => {
+    async (invoiceId: number | string): Promise<void> => {
       try {
         setStatus('loading')
         setError(null)
 
+        // Convert to number if string
+        const numericId =
+          typeof invoiceId === 'string' ? parseInt(invoiceId, 10) : invoiceId
+
         // Finalize the invoice by setting finalized to true
         await api.putInvoice(
-          { id: parseInt(invoiceId, 10) },
+          { id: numericId },
           {
             invoice: {
-              id: parseInt(invoiceId, 10),
+              id: numericId,
               finalized: true,
             },
           }

@@ -9,7 +9,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 interface SaveToastState {
   show: boolean
   message: string
-  invoiceId?: string
+  invoiceId?: number // BE uses number IDs
   isFinalized?: boolean
 }
 
@@ -34,7 +34,7 @@ export const useInvoiceListToasts = (): UseInvoiceListToastsReturn => {
   useEffect(() => {
     const state = location.state as {
       successMessage?: string
-      invoiceId?: string
+      invoiceId?: number // BE uses number IDs (converted from string in useInvoiceSubmit)
       isFinalized?: boolean
     } | null
     if (state?.successMessage) {
