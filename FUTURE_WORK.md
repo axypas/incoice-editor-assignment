@@ -44,7 +44,7 @@
 ### Current Limitations
 
 **Backend API:**
-- No discount fields (workaround: create discounted products)
+- No discount fields
 - No multi-currency support (EUR only)
 - Product fields readonly (unit, price, VAT from catalog only)
 
