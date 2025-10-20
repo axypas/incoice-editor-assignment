@@ -6,20 +6,7 @@
 
 import { Toast, ToastContainer } from 'react-bootstrap'
 import { Link } from 'react-router-dom'
-
-interface ToastState {
-  show: boolean
-  message: string
-  variant: 'success' | 'danger' | 'warning'
-  invoiceId?: number // BE uses number IDs
-}
-
-interface SaveToastState {
-  show: boolean
-  message: string
-  invoiceId?: number // BE uses number IDs
-  isFinalized?: boolean
-}
+import { ToastState, SaveToastState } from '../types'
 
 interface ToastNotificationsProps {
   deleteToast: ToastState

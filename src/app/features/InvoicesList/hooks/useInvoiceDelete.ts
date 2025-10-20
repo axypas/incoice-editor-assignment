@@ -8,12 +8,7 @@ import { Invoice } from 'common/types/invoice.types'
 import { useApi } from 'api'
 import { logger } from 'common/utils/logger'
 import { parseApiError } from 'common/utils/apiErrorParser'
-
-interface ToastState {
-  show: boolean
-  message: string
-  variant: 'success' | 'danger' | 'warning'
-}
+import { ToastState } from '../types'
 
 interface UseInvoiceDeleteReturn {
   invoiceToDelete: Invoice | null

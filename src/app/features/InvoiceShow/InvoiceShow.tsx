@@ -18,20 +18,6 @@ const InvoiceShow = (): JSX.Element => {
   const navigate = useNavigate()
   const { invoice, isLoading, isError, error } = useInvoice(id || '')
 
-  // Helper function to format dates
-  const formatDate = (dateString: string | null | undefined): string => {
-    if (!dateString) return 'N/A'
-    try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    } catch {
-      return dateString
-    }
-  }
-
   // Loading state
   if (isLoading) {
     return <LoadingState message="Loading invoice..." />
@@ -59,7 +45,7 @@ const InvoiceShow = (): JSX.Element => {
         onBackToList={() => navigate('/')}
       />
 
-      <InvoiceDetails invoice={invoice} formatDate={formatDate} />
+      <InvoiceDetails invoice={invoice} />
 
       <LineItemsTable invoice={invoice} />
 

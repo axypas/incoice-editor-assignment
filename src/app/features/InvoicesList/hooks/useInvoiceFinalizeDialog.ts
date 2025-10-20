@@ -7,13 +7,7 @@ import { useState, useCallback } from 'react'
 import { Invoice } from 'common/types/invoice.types'
 import { useInvoiceFinalize } from './useInvoiceFinalize'
 import { parseApiError } from 'common/utils/apiErrorParser'
-
-interface ToastState {
-  show: boolean
-  message: string
-  variant: 'success' | 'danger'
-  invoiceId?: number // BE uses number IDs
-}
+import { ToastState } from '../types'
 
 interface UseInvoiceFinalizeDialogReturn {
   invoiceToFinalize: Invoice | null

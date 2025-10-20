@@ -5,13 +5,7 @@
 
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-
-interface SaveToastState {
-  show: boolean
-  message: string
-  invoiceId?: number // BE uses number IDs
-  isFinalized?: boolean
-}
+import { SaveToastState } from '../types'
 
 interface UseInvoiceListToastsReturn {
   saveToast: SaveToastState

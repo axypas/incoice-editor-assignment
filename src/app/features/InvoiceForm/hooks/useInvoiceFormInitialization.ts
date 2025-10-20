@@ -8,20 +8,8 @@ import { UseFormReset } from 'react-hook-form'
 import { Customer } from 'common/types'
 import { Invoice } from 'common/types/invoice.types'
 import { logger } from 'common/utils/logger'
-import type { InvoiceFormValues, LineItemFormValue } from '../InvoiceForm'
-
-/**
- * Creates a default empty line item
- */
-const createDefaultLineItem = (): LineItemFormValue => ({
-  product: null,
-  product_id: undefined,
-  label: '',
-  quantity: 1,
-  unit: 'piece',
-  unit_price: 0,
-  vat_rate: '0',
-})
+import { InvoiceFormValues, LineItemFormValue } from '../types'
+import { createDefaultLineItem } from '../utils'
 
 interface UseInvoiceFormInitializationParams {
   isEditMode: boolean

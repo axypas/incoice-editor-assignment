@@ -4,7 +4,7 @@
  * Uses MSW to mock API responses
  */
 
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { API_BASE } from 'common/test/constants'
@@ -42,7 +42,9 @@ jest.mock('react-datepicker', () => {
     ...rest
   }: any) {
     const [inputValue, setInputValue] = React.useState(
-      selected ? selected.toISOString().split('T')[0] : ''
+      selected && selected instanceof Date && !isNaN(selected.getTime())
+        ? selected.toISOString().split('T')[0]
+        : ''
     )
 
     return (
@@ -235,7 +237,8 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       const customerInput = screen.getByTestId('customer-autocomplete')
-      fireEvent.blur(customerInput)
+      await userEvent.click(customerInput)
+      await userEvent.tab()
 
       await waitFor(() => {
         expect(screen.getByText('Please select a customer')).toBeInTheDocument()
@@ -253,7 +256,8 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       const productInput = screen.getByTestId('product-autocomplete')
-      fireEvent.blur(productInput)
+      await userEvent.click(productInput)
+      await userEvent.tab()
 
       await waitFor(() => {
         expect(screen.getByText('Please select a product')).toBeInTheDocument()
@@ -265,7 +269,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set invoice date to 2024-01-15
       const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
-      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+      await userEvent.clear(invoiceDateInput)
+      await userEvent.type(invoiceDateInput, '2024-01-15')
 
       await waitFor(() => {
         expect(invoiceDateInput).toHaveValue('2024-01-15')
@@ -273,7 +278,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set deadline to 2024-01-10 (before invoice date)
       const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
-      fireEvent.change(deadlineInput, { target: { value: '2024-01-10' } })
+      await userEvent.clear(deadlineInput)
+      await userEvent.type(deadlineInput, '2024-01-10')
 
       // Validation should trigger immediately
       await waitFor(() => {
@@ -288,7 +294,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set invoice date to 2024-01-15
       const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
-      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+      await userEvent.clear(invoiceDateInput)
+      await userEvent.type(invoiceDateInput, '2024-01-15')
 
       await waitFor(() => {
         expect(invoiceDateInput).toHaveValue('2024-01-15')
@@ -296,7 +303,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set deadline to same date (2024-01-15)
       const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
-      fireEvent.change(deadlineInput, { target: { value: '2024-01-15' } })
+      await userEvent.clear(deadlineInput)
+      await userEvent.type(deadlineInput, '2024-01-15')
 
       // Should NOT show validation error
       await waitFor(() => {
@@ -313,7 +321,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set invoice date to 2024-01-15
       const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
-      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+      await userEvent.clear(invoiceDateInput)
+      await userEvent.type(invoiceDateInput, '2024-01-15')
 
       await waitFor(() => {
         expect(invoiceDateInput).toHaveValue('2024-01-15')
@@ -321,7 +330,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set deadline to 2024-01-20 (valid)
       const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
-      fireEvent.change(deadlineInput, { target: { value: '2024-01-20' } })
+      await userEvent.clear(deadlineInput)
+      await userEvent.type(deadlineInput, '2024-01-20')
 
       await waitFor(() => {
         expect(deadlineInput).toHaveValue('2024-01-20')
@@ -333,7 +343,8 @@ describe('InvoiceForm - US3', () => {
       ).not.toBeInTheDocument()
 
       // Change invoice date to 2024-01-25 (now after deadline)
-      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-25' } })
+      await userEvent.clear(invoiceDateInput)
+      await userEvent.type(invoiceDateInput, '2024-01-25')
 
       // Deadline should be re-validated and show error
       await waitFor(() => {
@@ -352,7 +363,8 @@ describe('InvoiceForm - US3', () => {
       const tomorrowStr = tomorrow.toISOString().split('T')[0]
 
       const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
-      fireEvent.change(invoiceDateInput, { target: { value: tomorrowStr } })
+      await userEvent.clear(invoiceDateInput)
+      await userEvent.type(invoiceDateInput, tomorrowStr)
 
       // Future dates should be allowed without validation error
       await waitFor(() => {
@@ -364,7 +376,8 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
-      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+      await userEvent.clear(invoiceDateInput)
+      await userEvent.type(invoiceDateInput, '2024-01-15')
 
       await waitFor(() => {
         expect(invoiceDateInput).toHaveValue('2024-01-15')
@@ -376,7 +389,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set invoice date to 2024-01-15 (past date)
       const invoiceDateInput = screen.getAllByTestId('mock-datepicker')[0]
-      fireEvent.change(invoiceDateInput, { target: { value: '2024-01-15' } })
+      await userEvent.clear(invoiceDateInput)
+      await userEvent.type(invoiceDateInput, '2024-01-15')
 
       await waitFor(() => {
         expect(invoiceDateInput).toHaveValue('2024-01-15')
@@ -384,7 +398,8 @@ describe('InvoiceForm - US3', () => {
 
       // Set deadline to 2024-02-15 (also in the past)
       const deadlineInput = screen.getAllByTestId('mock-datepicker')[1]
-      fireEvent.change(deadlineInput, { target: { value: '2024-02-15' } })
+      await userEvent.clear(deadlineInput)
+      await userEvent.type(deadlineInput, '2024-02-15')
 
       await waitFor(() => {
         expect(deadlineInput).toHaveValue('2024-02-15')
@@ -435,7 +450,8 @@ describe('InvoiceForm - US3', () => {
 
       // Select a product first
       const productInput = screen.getByTestId('product-autocomplete')
-      fireEvent.change(productInput, { target: { value: 'Test Product' } })
+      await userEvent.clear(productInput)
+      await userEvent.type(productInput, 'Test Product')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('Test Product')).toBeInTheDocument()
@@ -473,11 +489,13 @@ describe('InvoiceForm - US3', () => {
 
       // Fill in customer
       const customerInput = screen.getByTestId('customer-autocomplete')
-      fireEvent.change(customerInput, { target: { value: 'John Doe' } })
+      await userEvent.clear(customerInput)
+      await userEvent.type(customerInput, 'John Doe')
 
       // Fill in product
       const productInput = screen.getByTestId('product-autocomplete')
-      fireEvent.change(productInput, { target: { value: 'Test Product' } })
+      await userEvent.clear(productInput)
+      await userEvent.type(productInput, 'Test Product')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('Test Product')).toBeInTheDocument()
@@ -495,7 +513,8 @@ describe('InvoiceForm - US3', () => {
 
       // First blur the customer field to trigger validation
       const customerInput = screen.getByTestId('customer-autocomplete')
-      fireEvent.blur(customerInput)
+      await userEvent.click(customerInput)
+      await userEvent.tab()
 
       await waitFor(() => {
         expect(screen.getByText('Please select a customer')).toBeInTheDocument()
@@ -535,13 +554,13 @@ describe('InvoiceForm - US3', () => {
 
       renderInvoiceForm()
 
-      fireEvent.change(screen.getByTestId('customer-autocomplete'), {
-        target: { value: 'John Doe' },
-      })
+      const customerInput = screen.getByTestId('customer-autocomplete')
+      await userEvent.clear(customerInput)
+      await userEvent.type(customerInput, 'John Doe')
 
-      fireEvent.change(screen.getByTestId('product-autocomplete'), {
-        target: { value: 'Sample Product' },
-      })
+      const productInput = screen.getByTestId('product-autocomplete')
+      await userEvent.clear(productInput)
+      await userEvent.type(productInput, 'Sample Product')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
@@ -570,9 +589,9 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       // Fill in form
-      fireEvent.change(screen.getByTestId('customer-autocomplete'), {
-        target: { value: 'John Doe' },
-      })
+      const customerInput = screen.getByTestId('customer-autocomplete')
+      await userEvent.clear(customerInput)
+      await userEvent.type(customerInput, 'John Doe')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
@@ -591,9 +610,9 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       // Fill in some data
-      fireEvent.change(screen.getByTestId('customer-autocomplete'), {
-        target: { value: 'John Doe' },
-      })
+      const customerInput = screen.getByTestId('customer-autocomplete')
+      await userEvent.clear(customerInput)
+      await userEvent.type(customerInput, 'John Doe')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
@@ -639,9 +658,9 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       // Fill in customer
-      fireEvent.change(screen.getByTestId('customer-autocomplete'), {
-        target: { value: 'John Doe' },
-      })
+      const customerInput = screen.getByTestId('customer-autocomplete')
+      await userEvent.clear(customerInput)
+      await userEvent.type(customerInput, 'John Doe')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
@@ -665,12 +684,13 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       // Fill in data
-      fireEvent.change(screen.getByTestId('customer-autocomplete'), {
-        target: { value: 'John Doe' },
-      })
-      fireEvent.change(screen.getByTestId('product-autocomplete'), {
-        target: { value: 'Test Product' },
-      })
+      const customerInput = screen.getByTestId('customer-autocomplete')
+      await userEvent.clear(customerInput)
+      await userEvent.type(customerInput, 'John Doe')
+
+      const productInput = screen.getByTestId('product-autocomplete')
+      await userEvent.clear(productInput)
+      await userEvent.type(productInput, 'Test Product')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument()
@@ -752,9 +772,9 @@ describe('InvoiceForm - US3', () => {
       renderInvoiceForm()
 
       // Fill in a product
-      fireEvent.change(screen.getByTestId('product-autocomplete'), {
-        target: { value: 'Test Product' },
-      })
+      const productInput = screen.getByTestId('product-autocomplete')
+      await userEvent.clear(productInput)
+      await userEvent.type(productInput, 'Test Product')
 
       await waitFor(() => {
         expect(screen.getByDisplayValue('Test Product')).toBeInTheDocument()

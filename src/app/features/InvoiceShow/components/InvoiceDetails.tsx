@@ -5,16 +5,13 @@
 
 import { Card, Badge } from 'react-bootstrap'
 import type { Invoice } from 'common/types/invoice.types'
+import { formatDate } from 'common/utils/date'
 
 interface InvoiceDetailsProps {
   invoice: Invoice
-  formatDate: (dateString: string | null | undefined) => string
 }
 
-const InvoiceDetails = ({
-  invoice,
-  formatDate,
-}: InvoiceDetailsProps): JSX.Element => {
+const InvoiceDetails = ({ invoice }: InvoiceDetailsProps): JSX.Element => {
   return (
     <Card className="mb-4">
       <Card.Header>

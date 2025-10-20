@@ -10,28 +10,9 @@ import type {
   UseFormGetValues,
   FieldArrayWithId,
 } from 'react-hook-form'
-import type { Product, Customer } from 'common/types'
-
-interface LineItemFormValue {
-  id?: string
-  product: Product | null
-  product_id?: string
-  label: string
-  quantity: number
-  unit: string
-  unit_price: number
-  vat_rate: string
-  _destroy?: boolean
-}
-
-interface InvoiceFormValues {
-  customer: Customer | null
-  date: Date | null
-  deadline: Date | null
-  paid: boolean
-  finalized: boolean
-  lineItems: LineItemFormValue[]
-}
+import type { Product } from 'common/types'
+import { LineItemFormValue, InvoiceFormValues } from '../types'
+import { createDefaultLineItem } from '../utils'
 
 interface UseLineItemActionsOptions {
   setValue: UseFormSetValue<InvoiceFormValues>
@@ -41,7 +22,6 @@ interface UseLineItemActionsOptions {
   append: (value: LineItemFormValue) => void
   remove: (index: number) => void
   insert: (index: number, value: LineItemFormValue) => void
-  createDefaultLineItem: () => LineItemFormValue
 }
 
 interface UseLineItemActionsReturn {
@@ -59,7 +39,6 @@ export const useLineItemActions = ({
   append,
   remove,
   insert,
-  createDefaultLineItem,
 }: UseLineItemActionsOptions): UseLineItemActionsReturn => {
   const handleProductSelect = useCallback(
     (index: number, product: Product | null) => {
@@ -112,12 +91,12 @@ export const useLineItemActions = ({
         })
       }
     },
-    [setValue, clearErrors, createDefaultLineItem]
+    [setValue, clearErrors]
   )
 
   const addLineItem = useCallback(() => {
     append(createDefaultLineItem())
-  }, [append, createDefaultLineItem])
+  }, [append])
 
   const removeLineItem = useCallback(
     (index: number) => {

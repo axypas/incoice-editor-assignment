@@ -4,29 +4,9 @@
  */
 
 import { useState, useCallback, useEffect } from 'react'
-import type { Customer, Product } from 'common/types'
+import type { Customer } from 'common/types'
 import { logger } from 'common/utils/logger'
-
-interface LineItemFormValue {
-  id?: string
-  product: Product | null
-  product_id?: string
-  label: string
-  quantity: number
-  unit: string
-  unit_price: number
-  vat_rate: string
-  _destroy?: boolean
-}
-
-interface InvoiceFormValues {
-  customer: Customer | null
-  date: Date | null
-  deadline: Date | null
-  paid: boolean
-  finalized: boolean
-  lineItems: LineItemFormValue[]
-}
+import { LineItemFormValue, InvoiceFormValues } from '../types'
 
 interface DraftBackup {
   customer: Customer | null

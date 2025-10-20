@@ -24,49 +24,9 @@ import {
   useInvoiceSubmit,
   useInvoiceFormInitialization,
 } from './hooks'
-import { Customer, Product } from 'common/types'
 import { Invoice } from 'common/types/invoice.types'
+import { InvoiceFormValues } from './types'
 import 'react-datepicker/dist/react-datepicker.css'
-
-/**
- * Represents a single line item in the invoice form
- */
-export interface LineItemFormValue {
-  id?: string // For existing line items in edit mode
-  product: Product | null
-  product_id?: string
-  label: string
-  quantity: number
-  unit: string
-  unit_price: number
-  vat_rate: string
-  _destroy?: boolean // For marking items for deletion
-}
-
-/**
- * Complete form values structure for the invoice form
- */
-export interface InvoiceFormValues {
-  customer: Customer | null
-  date: Date | null
-  deadline: Date | null
-  paid: boolean
-  finalized: boolean
-  lineItems: LineItemFormValue[]
-}
-
-/**
- * Creates a default empty line item
- */
-const createDefaultLineItem = (): LineItemFormValue => ({
-  product: null,
-  product_id: undefined,
-  label: '',
-  quantity: 1,
-  unit: 'piece',
-  unit_price: 0,
-  vat_rate: '0',
-})
 
 /**
  * Auto-save debounce delay in milliseconds (30 seconds)
@@ -167,7 +127,6 @@ const InvoiceFormInner = ({
     append,
     remove,
     insert,
-    createDefaultLineItem,
   })
 
   // Invoice submit hook
@@ -265,7 +224,6 @@ const InvoiceFormInner = ({
             addLineItem={addLineItem}
             removeLineItem={removeLineItem}
             duplicateLineItem={duplicateLineItem}
-            createDefaultLineItem={createDefaultLineItem}
           />
 
           <TotalsSection totals={totals} />

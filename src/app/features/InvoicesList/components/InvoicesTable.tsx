@@ -13,7 +13,6 @@ import {
 } from 'react-table'
 import { Spinner, Button, Badge, Table, Card } from 'react-bootstrap'
 import { useNavigate } from 'react-router-dom'
-import numeral from 'numeral'
 import { Invoice } from 'common/types/invoice.types'
 import { formatDate } from 'common/utils/date'
 import { calculateLineItem, formatCurrency } from 'common/utils/calculations'
@@ -240,24 +239,18 @@ const InvoicesTable = ({
               const due = new Date(deadline)
 
               if (now > due) {
-                // Use numeral.js for date math operations
-                const timeDiff =
-                  numeral(now.getTime()).subtract(due.getTime()).value() || 0
-                const daysOverdue = Math.ceil(
-                  numeral(timeDiff).divide(MILLISECONDS_PER_DAY).value() || 0
-                )
+                // Simple date math using native JS
+                const timeDiff = now.getTime() - due.getTime()
+                const daysOverdue = Math.ceil(timeDiff / MILLISECONDS_PER_DAY)
                 return {
                   label: `${daysOverdue} days overdue`,
                   color: 'danger',
                 }
               }
 
-              // Use numeral.js for date math operations
-              const timeDiff =
-                numeral(due.getTime()).subtract(now.getTime()).value() || 0
-              const daysUntilDue = Math.ceil(
-                numeral(timeDiff).divide(MILLISECONDS_PER_DAY).value() || 0
-              )
+              // Simple date math using native JS
+              const timeDiff = due.getTime() - now.getTime()
+              const daysUntilDue = Math.ceil(timeDiff / MILLISECONDS_PER_DAY)
               if (daysUntilDue <= 7) {
                 return {
                   label: `Due in ${daysUntilDue} days`,

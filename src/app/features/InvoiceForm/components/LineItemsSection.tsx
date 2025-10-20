@@ -14,29 +14,10 @@ import {
 import { Controller, Control, FieldArrayWithId } from 'react-hook-form'
 import { ProductAutocomplete } from 'common/components'
 import { formatCurrency } from 'common/utils/calculations'
-import type { Product, Customer } from 'common/types'
+import type { Product } from 'common/types'
 import type { LineItemCalculation as ImportedLineItemCalculation } from 'common/types/invoice.types'
-
-interface LineItemFormValue {
-  id?: string
-  product: Product | null
-  product_id?: string
-  label: string
-  quantity: number
-  unit: string
-  unit_price: number
-  vat_rate: string
-  _destroy?: boolean
-}
-
-interface InvoiceFormValues {
-  customer: Customer | null
-  date: Date | null
-  deadline: Date | null
-  paid: boolean
-  finalized: boolean
-  lineItems: LineItemFormValue[]
-}
+import { LineItemFormValue, InvoiceFormValues } from '../types'
+import { createDefaultLineItem } from '../utils'
 
 type LineItemCalculation = ImportedLineItemCalculation
 
@@ -49,7 +30,6 @@ interface LineItemsSectionProps {
   addLineItem: () => void
   removeLineItem: (index: number) => void
   duplicateLineItem: (index: number) => void
-  createDefaultLineItem: () => LineItemFormValue
 }
 
 const LineItemsSection = ({
@@ -61,7 +41,6 @@ const LineItemsSection = ({
   addLineItem,
   removeLineItem,
   duplicateLineItem,
-  createDefaultLineItem,
 }: LineItemsSectionProps): JSX.Element => {
   return (
     <Card className="mb-4 shadow-sm rounded-xl">

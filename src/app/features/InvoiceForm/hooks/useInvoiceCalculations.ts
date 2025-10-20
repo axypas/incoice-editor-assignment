@@ -12,18 +12,7 @@ import {
   calculateInvoiceTotals,
 } from 'common/utils/calculations'
 import type { Product } from 'common/types'
-
-interface LineItemFormValue {
-  id?: string
-  product: Product | null
-  product_id?: string
-  label: string
-  quantity: number
-  unit: string
-  unit_price: number
-  vat_rate: string
-  _destroy?: boolean
-}
+import { LineItemFormValue } from '../types'
 
 interface UseInvoiceCalculationsOptions {
   lineItems: LineItemFormValue[]

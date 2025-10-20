@@ -19,13 +19,18 @@ const isValidDate = (value: unknown): value is Date => {
 
 /**
  * Formats a date according to locale with validation
- * Returns 'Invalid Date' for malformed dates
+ * Returns 'N/A' for null/undefined, 'Invalid Date' for malformed dates
  */
 export const formatDate = (
-  date: string | Date,
+  date: string | Date | null | undefined,
   locale: string = 'en-US',
   options?: Intl.DateTimeFormatOptions
 ): string => {
+  // Handle null/undefined
+  if (!date) {
+    return 'N/A'
+  }
+
   // Convert string to Date if needed
   const dateObj = isString(date) ? new Date(date) : date
 
