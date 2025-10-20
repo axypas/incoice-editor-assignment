@@ -5,6 +5,7 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { useApiHealth } from 'common/hooks/useApiHealth'
+import { ErrorBoundary } from 'common/components'
 
 import InvoicesList from './features/InvoicesList'
 import InvoiceShow from './features/InvoiceShow'
@@ -66,10 +67,38 @@ function App() {
           {isHealthy && (
             <Router>
               <Routes>
-                <Route path="/invoices/new" Component={InvoiceForm} />
-                <Route path="/invoices/:id/edit" Component={InvoiceForm} />
-                <Route path="/invoice/:id" Component={InvoiceShow} />
-                <Route path="/" Component={InvoicesList} />
+                <Route
+                  path="/invoices/new"
+                  element={
+                    <ErrorBoundary>
+                      <InvoiceForm />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/invoices/:id/edit"
+                  element={
+                    <ErrorBoundary>
+                      <InvoiceForm />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/invoice/:id"
+                  element={
+                    <ErrorBoundary>
+                      <InvoiceShow />
+                    </ErrorBoundary>
+                  }
+                />
+                <Route
+                  path="/"
+                  element={
+                    <ErrorBoundary>
+                      <InvoicesList />
+                    </ErrorBoundary>
+                  }
+                />
               </Routes>
             </Router>
           )}

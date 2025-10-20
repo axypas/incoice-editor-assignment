@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import { ApiProvider } from '../api'
+import { ErrorBoundary } from '../common/components'
 
 import './index.css'
 import 'bootstrap/dist/css/bootstrap.min.css'
@@ -29,8 +30,10 @@ const root = createRoot(domRoot!)
 
 root.render(
   <StrictMode>
-    <ApiProvider url={apiBase} token={apiToken}>
-      <App />
-    </ApiProvider>
+    <ErrorBoundary>
+      <ApiProvider url={apiBase} token={apiToken}>
+        <App />
+      </ApiProvider>
+    </ErrorBoundary>
   </StrictMode>
 )
