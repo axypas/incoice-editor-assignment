@@ -18,6 +18,7 @@ import type { Product } from 'common/types'
 import type { LineItemCalculation as ImportedLineItemCalculation } from 'common/types/invoice.types'
 import { LineItemFormValue, InvoiceFormValues } from '../types'
 import { createDefaultLineItem } from '../utils'
+import numeral from 'numeral'
 
 type LineItemCalculation = ImportedLineItemCalculation
 
@@ -196,7 +197,11 @@ const LineItemsSection = ({
                       <strong>
                         {formatCurrency(
                           item.product?.unit_tax
-                            ? item.quantity * parseFloat(item.product.unit_tax)
+                            ? numeral(item.quantity)
+                                .multiply(
+                                  numeral(item.product.unit_tax).value() ?? 0
+                                )
+                                .value() ?? 0
                             : 0
                         )}
                       </strong>
