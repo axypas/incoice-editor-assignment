@@ -1396,5 +1396,614 @@ describe('InvoicesList - US1', () => {
         { timeout: 3000 }
       )
     })
+
+    it('handles 403 error (forbidden) with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.delete(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(403))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm deletion
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm deletion/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm deletion/i })
+      )
+
+      // Verify error toast is shown (403 is treated same as 409 in the hook)
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText(
+            /cannot delete finalized invoice/i
+          )
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+
+      // Verify dialog is closed
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/are you sure you want to delete invoice/i)
+        ).not.toBeInTheDocument()
+      })
+    })
+
+    it('handles 500 error (server error) with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.delete(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(500))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm deletion
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm deletion/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm deletion/i })
+      )
+
+      // Verify error toast is shown with generic message
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText('Failed to delete invoice')
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+
+      // Note: Dialog stays open for 500 errors to allow user to retry or cancel
+    })
+
+    it('handles network error with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.delete(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res.networkError('Network connection failed')
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /delete/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm deletion
+      await userEvent.click(screen.getByRole('button', { name: /delete/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm deletion/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm deletion/i })
+      )
+
+      // Verify error toast is shown with network error message
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText('Failed to delete invoice')
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+
+      // Note: Dialog stays open for network errors to allow user to retry or cancel
+    })
+  })
+
+  describe('Finalize Functionality - US4', () => {
+    it('shows finalize button only for draft invoices', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 2,
+              },
+              invoices: [
+                { ...mockInvoice, id: 1, finalized: false },
+                { ...mockInvoice, id: 2, finalized: true },
+              ],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(screen.getByRole('table')).toBeInTheDocument()
+      })
+
+      // Should have 1 Finalize action button in the table (only for draft invoice)
+      // Note: There's also a "Finalized" filter button, so we need to be specific
+      const finalizeButtons = screen.queryAllByRole('button', {
+        name: /^finalize$/i,
+      })
+      expect(finalizeButtons).toHaveLength(1)
+    })
+
+    it('opens finalize dialog when clicking Finalize button', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Click Finalize button
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      // Verify dialog is shown
+      await waitFor(() => {
+        expect(
+          screen.getByText(/are you sure you want to finalize this invoice/i)
+        ).toBeInTheDocument()
+      })
+
+      // Verify invoice number is shown in dialog title
+      expect(screen.getByText(/finalize invoice #1/i)).toBeInTheDocument()
+    })
+
+    it('closes dialog when clicking Cancel', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/are you sure you want to finalize this invoice/i)
+        ).toBeInTheDocument()
+      })
+
+      // Click Cancel
+      await userEvent.click(
+        screen.getByRole('button', { name: /cancel finalization/i })
+      )
+
+      // Verify dialog is closed
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/are you sure you want to finalize this invoice/i)
+        ).not.toBeInTheDocument()
+      })
+    })
+
+    it('finalizes invoice successfully and shows success toast', async () => {
+      let finalizeWasCalled = false
+
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.put(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          finalizeWasCalled = true
+          return res(ctx.json({ ...mockInvoice, finalized: true }))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/are you sure you want to finalize this invoice/i)
+        ).toBeInTheDocument()
+      })
+
+      // Confirm finalization (button is labeled "Finalize Invoice" but has aria-label "Confirm finalization")
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm finalization/i })
+      )
+
+      // Verify API was called
+      await waitFor(() => {
+        expect(finalizeWasCalled).toBe(true)
+      })
+
+      // Verify success toast is shown
+      await waitFor(
+        () => {
+          expect(
+            screen.getByText(/invoice finalized successfully/i)
+          ).toBeInTheDocument()
+        },
+        { timeout: 3000 }
+      )
+
+      // Verify dialog is closed
+      expect(
+        screen.queryByText(/are you sure you want to finalize this invoice/i)
+      ).not.toBeInTheDocument()
+    })
+
+    it('handles 403 error (forbidden) with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.put(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(403))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm finalization
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm finalization/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm finalization/i })
+      )
+
+      // Verify error toast is shown
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText(/failed to finalize invoice/i)
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+    })
+
+    it('handles 404 error (invoice not found) with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.put(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(404))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm finalization
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm finalization/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm finalization/i })
+      )
+
+      // Verify error toast is shown
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText(/failed to finalize invoice/i)
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+    })
+
+    it('handles 409 error (already finalized) with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.put(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(409))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm finalization
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm finalization/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm finalization/i })
+      )
+
+      // Verify error toast is shown
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText(/failed to finalize invoice/i)
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+    })
+
+    it('handles 500 error (server error) with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.put(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res(ctx.status(500))
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm finalization
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm finalization/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm finalization/i })
+      )
+
+      // Verify error toast is shown with generic message
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText('Failed to finalize invoice')
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+    })
+
+    it('handles network error with error toast', async () => {
+      server.use(
+        rest.get(`${API_BASE}/invoices`, (req, res, ctx) => {
+          return res(
+            ctx.json({
+              pagination: {
+                page: 1,
+                page_size: 10,
+                total_pages: 1,
+                total_entries: 1,
+              },
+              invoices: [mockInvoice],
+            })
+          )
+        }),
+        rest.put(`${API_BASE}/invoices/:id`, (req, res, ctx) => {
+          return res.networkError('Network connection failed')
+        })
+      )
+
+      renderInvoicesList()
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /^finalize$/i })
+        ).toBeInTheDocument()
+      })
+
+      // Open dialog and confirm finalization
+      await userEvent.click(screen.getByRole('button', { name: /^finalize$/i }))
+
+      await waitFor(() => {
+        expect(
+          screen.getByRole('button', { name: /confirm finalization/i })
+        ).toBeInTheDocument()
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', { name: /confirm finalization/i })
+      )
+
+      // Verify error toast is shown with network error message
+      await waitFor(
+        () => {
+          const messages = screen.queryAllByText('Failed to finalize invoice')
+          expect(messages.length).toBeGreaterThan(0)
+        },
+        { timeout: 3000 }
+      )
+    })
   })
 })

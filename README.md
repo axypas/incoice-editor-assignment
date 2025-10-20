@@ -113,7 +113,7 @@ src/
 ### Key Technical Decisions
 
 1. **No Module Mocking**: Uses MSW (Mock Service Worker) for all network mocking instead of `jest.mock()` for realistic, portable test behavior
-2. **Decimal Precision**: 2 decimal places for all currency, uses `Intl.NumberFormat` for display
+2. **Financial Accuracy**: Uses numeral.js library for all currency calculations and formatting to avoid floating-point errors, ensuring 2 decimal places precision
 3. **Validation Strategy**: On-blur validation with inline errors, never loses user input
 4. **Focus Management**: Declarative `autoFocus` prop instead of imperative `useRef` + `useEffect`
 5. **Accessibility First**: Semantic HTML, ARIA attributes, keyboard navigation, focus management
@@ -124,13 +124,16 @@ src/
 
 - **Unit/Integration**: Jest + React Testing Library
 - **Network Mocking**: MSW for both tests and development
+- **Philosophy**: Test user interactions, not implementation details
 
 ### Test Strategy
 
-- Cover happy path + at least one error path per feature
-- Mock network with MSW, not module mocks
-- Assert business-critical flows, not implementation details
-- Current coverage: 98 tests passing, 3 skipped
+- **User-Centric Testing**: Tests simulate actual user interactions (clicking buttons, filling forms, reading toast messages)
+- **Component Integration Tests**: Test full component behavior with real user flows, not isolated hook logic
+- **Comprehensive Error Coverage**: Each critical feature tests happy path + error scenarios (403, 404, 409, 500, network errors)
+- **MSW for Network Mocking**: Realistic API simulation, no module mocks
+- **Accessibility Testing**: Verifies ARIA labels, keyboard navigation, screen reader announcements
+- **Current Coverage**: 122 tests passing across 6 test suites
 
 ### Running Tests
 
@@ -148,20 +151,28 @@ yarn test InvoiceForm
 yarn test --coverage
 ```
 
-### Test Examples
+### Test Coverage by Feature
 
-```tsx
-// MSW network mocking
-server.use(
-  http.get('/invoices', () => {
-    return HttpResponse.json({ invoices: mockInvoices })
-  })
-)
+- **InvoicesList**: 43 tests
+  - List display, sorting, filtering
+  - Delete functionality (success + 5 error scenarios)
+  - Finalize functionality (success + 5 error scenarios)
+  - Accessibility (live regions, keyboard navigation)
 
-// React Testing Library queries
-const submitButton = screen.getByRole('button', { name: /create invoice/i })
-const amountHeader = screen.getByRole('columnheader', { name: /amount/i })
-```
+- **InvoiceForm**: 23 tests
+  - Form validation, calculations
+  - Line item management
+  - Customer/product selection
+
+- **InvoiceShow**: 11 tests
+  - Invoice detail display
+  - PDF generation
+  - Status badges
+
+- **Utilities**: 45 tests
+  - Currency calculations
+  - Date formatting
+  - API error parsing
 
 ## API Integration
 
@@ -266,7 +277,6 @@ This project follows Pennylane's design principles (see `CLAUDE.md`):
 - **PENNYLANE_CHALLENGE.md**: Original interview requirements
 - **CLAUDE.md**: Development guidelines and architectural decisions
 - **FUTURE_WORK.md**: Planned features and technical improvements
-- **US6_IMPLEMENTATION.md**: Accessibility implementation details
 
 ## Contributing
 
