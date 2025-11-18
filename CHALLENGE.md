@@ -1,4 +1,4 @@
-# Pennylane frontend challenge
+# frontend challenge
 
 This repository contains the guidelines for the frontend interview question, as well as a repository skeleton with which to start.
 
